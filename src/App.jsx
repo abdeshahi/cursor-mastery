@@ -12,7 +12,6 @@ import {
   Download,
   LayoutDashboard,
   Menu,
-  Minus,
   MoreHorizontal,
   PackagePlus,
   Plus,
