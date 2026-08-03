@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowDownLeft,
   ArrowUpLeft,
@@ -11,20 +11,24 @@ import {
   Clock3,
   Download,
   LayoutDashboard,
+  LogOut,
   Menu,
   MoreHorizontal,
   PackagePlus,
   Plus,
   ReceiptText,
   Search,
-  Settings,
+  ShieldCheck,
   ShoppingBag,
   ShoppingCart,
   Smartphone,
   Sparkles,
   TrendingUp,
+  UserCog,
   UserPlus,
   Users,
+  Wifi,
+  WifiOff,
   Wrench,
   X,
 } from 'lucide-react'
@@ -36,6 +40,8 @@ import {
   Tooltip,
   XAxis,
 } from 'recharts'
+import { LoginScreen, roleLabels, useAuth } from './auth'
+import { useStoreData } from './useStoreData'
 
 const money = (value) => `${new Intl.NumberFormat('fa-IR').format(value)} تومان`
 const number = (value) => new Intl.NumberFormat('fa-IR').format(value)
@@ -89,25 +95,13 @@ const navItems = [
   { id: 'customers', label: 'مشتریان', icon: Users },
   { id: 'repairs', label: 'تعمیرات', icon: Wrench, badge: 4 },
   { id: 'reports', label: 'گزارش‌ها', icon: BarChart3 },
+  { id: 'personnel', label: 'پرسنل و دسترسی‌ها', icon: UserCog },
 ]
 
-function useStoredState(key, fallback) {
-  const [value, setValue] = useState(() => {
-    try {
-      const saved = localStorage.getItem(key)
-      return saved ? JSON.parse(saved) : fallback
-    } catch {
-      return fallback
-    }
-  })
-  const update = (next) => {
-    setValue((current) => {
-      const result = typeof next === 'function' ? next(current) : next
-      localStorage.setItem(key, JSON.stringify(result))
-      return result
-    })
-  }
-  return [value, update]
+const rolePermissions = {
+  admin: navItems.map((item) => item.id),
+  sales: ['dashboard', 'sales', 'inventory', 'customers', 'repairs'],
+  technician: ['dashboard', 'customers', 'repairs'],
 }
 
 function Logo() {
@@ -435,23 +429,101 @@ function RepairForm({ onSubmit, onClose }) {
   )
 }
 
+function Personnel({ profile, online, installAvailable, installed, installApp }) {
+  const roles = [
+    { id: 'admin', title: 'مدیر فروشگاه', text: 'دسترسی کامل به فروش، انبار، گزارش‌ها و پرسنل', icon: ShieldCheck },
+    { id: 'sales', title: 'فروشنده', text: 'ثبت فروش، مشتریان، مشاهده موجودی و تعمیرات', icon: ShoppingCart },
+    { id: 'technician', title: 'تعمیرکار', text: 'پذیرش، پیگیری و تکمیل سفارش‌های تعمیر', icon: Wrench },
+  ]
+  return (
+    <>
+      <PageHeader eyebrow="مدیریت تیم" title="پرسنل و دسترسی‌ها" description="هر کاربر فقط بخش‌های مرتبط با نقش خود را مشاهده می‌کند." />
+      <section className={`connection-panel ${online ? 'online' : ''}`}>
+        <div className="connection-icon">{online ? <Wifi size={22} /> : <WifiOff size={22} />}</div>
+        <div><strong>{online ? 'دیتابیس مرکزی فعال است' : 'حالت نمایشی محلی فعال است'}</strong><span>{online ? 'تغییرات این دستگاه با گوشی همه پرسنل همگام می‌شود.' : 'برای همگام‌سازی بین گوشی‌ها، متغیرهای Supabase را هنگام انتشار تنظیم کنید.'}</span></div>
+        <span className="connection-state">{online ? 'آنلاین' : 'نیاز به تنظیم'}</span>
+      </section>
+      <section className="personnel-grid">
+        <article className="panel current-user-card">
+          <div className="panel-header"><div><h2>کاربر فعلی</h2><p>حساب فعال روی این دستگاه</p></div></div>
+          <div className="current-user">
+            <div className="large-avatar">{profile?.full_name?.charAt(0) || 'ک'}</div>
+            <div><strong>{profile?.full_name}</strong><span>{roleLabels[profile?.role] || 'پرسنل فروشگاه'}</span></div>
+            <span className="active-pill"><i /> فعال</span>
+          </div>
+        </article>
+        <article className="panel install-card">
+          <div className="install-copy"><div className="install-icon"><Smartphone size={25} /></div><div><h2>نصب روی گوشی</h2><p>برنامه را بدون نیاز به اپ‌استور روی صفحه اصلی نصب کنید.</p></div></div>
+          {installed ? <span className="installed-badge">✓ برنامه نصب شده است</span> : installAvailable ? <button className="primary-button" onClick={installApp}><Download size={17} /> نصب برنامه</button> : <div className="install-help"><b>اندروید:</b> منوی مرورگر ← افزودن به صفحه اصلی<br /><b>آیفون:</b> Share ← Add to Home Screen</div>}
+        </article>
+      </section>
+      <section className="panel roles-panel">
+        <div className="panel-header"><div><h2>سطوح دسترسی</h2><p>نقش هر کاربر در Supabase قابل تنظیم است.</p></div></div>
+        <div className="roles-grid">
+          {roles.map(({ id, title, text, icon: Icon }) => <article key={id} className={profile?.role === id ? 'current-role' : ''}><div><Icon size={20} /></div><strong>{title}</strong><p>{text}</p>{profile?.role === id && <span>نقش فعلی شما</span>}</article>)}
+        </div>
+      </section>
+    </>
+  )
+}
+
 export default function App() {
+  const auth = useAuth()
   const [page, setPage] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [modal, setModal] = useState(null)
   const [toast, setToast] = useState('')
-  const [products, setProducts] = useStoredState('cttel-products', initialProducts)
-  const [sales, setSales] = useStoredState('cttel-sales', initialSales)
-  const [customers, setCustomers] = useStoredState('cttel-customers', initialCustomers)
-  const [repairs, setRepairs] = useStoredState('cttel-repairs', initialRepairs)
+  const [installPrompt, setInstallPrompt] = useState(null)
+  const [installed, setInstalled] = useState(() => window.matchMedia('(display-mode: standalone)').matches)
+  const [products, setProducts] = useStoreData('cttel-products', initialProducts, auth.user?.id, auth.online)
+  const [sales, setSales] = useStoreData('cttel-sales', initialSales, auth.user?.id, auth.online)
+  const [customers, setCustomers] = useStoreData('cttel-customers', initialCustomers, auth.user?.id, auth.online)
+  const [repairs, setRepairs] = useStoreData('cttel-repairs', initialRepairs, auth.user?.id, auth.online)
 
   const currentNav = useMemo(() => navItems.find((item) => item.id === page), [page])
+  const role = auth.profile?.role || 'sales'
+  const allowedPages = rolePermissions[role] || rolePermissions.sales
+  const visibleNav = navItems.filter((item) => allowedPages.includes(item.id))
+
+  useEffect(() => {
+    const captureInstall = (event) => {
+      event.preventDefault()
+      setInstallPrompt(event)
+    }
+    const markInstalled = () => {
+      setInstalled(true)
+      setInstallPrompt(null)
+    }
+    window.addEventListener('beforeinstallprompt', captureInstall)
+    window.addEventListener('appinstalled', markInstalled)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', captureInstall)
+      window.removeEventListener('appinstalled', markInstalled)
+    }
+  }, [])
+
   const notify = (message) => {
     setToast(message)
     window.setTimeout(() => setToast(''), 2800)
   }
-  const navigate = (target) => { setPage(target); setSearch(''); setSidebarOpen(false) }
+  const navigate = (target) => {
+    if (!allowedPages.includes(target)) {
+      notify('حساب شما به این بخش دسترسی ندارد')
+      return
+    }
+    setPage(target); setSearch(''); setSidebarOpen(false)
+  }
+  const guardedAction = (allowed, action) => {
+    if (allowed) action()
+    else notify('این عملیات برای نقش شما مجاز نیست')
+  }
+  const installApp = async () => {
+    if (!installPrompt) return
+    await installPrompt.prompt()
+    const choice = await installPrompt.userChoice
+    if (choice.outcome === 'accepted') setInstallPrompt(null)
+  }
   const addProduct = (form) => {
     setProducts((current) => [...current, { ...form, id: Date.now(), stock: Number(form.stock), min: Number(form.min), buy: Number(form.buy), price: Number(form.price) }])
     setModal(null); notify('کالای جدید با موفقیت به انبار اضافه شد')
@@ -476,14 +548,22 @@ export default function App() {
     notify(`وضعیت تعمیر به «${status}» تغییر کرد`)
   }
 
+  const canSell = ['admin', 'sales'].includes(role)
+  const canManageInventory = role === 'admin'
+  const canRepair = ['admin', 'technician'].includes(role)
+  const canAddCustomer = ['admin', 'sales'].includes(role)
   const pageContent = {
-    dashboard: <Dashboard products={products} sales={sales} repairs={repairs} setPage={navigate} openSale={() => setModal('sale')} openProduct={() => setModal('product')} />,
-    sales: <Sales sales={sales} search={search} setSearch={setSearch} openSale={() => setModal('sale')} />,
-    inventory: <Inventory products={products} search={search} setSearch={setSearch} openProduct={() => setModal('product')} />,
-    customers: <Customers customers={customers} search={search} setSearch={setSearch} openCustomer={() => setModal('customer')} />,
-    repairs: <Repairs repairs={repairs} openRepair={() => setModal('repair')} updateRepair={updateRepair} />,
+    dashboard: <Dashboard products={products} sales={sales} repairs={repairs} setPage={navigate} openSale={() => guardedAction(canSell, () => setModal('sale'))} openProduct={() => guardedAction(canManageInventory, () => setModal('product'))} />,
+    sales: <Sales sales={sales} search={search} setSearch={setSearch} openSale={() => guardedAction(canSell, () => setModal('sale'))} />,
+    inventory: <Inventory products={products} search={search} setSearch={setSearch} openProduct={() => guardedAction(canManageInventory, () => setModal('product'))} />,
+    customers: <Customers customers={customers} search={search} setSearch={setSearch} openCustomer={() => guardedAction(canAddCustomer, () => setModal('customer'))} />,
+    repairs: <Repairs repairs={repairs} openRepair={() => guardedAction(canRepair, () => setModal('repair'))} updateRepair={(id, status) => guardedAction(canRepair, () => updateRepair(id, status))} />,
     reports: <Reports sales={sales} products={products} />,
+    personnel: <Personnel profile={auth.profile} online={auth.online} installAvailable={Boolean(installPrompt)} installed={installed} installApp={installApp} />,
   }
+
+  if (auth.loading) return <div className="app-loading"><div className="loading-logo"><Smartphone /></div><span>در حال آماده‌سازی سی‌تی‌تل...</span></div>
+  if (!auth.user) return <LoginScreen signIn={auth.signIn} demoSignIn={auth.demoSignIn} online={auth.online} />
 
   return (
     <div className="app-shell">
@@ -492,11 +572,11 @@ export default function App() {
         <Logo />
         <nav>
           <span className="nav-label">منوی اصلی</span>
-          {navItems.map(({ id, label, icon: Icon, badge }) => <button key={id} className={page === id ? 'active' : ''} onClick={() => navigate(id)}><Icon size={20} /><span>{label}</span>{badge && <b>{number(badge)}</b>}</button>)}
+          {visibleNav.map(({ id, label, icon: Icon, badge }) => <button key={id} className={page === id ? 'active' : ''} onClick={() => navigate(id)}><Icon size={20} /><span>{label}</span>{badge && <b>{number(badge)}</b>}</button>)}
         </nav>
         <div className="sidebar-bottom">
-          <button><Settings size={19} /> تنظیمات</button>
-          <div className="support-card"><div><Sparkles size={18} /></div><strong>نیاز به راهنمایی دارید؟</strong><span>پشتیبانی سی‌تی‌تل کنار شماست</span><button>تماس با پشتیبانی</button></div>
+          <button onClick={auth.signOut}><LogOut size={19} /> خروج از حساب</button>
+          <div className="support-card"><div><Smartphone size={18} /></div><strong>سی‌تی‌تل روی گوشی شما</strong><span>{installed ? 'برنامه روی این دستگاه نصب شده است' : 'برای دسترسی سریع برنامه را نصب کنید'}</span><button onClick={() => installPrompt ? installApp() : notify('از منوی مرورگر، افزودن به صفحه اصلی را انتخاب کنید')}>{installed ? 'نصب شده ✓' : 'نصب برنامه'}</button></div>
         </div>
       </aside>
       <div className="main-area">
@@ -504,8 +584,9 @@ export default function App() {
           <div className="topbar-title"><button className="menu-button" onClick={() => setSidebarOpen(true)}><Menu /></button><div><span>صفحه / {currentNav?.label}</span><strong>{currentNav?.label}</strong></div></div>
           <div className="topbar-actions">
             <div className="global-search"><Search size={17} /><input placeholder="جست‌وجو در فروشگاه..." /></div>
+            <span className={`sync-indicator ${auth.online ? 'online' : ''}`}>{auth.online ? <Wifi size={15} /> : <WifiOff size={15} />}{auth.online ? 'همگام' : 'محلی'}</span>
             <button className="notification"><Bell size={20} /><i /></button>
-            <div className="profile"><div className="avatar">م</div><div><strong>محمد رضایی</strong><span>مدیر فروشگاه</span></div></div>
+            <div className="profile"><div className="avatar">{auth.profile?.full_name?.charAt(0) || 'ک'}</div><div><strong>{auth.profile?.full_name}</strong><span>{roleLabels[role]}</span></div></div>
           </div>
         </header>
         <main>{pageContent[page]}</main>
