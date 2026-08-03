@@ -40,7 +40,8 @@ import {
   Tooltip,
   XAxis,
 } from 'recharts'
-import { LoginScreen, roleLabels, useAuth } from './auth'
+import { LoginScreen } from './auth'
+import { roleLabels, useAuth } from './useAuth'
 import { useStoreData } from './useStoreData'
 
 const money = (value) => `${new Intl.NumberFormat('fa-IR').format(value)} تومان`
