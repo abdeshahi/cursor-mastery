@@ -17,26 +17,64 @@ create table if not exists public.store_data (
 alter table public.profiles enable row level security;
 alter table public.store_data enable row level security;
 
+drop policy if exists "Authenticated staff can view profiles" on public.profiles;
 create policy "Authenticated staff can view profiles"
 on public.profiles for select
 to authenticated
 using (true);
 
+drop policy if exists "Authenticated staff can view store data" on public.store_data;
 create policy "Authenticated staff can view store data"
 on public.store_data for select
 to authenticated
 using (true);
 
-create policy "Authenticated staff can insert store data"
+create or replace function public.current_user_role()
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select role from public.profiles where id = auth.uid()
+$$;
+
+revoke all on function public.current_user_role() from public;
+grant execute on function public.current_user_role() to authenticated;
+
+drop policy if exists "Authenticated staff can insert store data" on public.store_data;
+drop policy if exists "Authenticated staff can update store data" on public.store_data;
+drop policy if exists "Authorized staff can insert store data" on public.store_data;
+drop policy if exists "Authorized staff can update store data" on public.store_data;
+
+create policy "Authorized staff can insert store data"
 on public.store_data for insert
 to authenticated
-with check (auth.uid() = updated_by);
+with check (
+  auth.uid() = updated_by
+  and (
+    public.current_user_role() = 'admin'
+    or (public.current_user_role() = 'sales' and key in ('cttel-products', 'cttel-sales', 'cttel-customers'))
+    or (public.current_user_role() = 'technician' and key = 'cttel-repairs')
+  )
+);
 
-create policy "Authenticated staff can update store data"
+create policy "Authorized staff can update store data"
 on public.store_data for update
 to authenticated
-using (true)
-with check (auth.uid() = updated_by);
+using (
+  public.current_user_role() = 'admin'
+  or (public.current_user_role() = 'sales' and key in ('cttel-products', 'cttel-sales', 'cttel-customers'))
+  or (public.current_user_role() = 'technician' and key = 'cttel-repairs')
+)
+with check (
+  auth.uid() = updated_by
+  and (
+    public.current_user_role() = 'admin'
+    or (public.current_user_role() = 'sales' and key in ('cttel-products', 'cttel-sales', 'cttel-customers'))
+    or (public.current_user_role() = 'technician' and key = 'cttel-repairs')
+  )
+);
 
 create or replace function public.handle_new_user()
 returns trigger
