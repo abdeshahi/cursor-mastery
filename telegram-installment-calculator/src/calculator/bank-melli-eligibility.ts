@@ -43,3 +43,19 @@ export function applyBankMelliEligibility(results: InstallmentResult[]): Install
     eligible: allowedMonths.includes(plan.months),
   }));
 }
+
+function isWithinLoanBounds(requiredLoan: bigint, plan: InstallmentResult): boolean {
+  const meetsMinimum = requiredLoan >= plan.minimumLoan;
+  const meetsMaximum = plan.maximumLoan === null || requiredLoan <= plan.maximumLoan;
+  return meetsMinimum && meetsMaximum;
+}
+
+/** Uses each plan's own required loan for month-tier eligibility (installment-capacity mode). */
+export function applyBankMelliPerPlanEligibility(results: InstallmentResult[]): InstallmentResult[] {
+  return results.map((plan) => ({
+    ...plan,
+    eligible:
+      isBankMelliMonthAllowed(plan.requiredLoan, plan.months) &&
+      isWithinLoanBounds(plan.requiredLoan, plan),
+  }));
+}

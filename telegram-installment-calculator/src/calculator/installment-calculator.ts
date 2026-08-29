@@ -2,7 +2,7 @@ import { Decimal } from 'decimal.js';
 import type { InstallmentResult, PlanTerms } from '../types/calculator.js';
 import type { FundingSource } from '../types/result.js';
 import { MAX_SIGNED_64 } from '../utils/input-validation.js';
-import { applyBankMelliEligibility } from './bank-melli-eligibility.js';
+import { applyBankMelliEligibility, applyBankMelliPerPlanEligibility } from './bank-melli-eligibility.js';
 
 Decimal.set({ precision: 50, rounding: Decimal.ROUND_HALF_UP });
 
@@ -210,7 +210,7 @@ export function calculateAllPlansFromInstallmentCapacity(
 ): InstallmentResult[] {
   const results = plans.map((plan) => calculateFromInstallmentCapacity(monthlyInstallment, plan));
 
-  return fundingSource === 'bank-melli' ? applyBankMelliEligibility(results) : results;
+  return fundingSource === 'bank-melli' ? applyBankMelliPerPlanEligibility(results) : results;
 }
 
 export function calculateAllPlans(

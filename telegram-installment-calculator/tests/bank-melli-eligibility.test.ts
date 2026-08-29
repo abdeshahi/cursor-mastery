@@ -3,7 +3,10 @@ import {
   allowedBankMelliMonths,
   isBankMelliMonthAllowed,
 } from '../src/calculator/bank-melli-eligibility.js';
-import { calculateAllPlans } from '../src/calculator/installment-calculator.js';
+import {
+  calculateAllPlans,
+  calculateAllPlansFromInstallmentCapacity,
+} from '../src/calculator/installment-calculator.js';
 import type { PlanTerms } from '../src/types/calculator.js';
 
 const plans: PlanTerms[] = [
@@ -91,5 +94,17 @@ describe('bank melli month tiers', () => {
     const eligibleMonths = results.filter((plan) => plan.eligible).map((plan) => plan.months);
 
     expect(eligibleMonths).toEqual([18, 24, 36]);
+  });
+
+  it('matches Samin installment-capacity results using each plan loan tier', () => {
+    const results = calculateAllPlansFromInstallmentCapacity(52_373_000n, plans, 'bank-melli');
+    const eligibleMonths = results.filter((plan) => plan.eligible).map((plan) => plan.months);
+    const twentyFourMonth = results.find((plan) => plan.months === 24);
+
+    expect(eligibleMonths).toEqual([6, 12, 24]);
+    expect(twentyFourMonth?.requiredLoan).toBe(1_000_000_000n);
+    expect(twentyFourMonth?.credit).toBe(800_000_000n);
+    expect(twentyFourMonth?.monthlyInstallment).toBe(52_373_000n);
+    expect(twentyFourMonth?.cashPriceToman).toBe(80_000_000n);
   });
 });
