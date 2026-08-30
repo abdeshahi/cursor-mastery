@@ -7,6 +7,10 @@ import type { SeenStore } from '../store/seen-store.js';
 import { Translator } from '../translate/translator.js';
 import type { Logger } from '../utils/logger.js';
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export class NewsPoller {
   private readonly translator: Translator;
 
@@ -43,6 +47,7 @@ export class NewsPoller {
           source: article.sourceName,
           title: article.title,
         });
+        await sleep(2_000);
       } catch (error) {
         this.logger.error('Failed to publish article', {
           id: article.id,
