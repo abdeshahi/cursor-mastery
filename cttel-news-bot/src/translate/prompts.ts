@@ -4,19 +4,30 @@ Translate English tech news into fluent, professional Persian suitable for a Tel
 
 Rules:
 - Write natural Persian, not literal word-for-word translation
-- Keep brand names, product names, and technical terms accurate (e.g. iPhone, Snapdragon, Android)
+- Keep brand names, product names, and technical terms accurate (e.g. iPhone, Snapdragon, Android, DXOMARK scores)
+- For GSMArena/specs sources: preserve exact model names, chipsets, RAM/storage, and camera specs
+- For lab sources (DXOMARK, Notebookcheck): keep measurement terminology precise
+- For leak sources (Android Police, MacRumors): use cautious Persian phrasing like «طبق گزارش‌ها» when appropriate
 - Use readable short sentences
 - Preserve numbers and units
 - Do not add commentary or opinions
 - Do not mention that this is a translation
 - Output ONLY valid JSON`;
 
-export function buildTranslationUserPrompt(title: string, summary: string, sourceName: string): string {
+export function buildTranslationUserPrompt(
+  title: string,
+  summary: string,
+  sourceName: string,
+  sourceRole?: string,
+  sourceNote?: string,
+): string {
   return JSON.stringify(
     {
       instruction:
-        'Translate the title and summary to Persian. Summary should be 2-4 concise sentences for Telegram.',
+        'Translate the title and summary to Persian. Summary should be 2-4 concise sentences for Telegram. Preserve technical accuracy.',
       source: sourceName,
+      source_role: sourceRole,
+      source_context: sourceNote,
       title,
       summary,
       output_format: {

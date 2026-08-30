@@ -5,8 +5,9 @@ import type { RawArticle } from './article.js';
 const parser = new Parser({
   timeout: 20_000,
   headers: {
-    'User-Agent': 'CTTEL-NewsBot/0.1 (+https://cttel.ir)',
-    Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+    'User-Agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
   },
 });
 
@@ -68,6 +69,7 @@ export async function fetchArticlesFromSource(source: NewsSource): Promise<RawAr
       id: articleId(source.id, link, title),
       sourceId: source.id,
       sourceName: source.name,
+      sourceRole: source.role,
       title,
       summary: summary.slice(0, 1200),
       link,

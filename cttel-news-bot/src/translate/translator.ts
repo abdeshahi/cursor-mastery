@@ -1,4 +1,5 @@
 import type { Env } from '../config/env.js';
+import { findSourceById, SOURCE_ROLE_LABELS_FA } from '../config/sources.js';
 import type { RawArticle, TranslatedArticle } from '../feeds/article.js';
 import {
   buildTranslationUserPrompt,
@@ -14,6 +15,9 @@ export class Translator {
   constructor(private readonly env: Env) {}
 
   async translate(article: RawArticle): Promise<TranslatedArticle> {
+    const source = findSourceById(article.sourceId);
+    const roleLabel = SOURCE_ROLE_LABELS_FA[article.sourceRole as keyof typeof SOURCE_ROLE_LABELS_FA] ?? article.sourceRole;
+
     const response = await fetch(`${this.env.OPENAI_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -28,7 +32,13 @@ export class Translator {
           { role: 'system', content: TRANSLATION_SYSTEM_PROMPT },
           {
             role: 'user',
-            content: buildTranslationUserPrompt(article.title, article.summary, article.sourceName),
+            content: buildTranslationUserPrompt(
+              article.title,
+              article.summary,
+              article.sourceName,
+              roleLabel,
+              source?.note,
+            ),
           },
         ],
       }),
@@ -59,6 +69,7 @@ export class Translator {
       id: article.id,
       sourceId: article.sourceId,
       sourceName: article.sourceName,
+      sourceRole: article.sourceRole,
       titleFa,
       summaryFa,
       link: article.link,

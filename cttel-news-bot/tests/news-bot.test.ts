@@ -1,11 +1,45 @@
 import { describe, expect, it } from 'vitest';
 import { formatTelegramPost } from '../src/format/post-formatter.js';
 import type { TranslatedArticle } from '../src/feeds/article.js';
+import { DEFAULT_NEWS_SOURCES, SOURCE_ROLE_LABELS_FA } from '../src/config/sources.js';
 import { chunkTelegramMessage, escapeHtml, rtl } from '../src/utils/telegram-html.js';
 import { SeenStore } from '../src/store/seen-store.js';
 import { mkdtemp, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+
+describe('default news sources', () => {
+  it('includes all curated mobile and tech sources', () => {
+    const ids = DEFAULT_NEWS_SOURCES.map((source) => source.id);
+    expect(ids).toEqual([
+      'gsmarena',
+      'android-authority',
+      'phonearena',
+      'theverge',
+      'engadget',
+      'cnet',
+      'techradar',
+      'android-police',
+      '9to5google',
+      '9to5mac',
+      'macrumors',
+      'dxomark',
+      'notebookcheck',
+    ]);
+  });
+
+  it('prioritizes GSMArena for specs coverage', () => {
+    const gsmarena = DEFAULT_NEWS_SOURCES.find((source) => source.id === 'gsmarena');
+    expect(gsmarena?.role).toBe('specs');
+    expect(gsmarena?.priority).toBe(1);
+  });
+
+  it('maps every role to a Persian label', () => {
+    for (const source of DEFAULT_NEWS_SOURCES) {
+      expect(SOURCE_ROLE_LABELS_FA[source.role]).toBeTruthy();
+    }
+  });
+});
 
 describe('post formatter', () => {
   it('formats a Persian Telegram post with source and link', () => {
@@ -13,6 +47,7 @@ describe('post formatter', () => {
       id: 'test:1',
       sourceId: 'gsmarena',
       sourceName: 'GSMArena',
+      sourceRole: 'specs',
       titleFa: 'گلکسی S26 با باتری بزرگ‌تر',
       summaryFa: 'سامسونگ در نسل بعدی ظرفیت باتری را افزایش می‌دهد.',
       link: 'https://example.com/news/1',
@@ -22,6 +57,7 @@ describe('post formatter', () => {
     const post = formatTelegramPost(article);
     expect(post).toContain('گلکسی S26');
     expect(post).toContain('GSMArena');
+    expect(post).toContain('مشخصات فنی');
     expect(post).toContain('https://example.com/news/1');
   });
 });
