@@ -6,7 +6,7 @@ const envSchema = z
     CHANNEL_ID: z.string().min(1),
     ADMIN_ID: z.coerce.number().int().positive().optional(),
     TELEGRAM_PROXY: z.string().optional(),
-    TRANSLATION_PROVIDER: z.enum(['google', 'openai']).default('google'),
+    TRANSLATION_PROVIDER: z.enum(['google', 'openai']).default('openai'),
     OPENAI_API_KEY: z.string().optional(),
     OPENAI_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
     OPENAI_MODEL: z.string().default('gpt-4o-mini'),
