@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { formatTelegramPost } from '../src/format/post-formatter.js';
 import type { RawArticle, TranslatedArticle } from '../src/feeds/article.js';
-import { DEFAULT_NEWS_SOURCES, SOURCE_ROLE_LABELS_FA } from '../src/config/sources.js';
+import {
+  DEFAULT_NEWS_SOURCES,
+  SOURCE_ROLE_LABELS_FA,
+  isIranSource,
+  resolveSources,
+} from '../src/config/sources.js';
 import { evaluateArticleTopic, isRelevantArticle } from '../src/filter/topic-filter.js';
 import { stripHtml } from '../src/feeds/article-content.js';
 import { renderArticlePage } from '../src/server/article-page.js';
@@ -25,22 +30,24 @@ function article(partial: Partial<RawArticle> & Pick<RawArticle, 'title'>): RawA
 }
 
 describe('default news sources', () => {
-  it('includes curated mobile-focused sources without Notebookcheck', () => {
+  it('includes international and Iranian sources', () => {
     const ids = DEFAULT_NEWS_SOURCES.map((source) => source.id);
-    expect(ids).toEqual([
-      'gsmarena',
-      'android-authority',
-      'phonearena',
-      'theverge',
-      'engadget',
-      'cnet',
-      'techradar',
-      'android-police',
-      '9to5google',
-      '9to5mac',
-      'macrumors',
-      'dxomark',
-    ]);
+    expect(ids).toContain('gsmarena');
+    expect(ids).toContain('ict-gov');
+    expect(ids).toContain('citna');
+    expect(ids).toContain('zoomit');
+    expect(ids).toContain('asreertebat');
+    expect(ids).toContain('isti');
+    expect(DEFAULT_NEWS_SOURCES.every((source) => source.enabled)).toBe(true);
+  });
+
+  it('resolves only enabled sources by default', () => {
+    expect(resolveSources([]).length).toBe(DEFAULT_NEWS_SOURCES.length);
+  });
+
+  it('marks Iranian sources correctly', () => {
+    expect(isIranSource('citna')).toBe(true);
+    expect(isIranSource('gsmarena')).toBe(false);
   });
 
   it('uses mobile-only feeds for CNET and TechRadar', () => {
@@ -64,7 +71,20 @@ describe('default news sources', () => {
 });
 
 describe('topic filter', () => {
-  it('allows mobile phone news from mixed sources', () => {
+  it('allows Iranian sources without brand filtering', () => {
+    expect(
+      isRelevantArticle(
+        article({
+          sourceId: 'citna',
+          sourceName: 'سیتنا',
+          title: 'افزایش تعرفه اینترنت',
+          summary: 'خبر داخلی حوزه ICT',
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it('allows foreign news only for Samsung, Apple, Xiaomi, Nothing, and Honor', () => {
     expect(
       isRelevantArticle(
         article({
@@ -73,17 +93,15 @@ describe('topic filter', () => {
         }),
       ),
     ).toBe(true);
-  });
 
-  it('allows AI news from mixed sources', () => {
     expect(
-      isRelevantArticle(
+      evaluateArticleTopic(
         article({
-          title: 'Google Gemini gets smarter on Android phones',
-          summary: 'The new AI assistant features roll out to Pixel devices first.',
+          title: 'Google Pixel 10 review',
+          summary: 'Google latest Android phone with Tensor chip.',
         }),
-      ),
-    ).toBe(true);
+      ).reason,
+    ).toBe('no-allowed-brand');
   });
 
   it('blocks computer and laptop news', () => {
@@ -95,31 +113,9 @@ describe('topic filter', () => {
         }),
       ).reason,
     ).toBe('blocked-computer');
-
-    expect(
-      evaluateArticleTopic(
-        article({
-          title: 'Mechanical keyboard review: best switches for typing',
-          summary: 'We tested keycaps and RGB lighting on desktop setups.',
-        }),
-      ).reason,
-    ).toBe('blocked-computer');
   });
 
-  it('allows trusted mobile sources even with sparse keywords', () => {
-    expect(
-      isRelevantArticle(
-        article({
-          sourceId: 'gsmarena',
-          sourceName: 'GSMArena',
-          title: 'Weekly poll results',
-          summary: 'Readers voted for their favorite handset of the month.',
-        }),
-      ),
-    ).toBe(true);
-  });
-
-  it('blocks Mac news from Apple sources', () => {
+  it('blocks Mac news from Apple sources when iPhone is not mentioned', () => {
     expect(
       evaluateArticleTopic(
         article({

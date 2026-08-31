@@ -1,17 +1,7 @@
 import type { RawArticle } from '../feeds/article.js';
-
-/** Sources that publish almost exclusively mobile content */
-const TRUSTED_MOBILE_SOURCES = new Set([
-  'gsmarena',
-  'android-authority',
-  'phonearena',
-  'android-police',
-  '9to5google',
-]);
+import { isIranSource } from '../config/sources.js';
 
 const APPLE_SOURCES = new Set(['9to5mac', 'macrumors']);
-
-const LAB_SOURCES = new Set(['dxomark']);
 
 const COMPUTER_BLOCK_PATTERNS: RegExp[] = [
   /\blaptop/i,
@@ -72,82 +62,22 @@ const COMPUTER_BLOCK_PATTERNS: RegExp[] = [
   /\bwindows\s+laptop/i,
 ];
 
-const MOBILE_ALLOW_PATTERNS: RegExp[] = [
-  /\bphone/i,
-  /\bsmartphone/i,
-  /\bmobile/i,
-  /\bhandset/i,
+const ALLOWED_FOREIGN_BRAND_PATTERNS: RegExp[] = [
+  /\bsamsung\b/i,
+  /\bgalaxy\b/i,
+  /\bexynos\b/i,
+  /\bapple\b/i,
   /\biphone/i,
   /\bipad/i,
-  /\bgalaxy/i,
-  /\bpixel/i,
-  /\bandroid/i,
-  /\bios\b/i,
-  /\btablet/i,
-  /\bfoldable/i,
-  /\bflip\s+phone/i,
-  /\bsmartwatch/i,
+  /\bairpods/i,
   /\bapple\s+watch/i,
   /\bwatch\s+ultra/i,
-  /\bwear\s*os/i,
-  /\bearbuds/i,
-  /\bearphones/i,
-  /\bairpods/i,
-  /\bheadphone/i,
-  /\bcharger/i,
-  /\bpower\s+bank/i,
-  /\bphone\s+case/i,
-  /\bscreen\s+protector/i,
-  /\bsnapdragon/i,
-  /\bmediatek/i,
-  /\bdimensity/i,
-  /\bexynos/i,
-  /\bapple\s+silicon/i,
-  /\ba\d+\s+chip/i,
-  /\b5g\b/i,
-  /\besim/i,
-  /\bsim\s+card/i,
-  /\bcamera\s+phone/i,
-  /\bphone\s+camera/i,
-  /\bxiaomi/i,
-  /\boppo/i,
-  /\bvivo/i,
-  /\brealme/i,
-  /\bhuawei/i,
-  /\bhonor/i,
-  /\bredmi/i,
-  /\bpoco/i,
-  /\bnokia/i,
-  /\bmotorola/i,
-  /\boneplus/i,
-  /\bnothing\s+phone/i,
-  /\bfitness\s+tracker/i,
-  /\bsmart\s+ring/i,
-  /\bfitbit/i,
-  /\bgimbal/i,
-  /\bselfie\s+stick/i,
-  /\bwireless\s+charging/i,
-  /\bmagsafe/i,
-  /\busb-c\s+cable/i,
-  /\bfast\s+charging/i,
-  /\bbattery\s+life/i,
-  /\bdisplay\s+test/i,
-  /\bcamera\s+test/i,
-  /\bdxomark/i,
-  /\bai\b/i,
-  /\bartificial\s+intelligence/i,
-  /\bchatgpt/i,
-  /\bgemini\b/i,
-  /\bcopilot/i,
-  /\bllm/i,
-  /\bmachine\s+learning/i,
-  /\bopenai/i,
-  /\bdeepseek/i,
-  /\bclaude\b/i,
-  /\bvision\s+pro/i,
-  /\bmeta\s+quest/i,
-  /\bar\s+glasses/i,
-  /\bsmart\s+glasses/i,
+  /\bxiaomi\b/i,
+  /\bredmi\b/i,
+  /\bpoco\b/i,
+  /\bnothing\s+phone\b/i,
+  /\bnothing\s+phone\s*\(/i,
+  /\bhonor\b/i,
 ];
 
 const APPLE_MOBILE_PATTERNS: RegExp[] = [
@@ -163,7 +93,12 @@ const APPLE_MOBILE_PATTERNS: RegExp[] = [
 
 export interface TopicFilterResult {
   allowed: boolean;
-  reason: 'trusted-source' | 'mobile-topic' | 'apple-mobile' | 'blocked-computer' | 'no-mobile-topic';
+  reason:
+    | 'iran-source'
+    | 'foreign-brand'
+    | 'apple-mobile'
+    | 'blocked-computer'
+    | 'no-allowed-brand';
 }
 
 function articleText(article: RawArticle): string {
@@ -175,35 +110,28 @@ function matchesAny(text: string, patterns: RegExp[]): boolean {
 }
 
 export function evaluateArticleTopic(article: RawArticle): TopicFilterResult {
+  if (isIranSource(article.sourceId)) {
+    return { allowed: true, reason: 'iran-source' };
+  }
+
   const text = articleText(article);
 
   if (matchesAny(text, COMPUTER_BLOCK_PATTERNS)) {
     return { allowed: false, reason: 'blocked-computer' };
   }
 
-  if (TRUSTED_MOBILE_SOURCES.has(article.sourceId)) {
-    return { allowed: true, reason: 'trusted-source' };
-  }
-
   if (APPLE_SOURCES.has(article.sourceId)) {
     if (matchesAny(text, APPLE_MOBILE_PATTERNS)) {
       return { allowed: true, reason: 'apple-mobile' };
     }
-    return { allowed: false, reason: 'no-mobile-topic' };
+    return { allowed: false, reason: 'no-allowed-brand' };
   }
 
-  if (LAB_SOURCES.has(article.sourceId)) {
-    if (matchesAny(text, MOBILE_ALLOW_PATTERNS)) {
-      return { allowed: true, reason: 'mobile-topic' };
-    }
-    return { allowed: false, reason: 'no-mobile-topic' };
+  if (matchesAny(text, ALLOWED_FOREIGN_BRAND_PATTERNS)) {
+    return { allowed: true, reason: 'foreign-brand' };
   }
 
-  if (matchesAny(text, MOBILE_ALLOW_PATTERNS)) {
-    return { allowed: true, reason: 'mobile-topic' };
-  }
-
-  return { allowed: false, reason: 'no-mobile-topic' };
+  return { allowed: false, reason: 'no-allowed-brand' };
 }
 
 export function isRelevantArticle(article: RawArticle): boolean {

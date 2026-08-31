@@ -1,5 +1,6 @@
 import Parser from 'rss-parser';
 import type { NewsSource } from '../config/sources.js';
+import { fetchArticlesFromHtmlSource } from './html-source-fetcher.js';
 import type { RawArticle } from './article.js';
 
 const parser = new Parser({
@@ -76,6 +77,10 @@ function firstImage(item: Parser.Item): string | undefined {
 }
 
 export async function fetchArticlesFromSource(source: NewsSource): Promise<RawArticle[]> {
+  if (source.format === 'html') {
+    return fetchArticlesFromHtmlSource(source);
+  }
+
   const feed = await parser.parseURL(source.url);
   const articles: RawArticle[] = [];
 

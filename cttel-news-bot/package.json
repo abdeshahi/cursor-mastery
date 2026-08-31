@@ -12,7 +12,8 @@
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "poll-once": "tsx src/main.ts --once"
+    "poll-once": "tsx src/main.ts --once",
+    "ingest-test": "tsx scripts/ingest-test.ts"
   },
   "dependencies": {
     "dotenv": "^17.2.1",
