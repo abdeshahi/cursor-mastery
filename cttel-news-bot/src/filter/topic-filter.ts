@@ -91,10 +91,75 @@ const APPLE_MOBILE_PATTERNS: RegExp[] = [
   /\bwatchos/i,
 ];
 
+/** Iranian news must match mobile, registry, internet, AI, or mobile-operator topics */
+const IRAN_ICT_TOPIC_PATTERNS: RegExp[] = [
+  /موبایل/u,
+  /گوشی/u,
+  /تلفن\s*همراه/u,
+  /تلفن\s*همراه/u,
+  /اینترنت\s*همراه/u,
+  /اپراتور/u,
+  /همراه\s*اول/u,
+  /ایران\s*سل/u,
+  /ایرانسل/u,
+  /رایتل/u,
+  /rightel/i,
+  /رجیستر/u,
+  /رجیستری/u,
+  /ثبت\s*تلفن/u,
+  /سامانه\s*همتا/u,
+  /همتا/u,
+  /hwi/u,
+  /اینترنت/u,
+  /فیلتر/u,
+  /فیلترینگ/u,
+  /vpn/u,
+  /شبکه/u,
+  /شبکه\s*های\s*ارتباط/u,
+  /ارتباطات/u,
+  /مخابرات/u,
+  /فناوری\s*اطلاعات/u,
+  /\sict\s/u,
+  /\bict\b/i,
+  /هوش\s*مصنوعی/u,
+  /هوش\s*مک/u,
+  /\bai\b/i,
+  /chatgpt/u,
+  /چت\s*جی\s*پی\s*تی/u,
+  /gemini/u,
+  /llm/u,
+  /سیم\s*کارت/u,
+  /esim/u,
+  /ای\s*سی\s*م/u,
+  /\b5g\b/i,
+  /\b4g\b/i,
+  /\blte\b/i,
+  /پهنای\s*باند/u,
+  /wifi/u,
+  /wi-fi/u,
+  /وای\s*فای/u,
+  /تعرفه\s*اینترنت/u,
+  /تعرفه\s*دیتا/u,
+  /دیتای\s*موبایل/u,
+  /روستا\s*نم/u,
+  /فیبر\s*نوری/u,
+  /ftth/u,
+  /سازمان\s*تنظیم/u,
+  /رگولات/u,
+  /regulat/u,
+  /وزارت\s*ارتباطات/u,
+  /smartphone/i,
+  /registry/u,
+  /operator/u,
+  /telecom/u,
+  /broadband/u,
+];
+
 export interface TopicFilterResult {
   allowed: boolean;
   reason:
-    | 'iran-source'
+    | 'iran-ict-topic'
+    | 'no-iran-ict-topic'
     | 'foreign-brand'
     | 'apple-mobile'
     | 'blocked-computer'
@@ -102,32 +167,41 @@ export interface TopicFilterResult {
 }
 
 function articleText(article: RawArticle): string {
-  return `${article.title} ${article.summary}`.toLowerCase();
+  return `${article.title} ${article.summary}`;
 }
 
 function matchesAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
 }
 
-export function evaluateArticleTopic(article: RawArticle): TopicFilterResult {
-  if (isIranSource(article.sourceId)) {
-    return { allowed: true, reason: 'iran-source' };
+function evaluateIranTopic(text: string): TopicFilterResult {
+  if (matchesAny(text, IRAN_ICT_TOPIC_PATTERNS)) {
+    return { allowed: true, reason: 'iran-ict-topic' };
   }
+  return { allowed: false, reason: 'no-iran-ict-topic' };
+}
 
+export function evaluateArticleTopic(article: RawArticle): TopicFilterResult {
   const text = articleText(article);
 
-  if (matchesAny(text, COMPUTER_BLOCK_PATTERNS)) {
+  if (isIranSource(article.sourceId)) {
+    return evaluateIranTopic(text);
+  }
+
+  const lowered = text.toLowerCase();
+
+  if (matchesAny(lowered, COMPUTER_BLOCK_PATTERNS)) {
     return { allowed: false, reason: 'blocked-computer' };
   }
 
   if (APPLE_SOURCES.has(article.sourceId)) {
-    if (matchesAny(text, APPLE_MOBILE_PATTERNS)) {
+    if (matchesAny(lowered, APPLE_MOBILE_PATTERNS)) {
       return { allowed: true, reason: 'apple-mobile' };
     }
     return { allowed: false, reason: 'no-allowed-brand' };
   }
 
-  if (matchesAny(text, ALLOWED_FOREIGN_BRAND_PATTERNS)) {
+  if (matchesAny(lowered, ALLOWED_FOREIGN_BRAND_PATTERNS)) {
     return { allowed: true, reason: 'foreign-brand' };
   }
 

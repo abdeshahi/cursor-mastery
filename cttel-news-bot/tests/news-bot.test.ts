@@ -71,14 +71,62 @@ describe('default news sources', () => {
 });
 
 describe('topic filter', () => {
-  it('allows Iranian sources without brand filtering', () => {
+  it('allows Iranian ICT news about mobile, internet, registry, AI, or operators', () => {
     expect(
       isRelevantArticle(
         article({
           sourceId: 'citna',
           sourceName: 'سیتنا',
-          title: 'افزایش تعرفه اینترنت',
-          summary: 'خبر داخلی حوزه ICT',
+          title: 'افزایش تعرفه اینترنت همراه',
+          summary: 'اپراتورها از وزارت ارتباطات مجوز گرفتند.',
+        }),
+      ),
+    ).toBe(true);
+
+    expect(
+      evaluateArticleTopic(
+        article({
+          sourceId: 'zoomit',
+          sourceName: 'زومیت',
+          title: 'رجیستری گوشی‌های جدید در سامانه همتا',
+          summary: 'ثبت HWI برای واردات موبایل',
+        }),
+      ).reason,
+    ).toBe('iran-ict-topic');
+  });
+
+  it('blocks unrelated Iranian political or economic news', () => {
+    expect(
+      evaluateArticleTopic(
+        article({
+          sourceId: 'irna-sci',
+          sourceName: 'ایرنا',
+          title: 'رشد صادرات کشاورزی',
+          summary: 'بازار داخلی و صادرات غیرنفتی',
+        }),
+      ).allowed,
+    ).toBe(false);
+
+    expect(
+      evaluateArticleTopic(
+        article({
+          sourceId: 'mehr-sci',
+          sourceName: 'مهر',
+          title: 'پیروزی تیم ملی فوتبال',
+          summary: 'ورزش',
+        }),
+      ).reason,
+    ).toBe('no-iran-ict-topic');
+  });
+
+  it('allows Iranian AI and operator network news', () => {
+    expect(
+      isRelevantArticle(
+        article({
+          sourceId: 'ictnews',
+          sourceName: 'آی‌سی‌تی‌نیوز',
+          title: 'سرمایه‌گذاری در هوش مصنوعی بومی',
+          summary: 'شبکه اپراتور همراه برای سرویس‌های AI',
         }),
       ),
     ).toBe(true);
