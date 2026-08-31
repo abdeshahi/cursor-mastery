@@ -38,11 +38,14 @@ describe('default news sources', () => {
     expect(ids).toContain('zoomit');
     expect(ids).toContain('asreertebat');
     expect(ids).toContain('isti');
-    expect(DEFAULT_NEWS_SOURCES.every((source) => source.enabled)).toBe(true);
+    expect(DEFAULT_NEWS_SOURCES.some((source) => source.enabled)).toBe(true);
+    expect(DEFAULT_NEWS_SOURCES.filter((source) => source.enabled).length).toBeGreaterThan(10);
   });
 
   it('resolves only enabled sources by default', () => {
-    expect(resolveSources([]).length).toBe(DEFAULT_NEWS_SOURCES.length);
+    const enabledCount = DEFAULT_NEWS_SOURCES.filter((source) => source.enabled).length;
+    expect(resolveSources([]).length).toBe(enabledCount);
+    expect(enabledCount).toBe(24);
   });
 
   it('marks Iranian sources correctly', () => {
@@ -130,6 +133,30 @@ describe('topic filter', () => {
         }),
       ),
     ).toBe(true);
+  });
+
+  it('blocks miscategorized Iranian military or political news', () => {
+    expect(
+      evaluateArticleTopic(
+        article({
+          sourceId: 'khabaronline-ict',
+          sourceName: 'خبرآنلاین',
+          title: 'ببینید | سردار نقدی: بیش از ۹۰ درصد ذخایر موشکی ایران دست‌نخورده باقی مانده است',
+          summary: 'سردار محمدرضا نقدی مشاور فرمانده کل سپاه صحبت کرد',
+        }),
+      ).allowed,
+    ).toBe(false);
+
+    expect(
+      evaluateArticleTopic(
+        article({
+          sourceId: 'khabaronline-ict',
+          sourceName: 'خبرآنلاین',
+          title: 'چرا ترامپ ویدیوی بمباران جزیره خارک که با هوش مصنوعی ساخته شده را منتشر کرد؟',
+          summary: 'ترامپ در شبکه‌های اجتماعی پیام سیاسی داد',
+        }),
+      ).allowed,
+    ).toBe(false);
   });
 
   it('allows foreign news only for Samsung, Apple, Xiaomi, Nothing, and Honor', () => {

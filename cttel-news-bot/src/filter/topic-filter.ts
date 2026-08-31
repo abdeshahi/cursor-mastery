@@ -91,68 +91,132 @@ const APPLE_MOBILE_PATTERNS: RegExp[] = [
   /\bwatchos/i,
 ];
 
-/** Iranian news must match mobile, registry, internet, AI, or mobile-operator topics */
-const IRAN_ICT_TOPIC_PATTERNS: RegExp[] = [
+/** Hard block for clearly off-topic Iranian news */
+const IRAN_BLOCK_PATTERNS: RegExp[] = [
+  /موشک/u,
+  /پهپاد/u,
+  /نظامی/u,
+  /جنگ/u,
+  /بمباران/u,
+  /سپاه/u,
+  /ارتش/u,
+  /سردار/u,
+  /ترامپ/u,
+  /بایدن/u,
+  /اسرائیل/u,
+  /فلسطین/u,
+  /اوکراین/u,
+  /فوتبال/u,
+  /ورزش/u,
+  /لیگ/u,
+  /سینما/u,
+  /فیلم/u,
+  /سریال/u,
+  /بازیگر/u,
+  /کشاورزی/u,
+  /دام/u,
+  /محیط\s*زیست/u,
+  /زلزله/u,
+  /سیل/u,
+  /شبکه\s*های\s*اجتماعی/u,
+  /اینستاگرام/u,
+  /فیسبوک/u,
+  /توییتر/u,
+  /کلاب\s*هاوس/u,
+  /trump/i,
+  /biden/i,
+  /missile/i,
+  /war\b/i,
+  /football/i,
+  /soccer/i,
+];
+
+const IRAN_MOBILE_PATTERNS: RegExp[] = [
   /موبایل/u,
   /گوشی/u,
   /تلفن\s*همراه/u,
-  /تلفن\s*همراه/u,
-  /اینترنت\s*همراه/u,
+  /تبلت/u,
+  /سیم\s*کارت/u,
+  /esim/u,
+  /ای\s*سی\s*م/u,
+  /smartphone/i,
+  /tablet/i,
+  /گلکسی/u,
+  /آی\s*فون/u,
+  /iphone/i,
+  /samsung/i,
+  /xiaomi/i,
+  /redmi/i,
+  /poco/i,
+  /honor/i,
+];
+
+const IRAN_REGISTRY_PATTERNS: RegExp[] = [
+  /رجیستر/u,
+  /رجیستری/u,
+  /ثبت\s*تلفن/u,
+  /سامانه\s*همتا/u,
+  /\bhwi\b/i,
+  /واردات\s*گوشی/u,
+  /واردات\s*موبایل/u,
+  /registry/u,
+];
+
+const IRAN_INTERNET_PATTERNS: RegExp[] = [
+  /اینترنت/u,
+  /فیلترینگ/u,
+  /فیلتر\s*شکن/u,
+  /vpn/u,
+  /پهنای\s*باند/u,
+  /تعرفه\s*اینترنت/u,
+  /تعرفه\s*دیتا/u,
+  /دیتای\s*موبایل/u,
+  /فیبر\s*نوری/u,
+  /ftth/u,
+  /روستا\s*نم/u,
+  /wifi/u,
+  /wi-fi/u,
+  /وای\s*فای/u,
+  /broadband/u,
+  /قطع\s*اینترنت/u,
+  /سرعت\s*اینترنت/u,
+];
+
+const IRAN_OPERATOR_PATTERNS: RegExp[] = [
   /اپراتور/u,
   /همراه\s*اول/u,
   /ایران\s*سل/u,
   /ایرانسل/u,
   /رایتل/u,
   /rightel/i,
-  /رجیستر/u,
-  /رجیستری/u,
-  /ثبت\s*تلفن/u,
-  /سامانه\s*همتا/u,
-  /همتا/u,
-  /hwi/u,
-  /اینترنت/u,
-  /فیلتر/u,
-  /فیلترینگ/u,
-  /vpn/u,
-  /شبکه/u,
-  /شبکه\s*های\s*ارتباط/u,
-  /ارتباطات/u,
   /مخابرات/u,
+  /شبکه\s*های\s*ارتباط/u,
+  /شبکه\s*همراه/u,
+  /شبکه\s*موبایل/u,
+  /شبکه\s*نسل/u,
+  /\b5g\b/i,
+  /\b4g\b/i,
+  /\blte\b/i,
+  /telecom/u,
+];
+
+const IRAN_REGULATORY_PATTERNS: RegExp[] = [
+  /وزارت\s*ارتباطات/u,
+  /سازمان\s*تنظیم/u,
+  /رگولات/u,
+  /regulat/u,
   /فناوری\s*اطلاعات/u,
-  /\sict\s/u,
   /\bict\b/i,
+];
+
+const IRAN_AI_PATTERNS: RegExp[] = [
   /هوش\s*مصنوعی/u,
   /هوش\s*مک/u,
-  /\bai\b/i,
   /chatgpt/u,
   /چت\s*جی\s*پی\s*تی/u,
   /gemini/u,
   /llm/u,
-  /سیم\s*کارت/u,
-  /esim/u,
-  /ای\s*سی\s*م/u,
-  /\b5g\b/i,
-  /\b4g\b/i,
-  /\blte\b/i,
-  /پهنای\s*باند/u,
-  /wifi/u,
-  /wi-fi/u,
-  /وای\s*فای/u,
-  /تعرفه\s*اینترنت/u,
-  /تعرفه\s*دیتا/u,
-  /دیتای\s*موبایل/u,
-  /روستا\s*نم/u,
-  /فیبر\s*نوری/u,
-  /ftth/u,
-  /سازمان\s*تنظیم/u,
-  /رگولات/u,
-  /regulat/u,
-  /وزارت\s*ارتباطات/u,
-  /smartphone/i,
-  /registry/u,
-  /operator/u,
-  /telecom/u,
-  /broadband/u,
+  /\bai\b/i,
 ];
 
 export interface TopicFilterResult {
@@ -175,9 +239,26 @@ function matchesAny(text: string, patterns: RegExp[]): boolean {
 }
 
 function evaluateIranTopic(text: string): TopicFilterResult {
-  if (matchesAny(text, IRAN_ICT_TOPIC_PATTERNS)) {
+  if (matchesAny(text, IRAN_BLOCK_PATTERNS)) {
+    return { allowed: false, reason: 'no-iran-ict-topic' };
+  }
+
+  const hasMobile = matchesAny(text, IRAN_MOBILE_PATTERNS);
+  const hasRegistry = matchesAny(text, IRAN_REGISTRY_PATTERNS);
+  const hasInternet = matchesAny(text, IRAN_INTERNET_PATTERNS);
+  const hasOperator = matchesAny(text, IRAN_OPERATOR_PATTERNS);
+  const hasRegulatory = matchesAny(text, IRAN_REGULATORY_PATTERNS);
+  const hasAi = matchesAny(text, IRAN_AI_PATTERNS);
+
+  if (hasMobile || hasRegistry || hasInternet || hasOperator || hasRegulatory) {
     return { allowed: true, reason: 'iran-ict-topic' };
   }
+
+  // AI-only stories must mention mobile/telecom context, not politics or war
+  if (hasAi && (hasMobile || hasOperator || hasInternet || hasRegulatory)) {
+    return { allowed: true, reason: 'iran-ict-topic' };
+  }
+
   return { allowed: false, reason: 'no-iran-ict-topic' };
 }
 
