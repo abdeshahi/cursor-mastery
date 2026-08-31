@@ -62,18 +62,18 @@ export const DEFAULT_NEWS_SOURCES: NewsSource[] = [
   {
     id: 'cnet',
     name: 'CNET',
-    url: 'https://www.cnet.com/rss/news/',
+    url: 'https://www.cnet.com/rss/news/mobile/',
     role: 'buyers-guide',
     priority: 6,
-    note: 'Consumer reviews and trustworthy buying guides',
+    note: 'Mobile news, reviews, and buying guides',
   },
   {
     id: 'techradar',
     name: 'TechRadar',
-    url: 'https://www.techradar.com/rss',
+    url: 'https://www.techradar.com/feeds/tag/phones',
     role: 'buyers-guide',
     priority: 7,
-    note: 'Consumer reviews and buying guides',
+    note: 'Phone reviews and buying guides',
   },
   {
     id: 'android-police',
@@ -114,14 +114,6 @@ export const DEFAULT_NEWS_SOURCES: NewsSource[] = [
     role: 'lab',
     priority: 12,
     note: 'Lab camera, audio, display, and battery test results',
-  },
-  {
-    id: 'notebookcheck',
-    name: 'Notebookcheck',
-    url: 'https://www.notebookcheck.net/News.152.100.html',
-    role: 'lab',
-    priority: 13,
-    note: 'Deep lab reviews for display, performance, and battery',
   },
 ];
 

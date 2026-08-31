@@ -1,6 +1,7 @@
 import type { Env } from '../config/env.js';
 import { parseFeedUrls } from '../config/env.js';
 import { resolveSources } from '../config/sources.js';
+import { evaluateArticleTopic } from '../filter/topic-filter.js';
 import { fetchLatestArticles } from '../feeds/rss-fetcher.js';
 import type { TelegramPublisher } from '../publisher/telegram-publisher.js';
 import type { SeenStore } from '../store/seen-store.js';
@@ -33,10 +34,25 @@ export class NewsPoller {
       return 0;
     }
 
-    const toPublish = fresh.slice(0, this.env.MAX_POSTS_PER_RUN);
     let published = 0;
 
-    for (const article of toPublish) {
+    for (const article of fresh) {
+      if (published >= this.env.MAX_POSTS_PER_RUN) {
+        break;
+      }
+
+      const topic = evaluateArticleTopic(article);
+      if (!topic.allowed) {
+        await this.seenStore.markSeen(article.id);
+        this.logger.info('Skipped off-topic article', {
+          id: article.id,
+          source: article.sourceName,
+          title: article.title,
+          reason: topic.reason,
+        });
+        continue;
+      }
+
       try {
         const translated = await this.translator.translate(article);
         await this.publisher.publish(translated);
