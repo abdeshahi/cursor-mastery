@@ -28,12 +28,13 @@ def should_sync(root: str, name: str) -> bool:
 
 
 def ensure_remote_dir(sftp: paramiko.SFTPClient, remote_dir: str) -> None:
-    parts = remote_dir.split('/')
+    if remote_dir in ('', '/', '.'):
+        return
+
+    parts = [part for part in remote_dir.split('/') if part]
     current = ''
     for part in parts:
-        if not part:
-            continue
-        current = f'{current}/{part}' if current else part
+        current = f'{current}/{part}' if current else f'/{part}'
         try:
             sftp.stat(current)
         except FileNotFoundError:
