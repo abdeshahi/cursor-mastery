@@ -166,6 +166,28 @@ describe('post formatter', () => {
     expect(post).toContain('http://185.18.214.66:3002/read/abc123def456');
     expect(post).toContain('https://example.com/news/1');
   });
+  it('formats a Persian native post with source link only', () => {
+    const article: TranslatedArticle = {
+      id: 'test:2',
+      sourceId: 'citna',
+      sourceName: 'سیتنا',
+      sourceRole: 'news',
+      titleFa: 'افزایش پوشش اینترنت پرسرعت',
+      summaryFa: 'وزارت ارتباطات از گسترش شبکه در مناطق روستایی خبر داد.',
+      bodyFa: 'وزارت ارتباطات از گسترش شبکه در مناطق روستایی خبر داد.',
+      link: 'https://www.citna.ir/news/example',
+      slug: 'abc123def456',
+      readerUrl: 'http://185.18.214.66:3002/read/abc123def456',
+      nativePersian: true,
+    };
+
+    const post = formatTelegramPost(article);
+    expect(post).toContain('افزایش پوشش اینترنت پرسرعت');
+    expect(post).toContain('مطالعه در منبع');
+    expect(post).toContain('https://www.citna.ir/news/example');
+    expect(post).not.toContain('مطالعه کامل به فارسی');
+    expect(post).not.toContain('منبع انگلیسی');
+  });
 });
 
 describe('article reader', () => {

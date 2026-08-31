@@ -1,6 +1,6 @@
 import type { Env } from '../config/env.js';
 import { parseFeedUrls } from '../config/env.js';
-import { resolveSources } from '../config/sources.js';
+import { isIranSource, resolveSources } from '../config/sources.js';
 import { fetchArticleBody } from '../feeds/article-content.js';
 import { evaluateArticleTopic } from '../filter/topic-filter.js';
 import { fetchLatestArticles } from '../feeds/rss-fetcher.js';
@@ -57,31 +57,38 @@ export class NewsPoller {
       }
 
       try {
-        const bodyText = await fetchArticleBody(article.link, article.bodyHtml, article.summary);
-        const translated = await this.translator.translate({ ...article, bodyText });
+        let prepared;
 
-        await this.articleStore.save({
-          slug: translated.slug,
-          id: translated.id,
-          titleFa: translated.titleFa,
-          summaryFa: translated.summaryFa,
-          bodyFa: translated.bodyFa,
-          sourceName: translated.sourceName,
-          sourceRole: translated.sourceRole,
-          sourceLink: translated.link,
-          imageUrl: translated.imageUrl,
-          publishedAt: translated.publishedAt?.toISOString(),
-          createdAt: new Date().toISOString(),
-        });
+        if (isIranSource(article.sourceId)) {
+          prepared = await this.translator.translate(article);
+        } else {
+          const bodyText = await fetchArticleBody(article.link, article.bodyHtml, article.summary);
+          prepared = await this.translator.translate({ ...article, bodyText });
 
-        await this.publisher.publish(translated);
+          await this.articleStore.save({
+            slug: prepared.slug,
+            id: prepared.id,
+            titleFa: prepared.titleFa,
+            summaryFa: prepared.summaryFa,
+            bodyFa: prepared.bodyFa,
+            sourceName: prepared.sourceName,
+            sourceRole: prepared.sourceRole,
+            sourceLink: prepared.link,
+            imageUrl: prepared.imageUrl,
+            publishedAt: prepared.publishedAt?.toISOString(),
+            createdAt: new Date().toISOString(),
+          });
+        }
+
+        await this.publisher.publish(prepared);
         await this.seenStore.markSeen(article.id);
         published += 1;
         this.logger.info('Published article', {
           id: article.id,
           source: article.sourceName,
           title: article.title,
-          readerUrl: translated.readerUrl,
+          nativePersian: prepared.nativePersian === true,
+          readerUrl: prepared.nativePersian ? undefined : prepared.readerUrl,
         });
         await sleep(2_000);
       } catch (error) {

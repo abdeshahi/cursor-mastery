@@ -25,6 +25,8 @@ export interface TranslatedArticle {
   readerUrl: string;
   publishedAt?: Date;
   imageUrl?: string;
+  /** Iranian sources: already Persian, skip translation and reader page */
+  nativePersian?: boolean;
 }
 
 export interface StoredArticle {
