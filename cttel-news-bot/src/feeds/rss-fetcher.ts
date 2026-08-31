@@ -34,6 +34,29 @@ function itemContent(item: Parser.Item): string {
   return item.contentSnippet ?? item.summary ?? extended['content:encoded'] ?? item.content ?? '';
 }
 
+function itemBodyHtml(item: Parser.Item): string | undefined {
+  const extended = item as Parser.Item & { 'content:encoded'?: string };
+  const encoded = extended['content:encoded'];
+  if (encoded !== undefined && encoded.includes('<')) {
+    return encoded;
+  }
+
+  const content = item.content ?? item.summary;
+  if (content !== undefined && content.includes('<p')) {
+    return content;
+  }
+
+  return undefined;
+}
+
+function itemSummary(item: Parser.Item): string {
+  const snippet = item.contentSnippet ?? item.summary;
+  if (snippet !== undefined && snippet.length > 0) {
+    return stripHtml(snippet);
+  }
+  return stripHtml(itemContent(item));
+}
+
 function firstImage(item: Parser.Item): string | undefined {
   const enclosure = item.enclosure?.url;
   if (enclosure !== undefined && enclosure.startsWith('http')) {
@@ -59,7 +82,7 @@ export async function fetchArticlesFromSource(source: NewsSource): Promise<RawAr
   for (const item of feed.items ?? []) {
     const title = stripHtml(item.title ?? '');
     const link = item.link ?? item.guid ?? '';
-    const summary = stripHtml(itemContent(item) || title);
+    const summary = itemSummary(item) || title;
 
     if (title.length === 0 || link.length === 0) {
       continue;
@@ -75,6 +98,7 @@ export async function fetchArticlesFromSource(source: NewsSource): Promise<RawAr
       link,
       publishedAt: item.isoDate ? new Date(item.isoDate) : item.pubDate ? new Date(item.pubDate) : undefined,
       imageUrl: firstImage(item),
+      bodyHtml: itemBodyHtml(item),
     });
   }
 

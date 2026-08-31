@@ -16,6 +16,15 @@ Rules:
 - Do not mention that this is a translation
 - Output ONLY valid JSON`;
 
+export const BODY_TRANSLATION_SYSTEM_PROMPT = `You translate English tech article paragraphs into fluent Persian for CTTEL readers.
+
+Rules:
+- Natural Persian, accurate technical terms
+- Preserve product names, numbers, and measurements
+- Keep paragraph breaks using blank lines
+- Do not summarize or omit details
+- Output ONLY the translated Persian text without markdown`;
+
 export function buildTranslationUserPrompt(
   title: string,
   summary: string,
@@ -36,6 +45,18 @@ export function buildTranslationUserPrompt(
         title_fa: 'string',
         summary_fa: 'string',
       },
+    },
+    null,
+    2,
+  );
+}
+
+export function buildBodyTranslationUserPrompt(body: string, sourceName: string): string {
+  return JSON.stringify(
+    {
+      instruction: 'Translate the full article body to Persian for online reading. Keep all details.',
+      source: sourceName,
+      body,
     },
     null,
     2,

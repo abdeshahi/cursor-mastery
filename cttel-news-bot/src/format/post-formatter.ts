@@ -31,7 +31,8 @@ export function formatTelegramPost(article: TranslatedArticle): string {
     lines.push(rtl(`🗓 ${escapeHtml(date)}`));
   }
 
-  lines.push('', rtl(`🔗 <a href="${escapeHtml(article.link)}">مطالعه منبع</a>`));
+  lines.push('', rtl(`📖 <a href="${escapeHtml(article.readerUrl)}">مطالعه کامل به فارسی</a>`));
+  lines.push(rtl(`🔗 <a href="${escapeHtml(article.link)}">منبع انگلیسی</a>`));
 
   return lines.join('\n');
 }

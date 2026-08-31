@@ -7,7 +7,7 @@ export class Translator {
   private readonly backend: GoogleTranslator | OpenAiTranslator;
 
   constructor(env: Env) {
-    this.backend = env.TRANSLATION_PROVIDER === 'openai' ? new OpenAiTranslator(env) : new GoogleTranslator();
+    this.backend = env.TRANSLATION_PROVIDER === 'openai' ? new OpenAiTranslator(env) : new GoogleTranslator(env);
   }
 
   translate(article: RawArticle): Promise<TranslatedArticle> {

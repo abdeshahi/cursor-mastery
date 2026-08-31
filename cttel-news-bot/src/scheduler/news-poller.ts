@@ -1,9 +1,11 @@
 import type { Env } from '../config/env.js';
 import { parseFeedUrls } from '../config/env.js';
 import { resolveSources } from '../config/sources.js';
+import { fetchArticleBody } from '../feeds/article-content.js';
 import { evaluateArticleTopic } from '../filter/topic-filter.js';
 import { fetchLatestArticles } from '../feeds/rss-fetcher.js';
 import type { TelegramPublisher } from '../publisher/telegram-publisher.js';
+import type { ArticleStore } from '../store/article-store.js';
 import type { SeenStore } from '../store/seen-store.js';
 import { Translator } from '../translate/translator.js';
 import type { Logger } from '../utils/logger.js';
@@ -18,6 +20,7 @@ export class NewsPoller {
   constructor(
     private readonly env: Env,
     private readonly seenStore: SeenStore,
+    private readonly articleStore: ArticleStore,
     private readonly publisher: TelegramPublisher,
     private readonly logger: Logger,
   ) {
@@ -54,7 +57,23 @@ export class NewsPoller {
       }
 
       try {
-        const translated = await this.translator.translate(article);
+        const bodyText = await fetchArticleBody(article.link, article.bodyHtml, article.summary);
+        const translated = await this.translator.translate({ ...article, bodyText });
+
+        await this.articleStore.save({
+          slug: translated.slug,
+          id: translated.id,
+          titleFa: translated.titleFa,
+          summaryFa: translated.summaryFa,
+          bodyFa: translated.bodyFa,
+          sourceName: translated.sourceName,
+          sourceRole: translated.sourceRole,
+          sourceLink: translated.link,
+          imageUrl: translated.imageUrl,
+          publishedAt: translated.publishedAt?.toISOString(),
+          createdAt: new Date().toISOString(),
+        });
+
         await this.publisher.publish(translated);
         await this.seenStore.markSeen(article.id);
         published += 1;
@@ -62,6 +81,7 @@ export class NewsPoller {
           id: article.id,
           source: article.sourceName,
           title: article.title,
+          readerUrl: translated.readerUrl,
         });
         await sleep(2_000);
       } catch (error) {

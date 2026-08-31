@@ -19,6 +19,7 @@ const envSchema = z
     MAX_POSTS_PER_RUN: z.coerce.number().int().positive().max(20).default(3),
     DATA_DIR: z.string().default('./data'),
     PORT: z.coerce.number().int().positive().default(3002),
+    PUBLIC_BASE_URL: z.string().url().default('http://185.18.214.66:3002'),
     LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
   })
   .superRefine((value, context) => {

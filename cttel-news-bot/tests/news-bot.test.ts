@@ -3,6 +3,9 @@ import { formatTelegramPost } from '../src/format/post-formatter.js';
 import type { RawArticle, TranslatedArticle } from '../src/feeds/article.js';
 import { DEFAULT_NEWS_SOURCES, SOURCE_ROLE_LABELS_FA } from '../src/config/sources.js';
 import { evaluateArticleTopic, isRelevantArticle } from '../src/filter/topic-filter.js';
+import { stripHtml } from '../src/feeds/article-content.js';
+import { renderArticlePage } from '../src/server/article-page.js';
+import { articleSlug, buildReaderUrl } from '../src/utils/article-slug.js';
 import { chunkTelegramMessage, escapeHtml, rtl } from '../src/utils/telegram-html.js';
 import { SeenStore } from '../src/store/seen-store.js';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -152,7 +155,10 @@ describe('post formatter', () => {
       sourceRole: 'specs',
       titleFa: 'گلکسی S26 با باتری بزرگ‌تر',
       summaryFa: 'سامسونگ در نسل بعدی ظرفیت باتری را افزایش می‌دهد.',
+      bodyFa: 'سامسونگ در نسل بعدی ظرفیت باتری را افزایش می‌دهد و جزئیات بیشتری در متن کامل آمده است.',
       link: 'https://example.com/news/1',
+      slug: 'abc123def456',
+      readerUrl: 'http://185.18.214.66:3002/read/abc123def456',
       publishedAt: new Date('2026-08-30T10:00:00.000Z'),
     };
 
@@ -160,7 +166,43 @@ describe('post formatter', () => {
     expect(post).toContain('گلکسی S26');
     expect(post).toContain('GSMArena');
     expect(post).toContain('مشخصات فنی');
+    expect(post).toContain('مطالعه کامل به فارسی');
+    expect(post).toContain('http://185.18.214.66:3002/read/abc123def456');
     expect(post).toContain('https://example.com/news/1');
+  });
+});
+
+describe('article reader', () => {
+  it('builds stable slugs and reader urls', () => {
+    const slug = articleSlug('gsmarena:https://example.com/news/1');
+    expect(slug).toHaveLength(12);
+    expect(buildReaderUrl('http://185.18.214.66:3002', slug)).toBe(
+      `http://185.18.214.66:3002/read/${slug}`,
+    );
+  });
+
+  it('renders a Persian reader page with full body', () => {
+    const html = renderArticlePage({
+      slug: 'abc123def456',
+      id: 'test:1',
+      titleFa: 'آیفون ۱۸ پرو',
+      summaryFa: 'خلاصه خبر',
+      bodyFa: 'پارagraph اول.\n\nپارagraph دوم.',
+      sourceName: 'MacRumors',
+      sourceRole: 'apple',
+      sourceLink: 'https://example.com/news/1',
+      createdAt: new Date().toISOString(),
+    });
+
+    expect(html).toContain('lang="fa"');
+    expect(html).toContain('dir="rtl"');
+    expect(html).toContain('آیفون ۱۸ پرو');
+    expect(html).toContain('پارagraph اول.');
+    expect(html).toContain('پارagraph دوم.');
+  });
+
+  it('strips html from article content', () => {
+    expect(stripHtml('<p>Hello <strong>world</strong></p>')).toBe('Hello world');
   });
 });
 

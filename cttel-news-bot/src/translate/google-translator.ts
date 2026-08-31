@@ -1,6 +1,9 @@
 import { translate } from '@vitalets/google-translate-api';
 import type { RawArticle, TranslatedArticle } from '../feeds/article.js';
 import { findSourceById, SOURCE_ROLE_LABELS_FA } from '../config/sources.js';
+import { articleSlug, buildReaderUrl } from '../utils/article-slug.js';
+import type { Env } from '../config/env.js';
+import { translateTextInChunks } from './chunk-translator.js';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -58,6 +61,8 @@ async function translateWithMyMemory(text: string): Promise<string> {
 }
 
 export class GoogleTranslator {
+  constructor(private readonly env: Env) {}
+
   async translate(article: RawArticle): Promise<TranslatedArticle> {
     const source = findSourceById(article.sourceId);
     const roleLabel =
@@ -74,6 +79,21 @@ export class GoogleTranslator {
       throw new Error('Translation returned empty text');
     }
 
+    const bodySource = article.bodyText ?? article.summary;
+    let bodyFa = summaryFa;
+    try {
+      bodyFa = polishPersian(
+        await translateTextInChunks(bodySource, async (chunk) => translateWithRetry(chunk)),
+      );
+      if (bodyFa.length === 0) {
+        bodyFa = summaryFa;
+      }
+    } catch {
+      bodyFa = summaryFa;
+    }
+
+    const slug = articleSlug(article.id);
+
     return {
       id: article.id,
       sourceId: article.sourceId,
@@ -81,7 +101,10 @@ export class GoogleTranslator {
       sourceRole: article.sourceRole,
       titleFa,
       summaryFa,
+      bodyFa,
       link: article.link,
+      slug,
+      readerUrl: buildReaderUrl(this.env.PUBLIC_BASE_URL, slug),
       publishedAt: article.publishedAt,
       imageUrl: article.imageUrl,
     };

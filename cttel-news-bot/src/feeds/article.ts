@@ -8,6 +8,8 @@ export interface RawArticle {
   link: string;
   publishedAt?: Date;
   imageUrl?: string;
+  bodyHtml?: string;
+  bodyText?: string;
 }
 
 export interface TranslatedArticle {
@@ -17,7 +19,24 @@ export interface TranslatedArticle {
   sourceRole: string;
   titleFa: string;
   summaryFa: string;
+  bodyFa: string;
   link: string;
+  slug: string;
+  readerUrl: string;
   publishedAt?: Date;
   imageUrl?: string;
+}
+
+export interface StoredArticle {
+  slug: string;
+  id: string;
+  titleFa: string;
+  summaryFa: string;
+  bodyFa: string;
+  sourceName: string;
+  sourceRole: string;
+  sourceLink: string;
+  imageUrl?: string;
+  publishedAt?: string;
+  createdAt: string;
 }
