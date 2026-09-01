@@ -1,0 +1,78 @@
+from __future__ import annotations
+
+import aiosqlite
+from pathlib import Path
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS customers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS technicians (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    default_pct REAL NOT NULL DEFAULT 40,
+    active INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS suppliers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    active INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS repairs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL REFERENCES customers(id),
+    technician_id INTEGER REFERENCES technicians(id),
+    device TEXT NOT NULL DEFAULT '',
+    issue TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'open',
+    labor_amount INTEGER NOT NULL DEFAULT 0,
+    technician_pct REAL NOT NULL DEFAULT 40,
+    parts_cost INTEGER NOT NULL DEFAULT 0,
+    parts_sell INTEGER NOT NULL DEFAULT 0,
+    customer_paid INTEGER NOT NULL DEFAULT 0,
+    supplier_paid INTEGER NOT NULL DEFAULT 0,
+    notes TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    closed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS repair_parts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    repair_id INTEGER NOT NULL REFERENCES repairs(id) ON DELETE CASCADE,
+    supplier_id INTEGER REFERENCES suppliers(id),
+    part_name TEXT NOT NULL,
+    cost INTEGER NOT NULL DEFAULT 0,
+    sell_price INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    repair_id INTEGER NOT NULL REFERENCES repairs(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_repairs_status ON repairs(status);
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+"""
+
+
+class Database:
+    def __init__(self, path: str) -> None:
+        self.path = path
+
+    async def connect(self) -> aiosqlite.Connection:
+        Path(self.path).parent.mkdir(parents=True, exist_ok=True)
+        conn = await aiosqlite.connect(self.path)
+        conn.row_factory = aiosqlite.Row
+        await conn.executescript(SCHEMA)
+        await conn.commit()
+        return conn
