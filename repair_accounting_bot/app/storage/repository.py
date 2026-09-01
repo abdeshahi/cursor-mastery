@@ -263,6 +263,24 @@ class RepairRepository:
         rows = await cursor.fetchall()
         return [dict(row) for row in rows]
 
+    async def list_open_repairs_full(self, limit: int = 200) -> list[dict[str, Any]]:
+        cursor = await self.conn.execute(
+            """
+            SELECT r.id
+            FROM repairs r
+            WHERE r.status = 'open'
+            ORDER BY r.id DESC
+            LIMIT ?
+            """,
+            (limit,),
+        )
+        repairs: list[dict[str, Any]] = []
+        for row in await cursor.fetchall():
+            repair = await self.get_repair(int(row['id']))
+            if repair:
+                repairs.append(repair)
+        return repairs
+
     async def add_customer_payment(self, repair_id: int, amount: int, note: str = '') -> None:
         await self.conn.execute(
             'UPDATE repairs SET customer_paid = customer_paid + ? WHERE id = ?',

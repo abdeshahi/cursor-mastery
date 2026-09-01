@@ -14,6 +14,8 @@ ACC_SHOP_PROFIT = '🏢 سود فروشگاه'
 ACC_TECH_SHARE = '👨‍🔧 سهم تعمیرکاران'
 ACC_SUPPLIER_DEBT = '🏪 بدهی قطعه‌فروش'
 ACC_CUSTOMER_DEBT = '👥 بدهی مشتریان'
+ACC_EXPORT_EXCEL = '📊 خروجی Excel'
+ACC_EXPORT_PDF = '📄 خروجی PDF'
 
 
 def root_menu() -> ReplyKeyboardMarkup:
@@ -31,6 +33,7 @@ def reception_menu() -> ReplyKeyboardMarkup:
         keyboard=[
             [KeyboardButton(text=REC_NEW), KeyboardButton(text=REC_SEARCH)],
             [KeyboardButton(text=REC_INVOICE), KeyboardButton(text=REC_REPORT)],
+            [KeyboardButton(text=ACC_EXPORT_EXCEL), KeyboardButton(text=ACC_EXPORT_PDF)],
             [KeyboardButton(text=BACK_ROOT)],
         ],
         resize_keyboard=True,
@@ -43,6 +46,7 @@ def accounting_menu() -> ReplyKeyboardMarkup:
             [KeyboardButton(text=ACC_SUMMARY), KeyboardButton(text=ACC_SHOP_PROFIT)],
             [KeyboardButton(text=ACC_TECH_SHARE), KeyboardButton(text=ACC_SUPPLIER_DEBT)],
             [KeyboardButton(text=ACC_CUSTOMER_DEBT)],
+            [KeyboardButton(text=ACC_EXPORT_EXCEL), KeyboardButton(text=ACC_EXPORT_PDF)],
             [KeyboardButton(text=BACK_ROOT)],
         ],
         resize_keyboard=True,
@@ -95,6 +99,10 @@ def supplier_keyboard(suppliers: list[dict]) -> InlineKeyboardMarkup:
 def repair_actions(repair_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
+            [
+                InlineKeyboardButton(text='📊 Excel', callback_data=f'xlsx:{repair_id}'),
+                InlineKeyboardButton(text='📄 PDF', callback_data=f'pdf:{repair_id}'),
+            ],
             [
                 InlineKeyboardButton(text='🧾 فاکتور', callback_data=f'inv:{repair_id}'),
                 InlineKeyboardButton(text='💼 حسابداری', callback_data=f'acc:{repair_id}'),

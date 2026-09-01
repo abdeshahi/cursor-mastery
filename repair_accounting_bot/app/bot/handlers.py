@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, FSInputFile, Message
 
 from app.bot.keyboards import (
     ACC_CUSTOMER_DEBT,
+    ACC_EXPORT_EXCEL,
+    ACC_EXPORT_PDF,
     ACC_SHOP_PROFIT,
     ACC_SUMMARY,
     ACC_SUPPLIER_DEBT,
@@ -34,6 +38,7 @@ from app.bot.middleware import RepositoryMiddleware
 from app.bot.states import AddSupplier, AddTechnician, InvoiceLookup, NewRepair, Payment, SearchRepair
 from app.config import settings
 from app.services.accounting import format_toman
+from app.services.export_service import ExportService
 from app.services.formatters import (
     format_accounting_report,
     format_invoice,
@@ -71,6 +76,10 @@ async def show_accounting_report(message: Message, repo: RepairRepository) -> No
     await message.answer(format_accounting_report(dashboard), parse_mode='Markdown')
 
 
+async def send_export_file(message: Message, path: Path, caption: str) -> None:
+    await message.answer_document(FSInputFile(path), caption=caption)
+
+
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext) -> None:
     if not is_allowed(message.from_user.id if message.from_user else None):
@@ -102,7 +111,9 @@ async def cmd_help(message: Message) -> None:
         '• سود فروشگاه — سود خالص پرونده‌های باز\n'
         '• سهم تعمیرکاران — درصد و مبلغ هر تعمیرکار\n'
         '• بدهی قطعه‌فروش — طلب فروشندگان قطعه\n'
-        '• بدهی مشتریان — مانده حساب مشتری‌ها\n\n'
+        '• بدهی مشتریان — مانده حساب مشتری‌ها\n'
+        '• خروجی Excel / PDF — گزارش کامل حسابداری\n\n'
+        'روی هر پرونده: 📊 Excel و 📄 PDF فاکتور\n\n'
         'دستورات: /repair 12 · /addtech علی|40 · /addsup رضایی',
         parse_mode='Markdown',
     )
@@ -476,7 +487,61 @@ async def accounting_customer_debt(message: Message, repo: RepairRepository) -> 
     await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu())
 
 
+@router.message(F.text == ACC_EXPORT_EXCEL)
+async def export_accounting_excel(message: Message, export_service: ExportService) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
+        return
+    await message.answer('⏳ در حال ساخت فایل Excel...')
+    path = await export_service.export_accounting_excel()
+    await send_export_file(message, path, '📊 گزارش حسابداری Excel')
+
+
+@router.message(F.text == ACC_EXPORT_PDF)
+async def export_accounting_pdf(message: Message, export_service: ExportService) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
+        return
+    await message.answer('⏳ در حال ساخت فایل PDF...')
+    path = await export_service.export_accounting_pdf()
+    await send_export_file(message, path, '📄 گزارش حسابداری PDF')
+
+
 # --- Callbacks ---
+
+@router.callback_query(F.data.startswith('xlsx:'))
+async def callback_invoice_excel(callback: CallbackQuery, export_service: ExportService) -> None:
+    if not is_allowed(callback.from_user.id):
+        await callback.answer(deny_message(), show_alert=True)
+        return
+    repair_id = int(callback.data.split(':')[1])
+    path = await export_service.export_invoice_excel(repair_id)
+    if not path:
+        await callback.answer('پرونده یافت نشد', show_alert=True)
+        return
+    await callback.message.answer_document(
+        FSInputFile(path),
+        caption=f'📊 فاکتور Excel #{repair_id}',
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith('pdf:'))
+async def callback_invoice_pdf(callback: CallbackQuery, export_service: ExportService) -> None:
+    if not is_allowed(callback.from_user.id):
+        await callback.answer(deny_message(), show_alert=True)
+        return
+    repair_id = int(callback.data.split(':')[1])
+    path = await export_service.export_invoice_pdf(repair_id)
+    if not path:
+        await callback.answer('پرونده یافت نشد', show_alert=True)
+        return
+    await callback.message.answer_document(
+        FSInputFile(path),
+        caption=f'📄 فاکتور PDF #{repair_id}',
+    )
+    await callback.answer()
+
 
 @router.callback_query(F.data.startswith('view:'))
 async def view_repair(callback: CallbackQuery, repo: RepairRepository) -> None:
@@ -651,9 +716,9 @@ async def add_supplier_name(message: Message, state: FSMContext, repo: RepairRep
     await append_part(message, state)
 
 
-def create_dispatcher(repo: RepairRepository) -> Dispatcher:
+def create_dispatcher(repo: RepairRepository, export_service: ExportService) -> Dispatcher:
     dp = Dispatcher()
-    dp.update.middleware(RepositoryMiddleware(repo))
+    dp.update.middleware(RepositoryMiddleware(repo, export_service))
     dp.include_router(router)
     return dp
 
@@ -664,7 +729,8 @@ async def run_bot() -> None:
     db = Database(settings.DATABASE_PATH)
     conn = await db.connect()
     repo = RepairRepository(conn)
+    export_service = ExportService(repo, Path(settings.EXPORT_DIR))
     session = AiohttpSession(proxy=settings.TELEGRAM_PROXY) if settings.TELEGRAM_PROXY else None
     bot = Bot(token=settings.BOT_TOKEN, session=session)
-    dp = create_dispatcher(repo)
+    dp = create_dispatcher(repo, export_service)
     await dp.start_polling(bot)

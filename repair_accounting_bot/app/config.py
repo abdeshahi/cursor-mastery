@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ALLOWED_USER_IDS: str = ''
     ADMIN_USER_IDS: str = ''
     DATABASE_PATH: str = './data/repair_accounting.db'
+    EXPORT_DIR: str = './data/exports'
     TELEGRAM_PROXY: str | None = None
 
     def allowed_user_ids(self) -> set[int]:
