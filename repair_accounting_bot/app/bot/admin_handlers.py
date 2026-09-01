@@ -28,7 +28,7 @@ from app.bot.keyboards import (
     tech_manage_menu,
 )
 from app.bot.parsing import parse_staff_args
-from app.bot.states import AdminStaffAdd, AdminSupAdd, AdminTechAdd
+from app.bot.states import AdminStaffAdd, AdminStaffRename, AdminSupAdd, AdminTechAdd
 from app.staff.roles import ROLE_LABELS
 from app.storage.repository import RepairRepository
 from app.storage.staff_repository import StaffRepository
@@ -142,11 +142,12 @@ async def cb_staff_view(callback: CallbackQuery, staff_repo: StaffRepository, is
         await callback.answer('پرسنل یافت نشد', show_alert=True)
         return
     role = ROLE_LABELS.get(row.get('role') or 'full', 'کارمند')
+    hint = 'نام یا نقش را ویرایش کنید:' if telegram_id == callback.from_user.id else 'نام یا نقش را ویرایش کنید، یا دسترسی را حذف کنید:'
     text = (
         f"👤 **{row['name']}**\n\n"
         f"آیدی: `{telegram_id}`\n"
         f"نقش: {role}\n\n"
-        'نقش جدید را انتخاب کنید یا دسترسی را حذف کنید:'
+        f'{hint}'
     )
     await callback.message.answer(
         text,
@@ -187,6 +188,62 @@ async def cb_staff_remove(callback: CallbackQuery, staff_repo: StaffRepository, 
         await show_staff_list(callback.message, staff_repo)
     else:
         await callback.answer('پرسنل یافت نشد', show_alert=True)
+
+
+@admin_router.callback_query(F.data.startswith('adm:staff:rename:'))
+async def cb_staff_rename_start(
+    callback: CallbackQuery,
+    state: FSMContext,
+    staff_repo: StaffRepository,
+    is_admin: bool,
+) -> None:
+    if not is_admin:
+        await callback.answer('فقط مدیر', show_alert=True)
+        return
+    telegram_id = int(callback.data.split(':')[-1])
+    row = await staff_repo.get_staff(telegram_id)
+    if not row or not row['active']:
+        await callback.answer('پرسنل یافت نشد', show_alert=True)
+        return
+    await state.set_state(AdminStaffRename.name)
+    await state.update_data(rename_staff_id=telegram_id, rename_staff_old=row['name'])
+    await callback.message.answer(
+        f"✏️ نام جدید برای **{row['name']}** را بنویسید:",
+        parse_mode='Markdown',
+    )
+    await callback.answer()
+
+
+@admin_router.message(AdminStaffRename.name)
+async def admin_staff_rename_save(
+    message: Message,
+    state: FSMContext,
+    staff_repo: StaffRepository,
+    is_admin: bool,
+) -> None:
+    if not is_admin:
+        await deny_admin(message)
+        return
+    new_name = message.text.strip()
+    if len(new_name) < 2:
+        await message.answer('نام باید حداقل ۲ حرف باشد.')
+        return
+    data = await state.get_data()
+    telegram_id = data.get('rename_staff_id')
+    old_name = data.get('rename_staff_old', '')
+    if not telegram_id:
+        await state.clear()
+        await message.answer('خطا — دوباره از لیست پرسنل شروع کنید.')
+        return
+    if await staff_repo.set_name(int(telegram_id), new_name):
+        await state.clear()
+        await message.answer(
+            f'✅ نام «{old_name}» به «{new_name}» تغییر کرد.',
+            reply_markup=staff_manage_menu(),
+        )
+        await show_staff_list(message, staff_repo)
+    else:
+        await message.answer('خطا در ذخیره نام.')
 
 
 @admin_router.callback_query(F.data == 'adm:staff:add')

@@ -47,6 +47,15 @@ async def test_re_add_preserves_admin(staff_repo: StaffRepository) -> None:
 
 
 @pytest.mark.asyncio
+async def test_set_name(staff_repo: StaffRepository) -> None:
+    await staff_repo.seed_from_env()
+    assert await staff_repo.set_name(111, 'مدیر اصلی')
+    row = await staff_repo.get_staff(111)
+    assert row is not None
+    assert row['name'] == 'مدیر اصلی'
+
+
+@pytest.mark.asyncio
 async def test_set_role(staff_repo: StaffRepository) -> None:
     await staff_repo.seed_from_env()
     assert await staff_repo.set_role(222, ROLE_ACCOUNTANT)

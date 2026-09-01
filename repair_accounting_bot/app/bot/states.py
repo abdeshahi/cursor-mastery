@@ -50,3 +50,7 @@ class AdminTechAdd(StatesGroup):
 
 class AdminSupAdd(StatesGroup):
     name = State()
+
+
+class AdminStaffRename(StatesGroup):
+    name = State()

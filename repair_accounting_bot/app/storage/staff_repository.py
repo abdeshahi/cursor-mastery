@@ -114,6 +114,14 @@ class StaffRepository:
         await self.conn.commit()
         return cursor.rowcount > 0
 
+    async def set_name(self, telegram_id: int, name: str) -> bool:
+        cursor = await self.conn.execute(
+            'UPDATE staff SET name = ? WHERE telegram_id = ? AND active = 1',
+            (name.strip(), telegram_id),
+        )
+        await self.conn.commit()
+        return cursor.rowcount > 0
+
     async def remove_staff(self, telegram_id: int) -> bool:
         cursor = await self.conn.execute(
             'UPDATE staff SET active = 0 WHERE telegram_id = ? AND active = 1',

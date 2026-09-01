@@ -18,7 +18,9 @@ def staff_list_keyboard(staff_rows: list[dict], *, current_user_id: int) -> Inli
 
 
 def staff_detail_keyboard(telegram_id: int, *, current_user_id: int) -> InlineKeyboardMarkup:
-    rows: list[list[InlineKeyboardButton]] = []
+    rows: list[list[InlineKeyboardButton]] = [
+        [InlineKeyboardButton(text='✏️ ویرایش نام', callback_data=f'adm:staff:rename:{telegram_id}')],
+    ]
     if telegram_id != current_user_id:
         role_row = [
             InlineKeyboardButton(
