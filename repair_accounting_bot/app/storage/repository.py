@@ -148,6 +148,103 @@ class RepairRepository:
         rows = await cursor.fetchall()
         return [dict(row) for row in rows]
 
+    async def summary_report(self) -> dict[str, int]:
+        dashboard = await self.accounting_dashboard()
+        return {
+            'customer_debt': dashboard['customer_debt'],
+            'supplier_debt': dashboard['supplier_debt'],
+            'technician_share_open': dashboard['technician_share'],
+            'shop_profit': dashboard['shop_profit'],
+            'open_count': dashboard['open_count'],
+        }
+
+    async def accounting_dashboard(self) -> dict[str, Any]:
+        cursor = await self.conn.execute(
+            """
+            SELECT
+                COUNT(*) AS open_count,
+                COALESCE(SUM(labor_amount + parts_sell - customer_paid), 0) AS customer_debt,
+                COALESCE(SUM(parts_cost - supplier_paid), 0) AS supplier_debt,
+                COALESCE(SUM(ROUND(labor_amount * technician_pct / 100.0)), 0) AS technician_share,
+                COALESCE(SUM(
+                    (labor_amount + parts_sell) - parts_cost - ROUND(labor_amount * technician_pct / 100.0)
+                ), 0) AS shop_profit
+            FROM repairs
+            WHERE status = 'open'
+            """,
+        )
+        totals = dict(await cursor.fetchone())
+
+        cursor = await self.conn.execute(
+            """
+            SELECT t.name, r.technician_pct AS pct,
+                   SUM(ROUND(r.labor_amount * r.technician_pct / 100.0)) AS share
+            FROM repairs r
+            JOIN technicians t ON t.id = r.technician_id
+            WHERE r.status = 'open'
+            GROUP BY t.id
+            ORDER BY share DESC
+            """,
+        )
+        technicians = [dict(row) for row in await cursor.fetchall()]
+
+        cursor = await self.conn.execute(
+            """
+            SELECT COALESCE(s.name, 'بدون فروشنده') AS name,
+                   SUM(rp.cost) AS part_cost
+            FROM repair_parts rp
+            JOIN repairs r ON r.id = rp.repair_id
+            LEFT JOIN suppliers s ON s.id = rp.supplier_id
+            WHERE r.status = 'open' AND (r.parts_cost - r.supplier_paid) > 0
+            GROUP BY COALESCE(s.id, 0), COALESCE(s.name, 'بدون فروشنده')
+            ORDER BY part_cost DESC
+            """,
+        )
+        suppliers = [{'name': row['name'], 'debt': int(row['part_cost'] or 0)} for row in await cursor.fetchall()]
+
+        return {
+            'open_count': int(totals['open_count'] or 0),
+            'customer_debt': int(totals['customer_debt'] or 0),
+            'supplier_debt': int(totals['supplier_debt'] or 0),
+            'technician_share': int(totals['technician_share'] or 0),
+            'shop_profit': int(totals['shop_profit'] or 0),
+            'technicians': technicians,
+            'suppliers': suppliers,
+        }
+
+    async def search_repairs(self, query: str, limit: int = 15) -> list[dict[str, Any]]:
+        query = query.strip()
+        if not query:
+            return []
+
+        if query.isdigit():
+            cursor = await self.conn.execute(
+                """
+                SELECT r.id, r.device, r.status, c.name AS customer_name
+                FROM repairs r
+                JOIN customers c ON c.id = r.customer_id
+                WHERE r.id = ?
+                """,
+                (int(query),),
+            )
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+
+        pattern = f'%{query}%'
+        cursor = await self.conn.execute(
+            """
+            SELECT r.id, r.device, r.status, c.name AS customer_name
+            FROM repairs r
+            JOIN customers c ON c.id = r.customer_id
+            WHERE c.name LIKE ? OR c.phone LIKE ? OR r.device LIKE ? OR r.issue LIKE ?
+            ORDER BY r.id DESC
+            LIMIT ?
+            """,
+            (pattern, pattern, pattern, pattern, limit),
+        )
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+
     async def list_open_repairs(self, limit: int = 20) -> list[dict[str, Any]]:
         cursor = await self.conn.execute(
             """
@@ -194,28 +291,6 @@ class RepairRepository:
             (repair_id,),
         )
         await self.conn.commit()
-
-    async def summary_report(self) -> dict[str, int]:
-        cursor = await self.conn.execute(
-            """
-            SELECT
-                COALESCE(SUM(labor_amount + parts_sell - customer_paid), 0) AS customer_debt,
-                COALESCE(SUM(parts_cost - supplier_paid), 0) AS supplier_debt,
-                COALESCE(SUM(
-                    ROUND(labor_amount * technician_pct / 100.0)
-                ), 0) AS technician_share_open,
-                COUNT(*) AS open_count
-            FROM repairs
-            WHERE status = 'open'
-            """,
-        )
-        row = await cursor.fetchone()
-        return {
-            'customer_debt': int(row['customer_debt'] or 0),
-            'supplier_debt': int(row['supplier_debt'] or 0),
-            'technician_share_open': int(row['technician_share_open'] or 0),
-            'open_count': int(row['open_count'] or 0),
-        }
 
     async def customer_debts(self, limit: int = 20) -> list[dict[str, Any]]:
         cursor = await self.conn.execute(

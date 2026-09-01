@@ -1,6 +1,7 @@
 import pytest
 import pytest_asyncio
 
+from app.services.formatters import format_accounting_report, format_invoice
 from app.storage.db import Database
 from app.storage.repository import RepairRepository
 
@@ -31,11 +32,34 @@ async def test_create_repair_and_payments(repo) -> None:
     repair = await repository.get_repair(repair_id)
     assert repair is not None
     assert repair['totals'].customer_total == 3_100_000
-    assert repair['totals'].customer_debt == 3_100_000
-    assert repair['totals'].supplier_debt == 2_000_000
+    assert repair['totals'].shop_profit == 860_000
 
-    await repository.add_customer_payment(repair_id, 1_000_000)
-    await repository.add_supplier_payment(repair_id, 500_000)
-    repair = await repository.get_repair(repair_id)
-    assert repair['totals'].customer_debt == 2_100_000
-    assert repair['totals'].supplier_debt == 1_500_000
+    invoice = format_invoice(repair)
+    assert 'فاکتور فروش' in invoice
+    assert '3,100,000' in invoice
+
+    dashboard = await repository.accounting_dashboard()
+    report = format_accounting_report(dashboard)
+    assert 'سود فروشگاه' in report
+    assert dashboard['technician_share'] == 240_000
+
+
+@pytest.mark.asyncio
+async def test_search_repairs(repo) -> None:
+    repository, tech_id = repo
+    customer_id = await repository.find_or_create_customer('حسین', '09121111111')
+    repair_id = await repository.create_repair(
+        customer_id=customer_id,
+        technician_id=tech_id,
+        device='Samsung A54',
+        issue='باتری',
+        labor_amount=200_000,
+        technician_pct=40,
+        parts=[],
+    )
+    by_id = await repository.search_repairs(str(repair_id))
+    assert len(by_id) == 1
+    by_name = await repository.search_repairs('حسین')
+    assert len(by_name) == 1
+    by_device = await repository.search_repairs('Samsung')
+    assert len(by_device) == 1

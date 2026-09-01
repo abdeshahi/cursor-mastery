@@ -27,3 +27,11 @@ class AddSupplier(StatesGroup):
 class Payment(StatesGroup):
     repair_id = State()
     amount = State()
+
+
+class SearchRepair(StatesGroup):
+    query = State()
+
+
+class InvoiceLookup(StatesGroup):
+    repair_id = State()

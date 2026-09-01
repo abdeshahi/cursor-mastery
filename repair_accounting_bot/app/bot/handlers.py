@@ -7,18 +7,39 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from app.bot.keyboards import (
+    ACC_CUSTOMER_DEBT,
+    ACC_SHOP_PROFIT,
+    ACC_SUMMARY,
+    ACC_SUPPLIER_DEBT,
+    ACC_TECH_SHARE,
+    BACK_ROOT,
+    REC_INVOICE,
+    REC_NEW,
+    REC_REPORT,
+    REC_SEARCH,
+    ROOT_ACCOUNTING,
+    ROOT_RECEPTION,
+    accounting_menu,
     cancel_keyboard,
-    main_menu,
     parts_more_keyboard,
+    reception_menu,
     repair_actions,
+    root_menu,
+    search_result_keyboard,
     skip_keyboard,
     supplier_keyboard,
     technician_keyboard,
 )
 from app.bot.middleware import RepositoryMiddleware
-from app.bot.states import AddSupplier, AddTechnician, NewRepair, Payment
+from app.bot.states import AddSupplier, AddTechnician, InvoiceLookup, NewRepair, Payment, SearchRepair
 from app.config import settings
 from app.services.accounting import format_toman
+from app.services.formatters import (
+    format_accounting_report,
+    format_invoice,
+    format_repair_summary,
+    format_search_results,
+)
 from app.storage.db import Database
 from app.storage.repository import RepairRepository
 
@@ -37,6 +58,19 @@ def deny_message() -> str:
     return '⛔️ شما دسترسی به این ربات را ندارید.'
 
 
+async def show_repair(message: Message, repo: RepairRepository, repair_id: int) -> None:
+    repair = await repo.get_repair(repair_id)
+    if not repair:
+        await message.answer('پرونده یافت نشد.')
+        return
+    await message.answer(format_repair_summary(repair), reply_markup=repair_actions(repair_id))
+
+
+async def show_accounting_report(message: Message, repo: RepairRepository) -> None:
+    dashboard = await repo.accounting_dashboard()
+    await message.answer(format_accounting_report(dashboard), parse_mode='Markdown')
+
+
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext) -> None:
     if not is_allowed(message.from_user.id if message.from_user else None):
@@ -44,9 +78,11 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
         return
     await state.clear()
     await message.answer(
-        '🔧 ربات حسابداری تعمیرات\n\n'
-        'پذیرش دستگاه، ثبت درصد تعمیرکار، قیمت قطعه، بدهی مشتری و طلب قطعه‌فروش.',
-        reply_markup=main_menu(),
+        '🔧 **بات پذیرش و حسابداری CTTEL**\n\n'
+        '📥 **پذیرش** — ثبت، جستجو، فاکتور\n'
+        '💼 **حسابداری** — سود، سهم تعمیرکار، بدهی‌ها',
+        reply_markup=root_menu(),
+        parse_mode='Markdown',
     )
 
 
@@ -57,28 +93,51 @@ async def cmd_help(message: Message) -> None:
         await message.answer(deny_message())
         return
     await message.answer(
-        '📝 **پذیرش جدید** — ثبت مشتری، دستگاه، تعمیرکار، اجرت و قطعات\n'
-        '📋 **پرونده‌های باز** — لیست تعمیرات جاری\n'
-        '💵 **دریافت از مشتری** — از دکمه‌های زیر هر پرونده\n'
-        '💸 **پرداخت به قطعه‌فروش** — ثبت پرداخت به فروشنده قطعه\n'
-        '💰 **گزارش بدهی‌ها** — جمع بدهی مشتریان و طلب قطعه‌فروش‌ها\n\n'
-        'دستورات:\n'
-        '/repair 12 — جزئیات پرونده\n'
-        '/addtech نام|40 — افزودن تعمیرکار با درصد\n'
-        '/addsup نام — افزودن قطعه‌فروش',
+        '📥 **منوی پذیرش**\n'
+        '• پذیرش جدید — ثبت مشتری، دستگاه، تعمیرکار، اجرت، قطعه\n'
+        '• جستجو — با شماره پرونده، نام، موبایل یا مدل دستگاه\n'
+        '• فاکتور — صدور فاکتور فروش برای مشتری\n'
+        '• گزارش حسابداری — خلاصه مالی\n\n'
+        '💼 **منوی حسابداری**\n'
+        '• سود فروشگاه — سود خالص پرونده‌های باز\n'
+        '• سهم تعمیرکاران — درصد و مبلغ هر تعمیرکار\n'
+        '• بدهی قطعه‌فروش — طلب فروشندگان قطعه\n'
+        '• بدهی مشتریان — مانده حساب مشتری‌ها\n\n'
+        'دستورات: /repair 12 · /addtech علی|40 · /addsup رضایی',
         parse_mode='Markdown',
     )
 
 
+@router.message(F.text == BACK_ROOT)
 @router.message(F.text == '❌ انصراف')
-async def cancel_flow(message: Message, state: FSMContext) -> None:
+async def back_to_root(message: Message, state: FSMContext) -> None:
     if not is_allowed(message.from_user.id if message.from_user else None):
         return
     await state.clear()
-    await message.answer('لغو شد.', reply_markup=main_menu())
+    await message.answer('منوی اصلی', reply_markup=root_menu())
 
 
-@router.message(F.text == '📝 پذیرش جدید')
+@router.message(F.text == ROOT_RECEPTION)
+async def open_reception_menu(message: Message, state: FSMContext) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
+        return
+    await state.clear()
+    await message.answer('📥 **منوی پذیرش**', reply_markup=reception_menu(), parse_mode='Markdown')
+
+
+@router.message(F.text == ROOT_ACCOUNTING)
+async def open_accounting_menu(message: Message, state: FSMContext) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
+        return
+    await state.clear()
+    await message.answer('💼 **منوی حسابداری**', reply_markup=accounting_menu(), parse_mode='Markdown')
+
+
+# --- Reception: new repair flow ---
+
+@router.message(F.text == REC_NEW)
 async def start_repair(message: Message, state: FSMContext) -> None:
     if not is_allowed(message.from_user.id if message.from_user else None):
         await message.answer(deny_message())
@@ -93,7 +152,7 @@ async def start_repair(message: Message, state: FSMContext) -> None:
 async def repair_customer_name(message: Message, state: FSMContext) -> None:
     await state.update_data(customer_name=message.text.strip())
     await state.set_state(NewRepair.customer_phone)
-    await message.answer('شماره تماس مشتری (اختیاری — برای `-` بگذارید):')
+    await message.answer('شماره تماس مشتری (اختیاری — `-` برای خالی):')
 
 
 @router.message(NewRepair.customer_phone)
@@ -146,7 +205,7 @@ async def pick_technician(callback: CallbackQuery, state: FSMContext, repo: Repa
     await state.set_state(NewRepair.labor_amount)
     await callback.message.answer(
         f"تعمیرکار: {tech['name']} ({tech['default_pct']}%)\n"
-        'مبلغ اجرت تعمیر (تومان، فقط عدد):',
+        'مبلغ اجرت تعمیر (تومان):',
         reply_markup=cancel_keyboard(),
     )
     await callback.answer()
@@ -159,10 +218,7 @@ async def repair_labor(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(labor_amount=int(message.text.strip()))
     await state.set_state(NewRepair.part_name)
-    await message.answer(
-        'نام قطعه (یا «⏭ بدون قطعه / ادامه»):',
-        reply_markup=skip_keyboard(),
-    )
+    await message.answer('نام قطعه (یا «⏭ بدون قطعه / ادامه»):', reply_markup=skip_keyboard())
 
 
 @router.message(NewRepair.part_name, F.text == '⏭ بدون قطعه / ادامه')
@@ -206,7 +262,7 @@ async def repair_part_sell(message: Message, state: FSMContext, repo: RepairRepo
     if suppliers:
         await message.answer('فروشنده قطعه:', reply_markup=supplier_keyboard(suppliers))
     else:
-        await message.answer('نام فروشنده قطعه را تایپ کنید (یا `-`):')
+        await message.answer('نام فروشنده قطعه (یا `-`):')
 
 
 @router.callback_query(F.data.startswith('sup:'))
@@ -248,7 +304,7 @@ async def append_part(message: Message, state: FSMContext) -> None:
     await state.set_state(NewRepair.part_name)
     await message.answer(
         f"قطعه ثبت شد ({len(parts)} مورد).\n"
-        'قطعه دیگر اضافه کنید یا «✅ ثبت نهایی پذیرش»:',
+        'قطعه دیگر یا «✅ ثبت نهایی پذیرش»:',
         reply_markup=parts_more_keyboard(),
     )
 
@@ -280,49 +336,187 @@ async def finalize_repair(message: Message, state: FSMContext, repo: RepairRepos
     )
     repair = await repo.get_repair(repair_id)
     await state.clear()
-    await message.answer(format_repair(repair), reply_markup=repair_actions(repair_id))
-    await message.answer('پذیرش ثبت شد ✅', reply_markup=main_menu())
-
-
-def format_repair(repair: dict) -> str:
-    totals = repair['totals']
-    parts_lines = '\n'.join(
-        f"  • {p['part_name']}: خرید {format_toman(int(p['cost']))} → فروش {format_toman(int(p['sell_price']))}"
-        for p in repair['parts']
-    ) or '  • بدون قطعه'
-    return (
-        f"📋 پرونده #{repair['id']} ({repair['status']})\n"
-        f"👤 {repair['customer_name']} | {repair['customer_phone'] or '—'}\n"
-        f"📱 {repair['device']}\n"
-        f"🔧 {repair['issue']}\n"
-        f"👨‍🔧 {repair['technician_name'] or '—'} ({repair['technician_pct']}%)\n\n"
-        f"💼 اجرت: {format_toman(totals.labor_amount)}\n"
-        f"🔩 قطعات:\n{parts_lines}\n\n"
-        f"🧾 جمع مشتری: {format_toman(totals.customer_total)}\n"
-        f"✅ دریافت‌شده: {format_toman(totals.customer_paid)}\n"
-        f"📌 بدهی مشتری: {format_toman(totals.customer_debt)}\n"
-        f"🏪 طلب قطعه‌فروش: {format_toman(totals.supplier_debt)}\n"
-        f"👨‍🔧 سهم تعمیرکار: {format_toman(totals.technician_share)}\n"
-        f"🏢 سود مغازه: {format_toman(totals.shop_profit)}"
+    await message.answer(format_repair_summary(repair), reply_markup=repair_actions(repair_id))
+    await message.answer(
+        format_invoice(repair),
+        parse_mode='Markdown',
+        reply_markup=reception_menu(),
     )
 
 
-@router.message(F.text == '📋 پرونده‌های باز')
-async def list_open(message: Message, repo: RepairRepository) -> None:
+# --- Reception: search & invoice ---
+
+@router.message(F.text == REC_SEARCH)
+async def start_search(message: Message, state: FSMContext) -> None:
     if not is_allowed(message.from_user.id if message.from_user else None):
         await message.answer(deny_message())
         return
-    repairs = await repo.list_open_repairs()
-    if not repairs:
-        await message.answer('پرونده بازی وجود ندارد.')
+    await state.set_state(SearchRepair.query)
+    await message.answer(
+        '🔍 عبارت جستجو:\n'
+        'شماره پرونده، نام مشتری، موبایل، مدل دستگاه یا ایراد',
+        reply_markup=cancel_keyboard(),
+    )
+
+
+@router.message(SearchRepair.query)
+async def run_search(message: Message, state: FSMContext, repo: RepairRepository) -> None:
+    results = await repo.search_repairs(message.text.strip())
+    await state.clear()
+    await message.answer(
+        format_search_results(results),
+        parse_mode='Markdown',
+        reply_markup=search_result_keyboard(results) if results else reception_menu(),
+    )
+    if results:
+        await message.answer('یک پرونده را انتخاب کنید یا /repair شماره', reply_markup=reception_menu())
+
+
+@router.message(F.text == REC_INVOICE)
+async def start_invoice(message: Message, state: FSMContext) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
         return
-    lines = []
-    for r in repairs:
-        debt = int(r['customer_debt'] or 0)
-        lines.append(
-            f"#{r['id']} | {r['customer_name']} | {r['device']} | بدهی {format_toman(debt)}",
+    await state.set_state(InvoiceLookup.repair_id)
+    await message.answer('شماره پرونده برای صدور فاکتور:', reply_markup=cancel_keyboard())
+
+
+@router.message(InvoiceLookup.repair_id)
+async def show_invoice(message: Message, state: FSMContext, repo: RepairRepository) -> None:
+    if not message.text.strip().isdigit():
+        await message.answer('لطفاً شماره پرونده را وارد کنید.')
+        return
+    repair = await repo.get_repair(int(message.text.strip()))
+    await state.clear()
+    if not repair:
+        await message.answer('پرونده یافت نشد.', reply_markup=reception_menu())
+        return
+    await message.answer(format_invoice(repair), parse_mode='Markdown', reply_markup=reception_menu())
+
+
+@router.message(F.text == REC_REPORT)
+async def reception_report(message: Message, repo: RepairRepository) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
+        return
+    await show_accounting_report(message, repo)
+
+
+# --- Accounting menu ---
+
+@router.message(F.text == ACC_SUMMARY)
+async def accounting_summary(message: Message, repo: RepairRepository) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
+        return
+    await show_accounting_report(message, repo)
+
+
+@router.message(F.text == ACC_SHOP_PROFIT)
+async def accounting_shop_profit(message: Message, repo: RepairRepository) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
+        return
+    dashboard = await repo.accounting_dashboard()
+    await message.answer(
+        f"🏢 **سود فروشگاه** (پرونده‌های باز)\n\n"
+        f"💰 {format_toman(dashboard['shop_profit'])}\n\n"
+        f"📂 تعداد پرونده: {dashboard['open_count']}",
+        parse_mode='Markdown',
+        reply_markup=accounting_menu(),
+    )
+
+
+@router.message(F.text == ACC_TECH_SHARE)
+async def accounting_tech_share(message: Message, repo: RepairRepository) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
+        return
+    dashboard = await repo.accounting_dashboard()
+    lines = ['👨‍🔧 **سهم تعمیرکاران**', '']
+    if dashboard['technicians']:
+        for row in dashboard['technicians']:
+            lines.append(f"• {row['name']} — {row['pct']}% → {format_toman(int(row['share']))}")
+    else:
+        lines.append('• پرونده بازی با تعمیرکار ثبت نشده')
+    lines.append(f"\n📊 **جمع:** {format_toman(dashboard['technician_share'])}")
+    await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu())
+
+
+@router.message(F.text == ACC_SUPPLIER_DEBT)
+async def accounting_supplier_debt(message: Message, repo: RepairRepository) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
+        return
+    dashboard = await repo.accounting_dashboard()
+    lines = ['🏪 **بدهی به قطعه‌فروش**', '']
+    if dashboard['suppliers']:
+        for row in dashboard['suppliers']:
+            lines.append(f"• {row['name']}: {format_toman(int(row['debt']))}")
+    else:
+        lines.append('• بدهی فعالی ثبت نشده')
+    lines.append(f"\n📊 **جمع:** {format_toman(dashboard['supplier_debt'])}")
+    await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu())
+
+
+@router.message(F.text == ACC_CUSTOMER_DEBT)
+async def accounting_customer_debt(message: Message, repo: RepairRepository) -> None:
+    if not is_allowed(message.from_user.id if message.from_user else None):
+        await message.answer(deny_message())
+        return
+    rows = await repo.customer_debts()
+    lines = ['👥 **بدهی مشتریان**', '']
+    if rows:
+        for row in rows:
+            lines.append(f"• {row['name']} ({row['phone'] or '—'}): {format_toman(int(row['debt']))}")
+    else:
+        lines.append('• بدهی فعالی ثبت نشده')
+    dashboard = await repo.accounting_dashboard()
+    lines.append(f"\n📊 **جمع:** {format_toman(dashboard['customer_debt'])}")
+    await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu())
+
+
+# --- Callbacks ---
+
+@router.callback_query(F.data.startswith('view:'))
+async def view_repair(callback: CallbackQuery, repo: RepairRepository) -> None:
+    if not is_allowed(callback.from_user.id):
+        await callback.answer(deny_message(), show_alert=True)
+        return
+    repair_id = int(callback.data.split(':')[1])
+    await show_repair(callback.message, repo, repair_id)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith('inv:'))
+async def callback_invoice(callback: CallbackQuery, repo: RepairRepository) -> None:
+    if not is_allowed(callback.from_user.id):
+        await callback.answer(deny_message(), show_alert=True)
+        return
+    repair_id = int(callback.data.split(':')[1])
+    repair = await repo.get_repair(repair_id)
+    if repair:
+        await callback.message.answer(format_invoice(repair), parse_mode='Markdown')
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith('acc:'))
+async def callback_accounting(callback: CallbackQuery, repo: RepairRepository) -> None:
+    if not is_allowed(callback.from_user.id):
+        await callback.answer(deny_message(), show_alert=True)
+        return
+    repair_id = int(callback.data.split(':')[1])
+    repair = await repo.get_repair(repair_id)
+    if repair:
+        totals = repair['totals']
+        await callback.message.answer(
+            f"💼 حسابداری پرونده #{repair_id}\n\n"
+            f"👨‍🔧 سهم تعمیرکار ({repair['technician_pct']}%): {format_toman(totals.technician_share)}\n"
+            f"🏪 بدهی قطعه‌فروش: {format_toman(totals.supplier_debt)}\n"
+            f"📌 بدهی مشتری: {format_toman(totals.customer_debt)}\n"
+            f"🏢 سود فروشگاه: {format_toman(totals.shop_profit)}",
         )
-    await message.answer('\n'.join(lines))
+    await callback.answer()
 
 
 @router.message(Command('repair'))
@@ -334,40 +528,7 @@ async def cmd_repair(message: Message, repo: RepairRepository) -> None:
     if len(parts) < 2 or not parts[1].isdigit():
         await message.answer('استفاده: /repair 12')
         return
-    repair = await repo.get_repair(int(parts[1]))
-    if not repair:
-        await message.answer('پرونده یافت نشد.')
-        return
-    repair_id = int(parts[1])
-    await message.answer(format_repair(repair), reply_markup=repair_actions(repair_id))
-
-
-@router.message(F.text == '💰 گزارش بدهی‌ها')
-async def report_summary(message: Message, repo: RepairRepository) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
-    summary = await repo.summary_report()
-    await message.answer(
-        f"📊 گزارش کلی\n\n"
-        f"📂 پرونده باز: {summary['open_count']}\n"
-        f"📌 جمع بدهی مشتریان: {format_toman(summary['customer_debt'])}\n"
-        f"🏪 جمع طلب قطعه‌فروش‌ها: {format_toman(summary['supplier_debt'])}\n"
-        f"👨‍🔧 سهم تعمیرکاران (پرونده باز): {format_toman(summary['technician_share_open'])}",
-    )
-
-
-@router.message(F.text == '👥 بدهی مشتریان')
-async def report_customers(message: Message, repo: RepairRepository) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
-    rows = await repo.customer_debts()
-    if not rows:
-        await message.answer('بدهی فعالی ثبت نشده.')
-        return
-    lines = [f"{r['name']} ({r['phone'] or '—'}): {format_toman(int(r['debt']))}" for r in rows]
-    await message.answer('\n'.join(lines))
+    await show_repair(message, repo, int(parts[1]))
 
 
 @router.callback_query(F.data.startswith('pay_c:'))
@@ -378,7 +539,7 @@ async def pay_customer_start(callback: CallbackQuery, state: FSMContext) -> None
     repair_id = int(callback.data.split(':')[1])
     await state.set_state(Payment.amount)
     await state.update_data(repair_id=repair_id, payment_kind='customer')
-    await callback.message.answer(f'مبلغ دریافتی از مشتری برای #{repair_id} (تومان):')
+    await callback.message.answer(f'💵 مبلغ دریافتی از مشتری — پرونده #{repair_id}:')
     await callback.answer()
 
 
@@ -390,7 +551,7 @@ async def pay_supplier_start(callback: CallbackQuery, state: FSMContext) -> None
     repair_id = int(callback.data.split(':')[1])
     await state.set_state(Payment.amount)
     await state.update_data(repair_id=repair_id, payment_kind='supplier')
-    await callback.message.answer(f'مبلغ پرداختی به قطعه‌فروش برای #{repair_id} (تومان):')
+    await callback.message.answer(f'💸 مبلغ پرداختی به قطعه‌فروش — پرونده #{repair_id}:')
     await callback.answer()
 
 
@@ -408,8 +569,11 @@ async def payment_amount(message: Message, state: FSMContext, repo: RepairReposi
         await repo.add_supplier_payment(repair_id, amount)
     repair = await repo.get_repair(repair_id)
     await state.clear()
-    await message.answer('ثبت شد ✅\n\n' + format_repair(repair), reply_markup=repair_actions(repair_id))
-    await message.answer('منوی اصلی', reply_markup=main_menu())
+    await message.answer(
+        '✅ ثبت شد\n\n' + format_repair_summary(repair),
+        reply_markup=repair_actions(repair_id),
+    )
+    await message.answer('منوی حسابداری', reply_markup=accounting_menu())
 
 
 @router.callback_query(F.data.startswith('close:'))
@@ -419,7 +583,7 @@ async def close_repair(callback: CallbackQuery, repo: RepairRepository) -> None:
         return
     repair_id = int(callback.data.split(':')[1])
     await repo.close_repair(repair_id)
-    await callback.message.answer(f'پرونده #{repair_id} بسته شد ✅')
+    await callback.message.answer(f'پرونده #{repair_id} بسته شد ✅', reply_markup=reception_menu())
     await callback.answer()
 
 
@@ -454,10 +618,11 @@ async def add_technician_pct(message: Message, state: FSMContext, repo: RepairRe
         return
     data = await state.get_data()
     tech_id = await repo.add_technician(data['tech_name'], float(message.text.strip()))
-    await state.update_data(technician_id=tech_id, technician_pct=float(message.text.strip()))
+    pct = float(message.text.strip())
+    await state.update_data(technician_id=tech_id, technician_pct=pct)
     await state.set_state(NewRepair.labor_amount)
     await message.answer(
-        f"تعمیرکار {data['tech_name']} ثبت شد.\n"
+        f"تعمیرکار {data['tech_name']} ({pct}%) ثبت شد.\n"
         'مبلغ اجرت تعمیر (تومان):',
         reply_markup=cancel_keyboard(),
     )
