@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from aiogram import Bot, Dispatcher, F, Router
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -498,6 +499,7 @@ async def run_bot() -> None:
     db = Database(settings.DATABASE_PATH)
     conn = await db.connect()
     repo = RepairRepository(conn)
-    bot = Bot(token=settings.BOT_TOKEN)
+    session = AiohttpSession(proxy=settings.TELEGRAM_PROXY) if settings.TELEGRAM_PROXY else None
+    bot = Bot(token=settings.BOT_TOKEN, session=session)
     dp = create_dispatcher(repo)
     await dp.start_polling(bot)
