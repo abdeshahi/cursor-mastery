@@ -85,9 +85,10 @@ def main() -> None:
 
     run_ssh(
         ssh,
-        f'cd {REMOTE} && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/pytest -q',
+        f'cd {REMOTE} && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && PYTHONPATH={REMOTE} .venv/bin/pytest -q',
     )
     run_ssh(ssh, f'install -m 644 {REMOTE}/deploy/cttelfix-bot.service /etc/systemd/system/cttelfix-bot.service')
+    run_ssh(ssh, 'systemctl daemon-reload')
     run_ssh(ssh, 'systemctl enable cttelfix-bot')
     run_ssh(ssh, 'systemctl restart cttelfix-bot')
     _, stdout, _ = ssh.exec_command('systemctl is-active cttelfix-bot')
