@@ -2,6 +2,7 @@ import pytest
 import pytest_asyncio
 
 from app.config import settings
+from app.staff.roles import ROLE_ACCOUNTANT
 from app.storage.db import Database
 from app.storage.staff_repository import StaffRepository
 
@@ -43,6 +44,14 @@ async def test_re_add_preserves_admin(staff_repo: StaffRepository) -> None:
     await staff_repo.seed_from_env()
     await staff_repo.add_staff(111, 'مدیر جدید')
     assert await staff_repo.is_admin(111)
+
+
+@pytest.mark.asyncio
+async def test_set_role(staff_repo: StaffRepository) -> None:
+    await staff_repo.seed_from_env()
+    assert await staff_repo.set_role(222, ROLE_ACCOUNTANT)
+    assert await staff_repo.get_role(222) == ROLE_ACCOUNTANT
+    assert not await staff_repo.is_admin(222)
 
 
 @pytest.mark.asyncio

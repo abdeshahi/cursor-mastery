@@ -1,4 +1,4 @@
-from app.bot.handlers import parse_staff_args
+from app.bot.parsing import parse_staff_args
 
 
 def test_parse_staff_args_id_first() -> None:

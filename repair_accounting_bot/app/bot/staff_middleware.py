@@ -5,6 +5,7 @@ from typing import Any, Awaitable, Callable
 from aiogram import BaseMiddleware
 from aiogram.types import CallbackQuery, Message, TelegramObject, Update
 
+from app.staff.roles import role_permissions
 from app.storage.staff_repository import StaffRepository
 
 PUBLIC_COMMANDS = {'/myid'}
@@ -89,5 +90,11 @@ class StaffGuardMiddleware(BaseMiddleware):
                     await event.callback_query.answer('فقط پرسنل مجاز.', show_alert=True)
             return None
 
-        data['is_admin'] = await self.staff_repo.is_admin(user_id)
+        role = await self.staff_repo.get_role(user_id) or 'full'
+        perms = role_permissions(role)
+        data['staff_role'] = role
+        data['is_admin'] = perms['manage']
+        data['can_manage'] = perms['manage']
+        data['can_reception'] = perms['reception']
+        data['can_accounting'] = perms['accounting']
         return await handler(event, data)

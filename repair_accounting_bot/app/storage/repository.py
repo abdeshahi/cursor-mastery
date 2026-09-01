@@ -41,6 +41,20 @@ class RepairRepository:
         await self.conn.commit()
         return int(cursor.lastrowid)
 
+    async def deactivate_technician(self, tech_id: int) -> bool:
+        cursor = await self.conn.execute(
+            'UPDATE technicians SET active = 0 WHERE id = ? AND active = 1',
+            (tech_id,),
+        )
+        await self.conn.commit()
+        return cursor.rowcount > 0
+
+    async def list_all_technicians(self) -> list[dict[str, Any]]:
+        cursor = await self.conn.execute(
+            'SELECT id, name, default_pct, active FROM technicians ORDER BY active DESC, name',
+        )
+        return [dict(row) for row in await cursor.fetchall()]
+
     async def list_suppliers(self) -> list[dict[str, Any]]:
         cursor = await self.conn.execute(
             'SELECT id, name FROM suppliers WHERE active = 1 ORDER BY name',
@@ -55,6 +69,20 @@ class RepairRepository:
         )
         await self.conn.commit()
         return int(cursor.lastrowid)
+
+    async def deactivate_supplier(self, sup_id: int) -> bool:
+        cursor = await self.conn.execute(
+            'UPDATE suppliers SET active = 0 WHERE id = ? AND active = 1',
+            (sup_id,),
+        )
+        await self.conn.commit()
+        return cursor.rowcount > 0
+
+    async def list_all_suppliers(self) -> list[dict[str, Any]]:
+        cursor = await self.conn.execute(
+            'SELECT id, name, active FROM suppliers ORDER BY active DESC, name',
+        )
+        return [dict(row) for row in await cursor.fetchall()]
 
     async def create_repair(
         self,

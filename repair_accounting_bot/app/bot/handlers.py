@@ -35,7 +35,9 @@ from app.bot.keyboards import (
     technician_keyboard,
 )
 from app.bot.middleware import RepositoryMiddleware
+from app.bot.parsing import parse_staff_args
 from app.bot.staff_middleware import StaffGuardMiddleware
+from app.bot.admin_handlers import admin_router
 from app.bot.states import AddSupplier, AddTechnician, InvoiceLookup, NewRepair, Payment, SearchRepair
 from app.config import settings
 from app.services.accounting import format_toman
@@ -49,21 +51,17 @@ from app.services.formatters import (
 from app.storage.db import Database
 from app.storage.staff_repository import StaffRepository
 from app.storage.repository import RepairRepository
+from app.staff.roles import ROLE_LABELS
 
 router = Router()
 
 
-def parse_staff_args(raw: str) -> tuple[int, str] | None:
-    if '|' not in raw:
-        return None
-    left, right = [part.strip() for part in raw.split('|', 1)]
-    if left.isdigit() and not right.isdigit():
-        return int(left), right
-    if right.isdigit() and not left.isdigit():
-        return int(right), left
-    if left.isdigit() and right.isdigit():
-        return int(left), right
-    return None
+def user_root_menu(can_reception: bool, can_accounting: bool, can_manage: bool):
+    return root_menu(
+        can_reception=can_reception,
+        can_accounting=can_accounting,
+        can_manage=can_manage,
+    )
 
 
 async def show_repair(message: Message, repo: RepairRepository, repair_id: int) -> None:
@@ -84,13 +82,24 @@ async def send_export_file(message: Message, path: Path, caption: str) -> None:
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message, state: FSMContext) -> None:
+async def cmd_start(
+    message: Message,
+    state: FSMContext,
+    can_reception: bool,
+    can_accounting: bool,
+    can_manage: bool,
+) -> None:
     await state.clear()
+    text = '🔧 **بات پذیرش و حسابداری CTTEL**\n\n'
+    if can_reception:
+        text += '📥 **پذیرش** — ثبت، جستجو، فاکتور\n'
+    if can_accounting:
+        text += '💼 **حسابداری** — سود، سهم تعمیرکار، بدهی‌ها\n'
+    if can_manage:
+        text += '⚙️ **مدیریت** — پرسنل، تعمیرکار، فروشنده\n'
     await message.answer(
-        '🔧 **بات پذیرش و حسابداری CTTEL**\n\n'
-        '📥 **پذیرش** — ثبت، جستجو، فاکتور\n'
-        '💼 **حسابداری** — سود، سهم تعمیرکار، بدهی‌ها',
-        reply_markup=root_menu(),
+        text,
+        reply_markup=user_root_menu(can_reception, can_accounting, can_manage),
         parse_mode='Markdown',
     )
 
@@ -111,28 +120,42 @@ async def cmd_help(message: Message) -> None:
         '• بدهی مشتریان — مانده حساب مشتری‌ها\n'
         '• خروجی Excel / PDF — گزارش کامل حسابداری\n\n'
         'روی هر پرونده: 📊 Excel و 📄 PDF فاکتور\n\n'
-        'دستورات مدیر: /addstaff آیدی|نام · /removestaff آیدی · /staff\n'
-        'برای گرفتن آیدی: /myid\n'
-        '/addtech علی|40 · /addsup رضایی',
+        '⚙️ **مدیریت (فقط مدیر):** پرسنل، تعمیرکاران، قطعه‌فروش\n'
+        'برای گرفتن آیدی: /myid',
         parse_mode='Markdown',
     )
 
 
 @router.message(F.text == BACK_ROOT)
 @router.message(F.text == '❌ انصراف')
-async def back_to_root(message: Message, state: FSMContext) -> None:
+async def back_to_root(
+    message: Message,
+    state: FSMContext,
+    can_reception: bool,
+    can_accounting: bool,
+    can_manage: bool,
+) -> None:
     await state.clear()
-    await message.answer('منوی اصلی', reply_markup=root_menu())
+    await message.answer(
+        'منوی اصلی',
+        reply_markup=user_root_menu(can_reception, can_accounting, can_manage),
+    )
 
 
 @router.message(F.text == ROOT_RECEPTION)
-async def open_reception_menu(message: Message, state: FSMContext) -> None:
+async def open_reception_menu(message: Message, state: FSMContext, can_reception: bool) -> None:
+    if not can_reception:
+        await message.answer('⛔️ دسترسی پذیرش برای شما فعال نیست.')
+        return
     await state.clear()
     await message.answer('📥 **منوی پذیرش**', reply_markup=reception_menu(), parse_mode='Markdown')
 
 
 @router.message(F.text == ROOT_ACCOUNTING)
-async def open_accounting_menu(message: Message, state: FSMContext) -> None:
+async def open_accounting_menu(message: Message, state: FSMContext, can_accounting: bool) -> None:
+    if not can_accounting:
+        await message.answer('⛔️ دسترسی حسابداری برای شما فعال نیست.')
+        return
     await state.clear()
     await message.answer('💼 **منوی حسابداری**', reply_markup=accounting_menu(), parse_mode='Markdown')
 
@@ -641,9 +664,9 @@ async def cmd_staff_list(message: Message, staff_repo: StaffRepository, is_admin
         return
     lines = ['👥 **پرسنل مجاز**', '']
     for row in rows:
-        role = 'مدیر' if row['is_admin'] else 'کارمند'
+        role = ROLE_LABELS.get(row.get('role') or 'full', 'کارمند')
         lines.append(f"• {row['name']} — `{row['telegram_id']}` ({role})")
-    lines.append('\n/addstaff آیدی|نام · /removestaff آیدی')
+    lines.append('\nاز منوی ⚙️ مدیریت → 👥 پرسنل هم می‌توانید مدیریت کنید.')
     await message.answer('\n'.join(lines), parse_mode='Markdown')
 
 
@@ -719,6 +742,7 @@ def create_dispatcher(
     dp = Dispatcher()
     dp.update.middleware(StaffGuardMiddleware(staff_repo))
     dp.update.middleware(RepositoryMiddleware(repo, export_service, staff_repo))
+    dp.include_router(admin_router)
     dp.include_router(router)
     return dp
 

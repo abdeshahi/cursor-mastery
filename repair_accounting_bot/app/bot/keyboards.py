@@ -2,7 +2,15 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardBu
 
 ROOT_RECEPTION = '📥 پذیرش'
 ROOT_ACCOUNTING = '💼 حسابداری'
+ROOT_MANAGE = '⚙️ مدیریت'
 BACK_ROOT = '⬅️ منوی اصلی'
+
+MGMT_STAFF = '👥 پرسنل و دسترسی'
+MGMT_TECH = '👨‍🔧 تعمیرکاران'
+MGMT_SUP = '🏪 قطعه‌فروش'
+MGMT_STAFF_ADD = '➕ افزودن پرسنل'
+MGMT_TECH_ADD = '➕ افزودن تعمیرکار'
+MGMT_SUP_ADD = '➕ افزودن فروشنده'
 
 REC_NEW = '📝 پذیرش جدید'
 REC_SEARCH = '🔍 جستجو'
@@ -19,11 +27,60 @@ ACC_EXPORT_EXCEL = '📊 خروجی Excel'
 ACC_EXPORT_PDF = '📄 خروجی PDF'
 
 
-def root_menu() -> ReplyKeyboardMarkup:
+def root_menu(*, can_reception: bool = True, can_accounting: bool = True, can_manage: bool = False) -> ReplyKeyboardMarkup:
+    row: list[KeyboardButton] = []
+    rows: list[list[KeyboardButton]] = []
+    if can_reception:
+        row.append(KeyboardButton(text=ROOT_RECEPTION))
+    if can_accounting:
+        if row:
+            rows.append(row)
+            row = []
+        row.append(KeyboardButton(text=ROOT_ACCOUNTING))
+    if row:
+        rows.append(row)
+    if can_manage:
+        rows.append([KeyboardButton(text=ROOT_MANAGE)])
+    rows.append([KeyboardButton(text='ℹ️ راهنما')])
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+def admin_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=ROOT_RECEPTION), KeyboardButton(text=ROOT_ACCOUNTING)],
-            [KeyboardButton(text='ℹ️ راهنما')],
+            [KeyboardButton(text=MGMT_STAFF)],
+            [KeyboardButton(text=MGMT_TECH), KeyboardButton(text=MGMT_SUP)],
+            [KeyboardButton(text=BACK_ROOT)],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def staff_manage_menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=MGMT_STAFF_ADD)],
+            [KeyboardButton(text=BACK_ROOT), KeyboardButton(text=ROOT_MANAGE)],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def tech_manage_menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=MGMT_TECH_ADD)],
+            [KeyboardButton(text=BACK_ROOT), KeyboardButton(text=ROOT_MANAGE)],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def sup_manage_menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=MGMT_SUP_ADD)],
+            [KeyboardButton(text=BACK_ROOT), KeyboardButton(text=ROOT_MANAGE)],
         ],
         resize_keyboard=True,
     )

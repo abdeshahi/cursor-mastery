@@ -35,3 +35,18 @@ class SearchRepair(StatesGroup):
 
 class InvoiceLookup(StatesGroup):
     repair_id = State()
+
+
+class AdminStaffAdd(StatesGroup):
+    telegram_id = State()
+    name = State()
+    role = State()
+
+
+class AdminTechAdd(StatesGroup):
+    name = State()
+    pct = State()
+
+
+class AdminSupAdd(StatesGroup):
+    name = State()
