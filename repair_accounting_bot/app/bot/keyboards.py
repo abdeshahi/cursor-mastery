@@ -11,7 +11,8 @@ REC_REPORT = '📊 گزارش حسابداری'
 
 ACC_SUMMARY = '💰 خلاصه مالی'
 ACC_SHOP_PROFIT = '🏢 سود فروشگاه'
-ACC_TECH_SHARE = '👨‍🔧 سهم تعمیرکاران'
+ACC_TECH_SHARE = '👨‍🔧 طلب تعمیرکاران'
+ACC_TECH_SETTLE = '💸 تسویه تعمیرکار'
 ACC_SUPPLIER_DEBT = '🏪 بدهی قطعه‌فروش'
 ACC_CUSTOMER_DEBT = '👥 بدهی مشتریان'
 ACC_EXPORT_EXCEL = '📊 خروجی Excel'
@@ -110,6 +111,9 @@ def repair_actions(repair_id: int) -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(text='💵 دریافت مشتری', callback_data=f'pay_c:{repair_id}'),
                 InlineKeyboardButton(text='💸 پرداخت قطعه‌فروش', callback_data=f'pay_s:{repair_id}'),
+            ],
+            [
+                InlineKeyboardButton(text='💸 پرداخت تعمیرکار', callback_data=f'pay_t:{repair_id}'),
             ],
             [InlineKeyboardButton(text='✅ بستن پرونده', callback_data=f'close:{repair_id}')],
         ],

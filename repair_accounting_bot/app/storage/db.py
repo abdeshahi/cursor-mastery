@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS repairs (
     parts_sell INTEGER NOT NULL DEFAULT 0,
     customer_paid INTEGER NOT NULL DEFAULT 0,
     supplier_paid INTEGER NOT NULL DEFAULT 0,
+    technician_paid INTEGER NOT NULL DEFAULT 0,
     notes TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     closed_at TEXT
@@ -74,5 +75,15 @@ class Database:
         conn = await aiosqlite.connect(self.path)
         conn.row_factory = aiosqlite.Row
         await conn.executescript(SCHEMA)
+        await _migrate(conn)
         await conn.commit()
         return conn
+
+
+async def _migrate(conn: aiosqlite.Connection) -> None:
+    cursor = await conn.execute('PRAGMA table_info(repairs)')
+    columns = {row[1] for row in await cursor.fetchall()}
+    if 'technician_paid' not in columns:
+        await conn.execute(
+            'ALTER TABLE repairs ADD COLUMN technician_paid INTEGER NOT NULL DEFAULT 0',
+        )

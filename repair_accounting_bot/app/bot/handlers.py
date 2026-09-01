@@ -109,7 +109,7 @@ async def cmd_help(message: Message) -> None:
         '• گزارش حسابداری — خلاصه مالی\n\n'
         '💼 **منوی حسابداری**\n'
         '• سود فروشگاه — سود خالص پرونده‌های باز\n'
-        '• سهم تعمیرکاران — درصد و مبلغ هر تعمیرکار\n'
+        '• طلب تعمیرکاران — سهم، پرداخت‌شده و مانده طلب هر نفر\n'
         '• بدهی قطعه‌فروش — طلب فروشندگان قطعه\n'
         '• بدهی مشتریان — مانده حساب مشتری‌ها\n'
         '• خروجی Excel / PDF — گزارش کامل حسابداری\n\n'
@@ -442,13 +442,18 @@ async def accounting_tech_share(message: Message, repo: RepairRepository) -> Non
         await message.answer(deny_message())
         return
     dashboard = await repo.accounting_dashboard()
-    lines = ['👨‍🔧 **سهم تعمیرکاران**', '']
+    lines = ['👨‍🔧 **طلب تعمیرکاران**', '']
     if dashboard['technicians']:
         for row in dashboard['technicians']:
-            lines.append(f"• {row['name']} — {row['pct']}% → {format_toman(int(row['share']))}")
+            lines.append(
+                f"• {row['name']} ({row['pct']}%)\n"
+                f"  سهم: {format_toman(int(row['share']))}\n"
+                f"  پرداخت‌شده: {format_toman(int(row.get('paid') or 0))}\n"
+                f"  **مانده طلب:** {format_toman(int(row.get('debt') or 0))}",
+            )
     else:
         lines.append('• پرونده بازی با تعمیرکار ثبت نشده')
-    lines.append(f"\n📊 **جمع:** {format_toman(dashboard['technician_share'])}")
+    lines.append(f"\n📊 **جمع مانده طلب:** {format_toman(dashboard.get('technician_debt', 0))}")
     await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu())
 
 
@@ -575,6 +580,8 @@ async def callback_accounting(callback: CallbackQuery, repo: RepairRepository) -
         await callback.message.answer(
             f"💼 حسابداری پرونده #{repair_id}\n\n"
             f"👨‍🔧 سهم تعمیرکار ({repair['technician_pct']}%): {format_toman(totals.technician_share)}\n"
+            f"✅ پرداخت‌شده: {format_toman(totals.technician_paid)}\n"
+            f"📋 مانده طلب: {format_toman(totals.technician_debt)}\n"
             f"🏪 بدهی قطعه‌فروش: {format_toman(totals.supplier_debt)}\n"
             f"📌 بدهی مشتری: {format_toman(totals.customer_debt)}\n"
             f"🏢 سود فروشگاه: {format_toman(totals.shop_profit)}",
@@ -592,6 +599,18 @@ async def cmd_repair(message: Message, repo: RepairRepository) -> None:
         await message.answer('استفاده: /repair 12')
         return
     await show_repair(message, repo, int(parts[1]))
+
+
+@router.callback_query(F.data.startswith('pay_t:'))
+async def pay_technician_start(callback: CallbackQuery, state: FSMContext) -> None:
+    if not is_allowed(callback.from_user.id):
+        await callback.answer(deny_message(), show_alert=True)
+        return
+    repair_id = int(callback.data.split(':')[1])
+    await state.set_state(Payment.amount)
+    await state.update_data(repair_id=repair_id, payment_kind='technician')
+    await callback.message.answer(f'💸 مبلغ پرداختی به تعمیرکار — پرونده #{repair_id}:')
+    await callback.answer()
 
 
 @router.callback_query(F.data.startswith('pay_c:'))
@@ -628,8 +647,10 @@ async def payment_amount(message: Message, state: FSMContext, repo: RepairReposi
     amount = int(message.text.strip())
     if data['payment_kind'] == 'customer':
         await repo.add_customer_payment(repair_id, amount)
-    else:
+    elif data['payment_kind'] == 'supplier':
         await repo.add_supplier_payment(repair_id, amount)
+    else:
+        await repo.add_technician_payment(repair_id, amount)
     repair = await repo.get_repair(repair_id)
     await state.clear()
     await message.answer(

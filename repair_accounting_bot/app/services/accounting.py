@@ -13,6 +13,8 @@ class RepairTotals:
     customer_debt: int
     supplier_debt: int
     technician_share: int
+    technician_paid: int
+    technician_debt: int
     shop_profit: int
 
 
@@ -24,11 +26,13 @@ def calculate_repair_totals(
     technician_pct: float,
     customer_paid: int,
     supplier_paid: int,
+    technician_paid: int = 0,
 ) -> RepairTotals:
     customer_total = labor_amount + parts_sell
     customer_debt = max(customer_total - customer_paid, 0)
     supplier_debt = max(parts_cost - supplier_paid, 0)
     technician_share = round(labor_amount * technician_pct / 100)
+    technician_debt = max(technician_share - technician_paid, 0)
     shop_profit = customer_total - parts_cost - technician_share
     return RepairTotals(
         labor_amount=labor_amount,
@@ -39,6 +43,8 @@ def calculate_repair_totals(
         customer_debt=customer_debt,
         supplier_debt=supplier_debt,
         technician_share=technician_share,
+        technician_paid=technician_paid,
+        technician_debt=technician_debt,
         shop_profit=shop_profit,
     )
 

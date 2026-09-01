@@ -24,6 +24,8 @@ def format_repair_summary(repair: dict) -> str:
         f"📌 بدهی مشتری: {format_toman(totals.customer_debt)}\n"
         f"🏪 بدهی قطعه‌فروش: {format_toman(totals.supplier_debt)}\n"
         f"👨‍🔧 سهم تعمیرکار: {format_toman(totals.technician_share)}\n"
+        f"✅ پرداخت به تعمیرکار: {format_toman(totals.technician_paid)}\n"
+        f"📋 مانده طلب تعمیرکار: {format_toman(totals.technician_debt)}\n"
         f"🏢 سود فروشگاه: {format_toman(totals.shop_profit)}"
     )
 
@@ -67,7 +69,10 @@ def format_accounting_report(dashboard: dict) -> str:
     if dashboard['technicians']:
         for row in dashboard['technicians']:
             lines.append(
-                f"  • {row['name']} ({row['pct']}%): {format_toman(int(row['share']))}",
+                f"  • {row['name']} ({row['pct']}%): "
+                f"سهم {format_toman(int(row['share']))} | "
+                f"پرداخت {format_toman(int(row.get('paid') or 0))} | "
+                f"مانده {format_toman(int(row.get('debt') or 0))}",
             )
     else:
         lines.append('  • —')
@@ -89,6 +94,8 @@ def format_accounting_report(dashboard: dict) -> str:
             f"📌 جمع بدهی مشتری: {format_toman(dashboard['customer_debt'])}",
             f"🏪 جمع بدهی قطعه‌فروش: {format_toman(dashboard['supplier_debt'])}",
             f"👨‍🔧 جمع سهم تعمیرکار: {format_toman(dashboard['technician_share'])}",
+            f"✅ پرداخت‌شده به تعمیرکاران: {format_toman(dashboard.get('technician_paid', 0))}",
+            f"📋 مانده طلب تعمیرکاران: {format_toman(dashboard.get('technician_debt', 0))}",
             f"🏢 جمع سود فروشگاه: {format_toman(dashboard['shop_profit'])}",
         ],
     )

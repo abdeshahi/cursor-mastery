@@ -47,6 +47,8 @@ def build_accounting_workbook(
         ('پرونده باز', dashboard['open_count']),
         ('سود فروشگاه', dashboard['shop_profit']),
         ('جمع سهم تعمیرکار', dashboard['technician_share']),
+        ('پرداخت‌شده به تعمیرکار', dashboard.get('technician_paid', 0)),
+        ('مانده طلب تعمیرکار', dashboard.get('technician_debt', 0)),
         ('جمع بدهی مشتری', dashboard['customer_debt']),
         ('جمع بدهی قطعه‌فروش', dashboard['supplier_debt']),
     ]
@@ -58,11 +60,13 @@ def build_accounting_workbook(
 
     tech_sheet = wb.create_sheet('تعمیرکاران')
     tech_sheet.sheet_view.rightToLeft = True
-    _header_row(tech_sheet, 1, ['نام', 'درصد', 'سهم (تومان)'])
+    _header_row(tech_sheet, 1, ['نام', 'درصد', 'سهم', 'پرداخت‌شده', 'مانده طلب'])
     for idx, row in enumerate(dashboard.get('technicians', []), start=2):
         tech_sheet.cell(row=idx, column=1, value=row['name']).alignment = RTL
         tech_sheet.cell(row=idx, column=2, value=row['pct'])
         tech_sheet.cell(row=idx, column=3, value=int(row['share']))
+        tech_sheet.cell(row=idx, column=4, value=int(row.get('paid') or 0))
+        tech_sheet.cell(row=idx, column=5, value=int(row.get('debt') or 0))
 
     sup_sheet = wb.create_sheet('قطعه‌فروش')
     sup_sheet.sheet_view.rightToLeft = True
@@ -97,6 +101,8 @@ def build_accounting_workbook(
             'بدهی مشتری',
             'بدهی قطعه‌فروش',
             'سهم تعمیرکار',
+            'پرداخت تعمیرکار',
+            'مانده طلب تعمیرکار',
             'سود مغازه',
         ],
     )
@@ -115,6 +121,8 @@ def build_accounting_workbook(
             totals.customer_debt,
             totals.supplier_debt,
             totals.technician_share,
+            totals.technician_paid,
+            totals.technician_debt,
             totals.shop_profit,
         ]
         for col, value in enumerate(values, start=1):

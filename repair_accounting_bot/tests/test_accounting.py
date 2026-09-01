@@ -19,6 +19,20 @@ def test_calculate_repair_totals_with_parts_and_debts() -> None:
     assert totals.shop_profit == 450_000
 
 
+def test_calculate_repair_totals_with_technician_settlement() -> None:
+    totals = calculate_repair_totals(
+        labor_amount=500_000,
+        parts_cost=0,
+        parts_sell=0,
+        technician_pct=40,
+        customer_paid=500_000,
+        supplier_paid=0,
+        technician_paid=100_000,
+    )
+    assert totals.technician_share == 200_000
+    assert totals.technician_debt == 100_000
+
+
 def test_calculate_repair_totals_no_debt_when_fully_paid() -> None:
     totals = calculate_repair_totals(
         labor_amount=400_000,

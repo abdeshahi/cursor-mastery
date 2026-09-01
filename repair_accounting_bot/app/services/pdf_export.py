@@ -44,18 +44,25 @@ def build_accounting_pdf(
         ('پرونده باز', str(dashboard['open_count'])),
         ('سود فروشگاه', format_toman(dashboard['shop_profit'])),
         ('جمع سهم تعمیرکار', format_toman(dashboard['technician_share'])),
+        ('پرداخت‌شده به تعمیرکار', format_toman(dashboard.get('technician_paid', 0))),
+        ('مانده طلب تعمیرکار', format_toman(dashboard.get('technician_debt', 0))),
         ('جمع بدهی مشتری', format_toman(dashboard['customer_debt'])),
         ('جمع بدهی قطعه‌فروش', format_toman(dashboard['supplier_debt'])),
     ]:
         pdf.cell_rtl(0, 8, f'{label}: {amount}')
 
     pdf.ln(2)
-    pdf.cell_rtl(0, 9, 'سهم تعمیرکاران', bold=True)
-    for row in dashboard.get('technicians', []) or [{'name': '—', 'pct': 0, 'share': 0}]:
+    pdf.cell_rtl(0, 9, 'طلب تعمیرکاران', bold=True)
+    for row in dashboard.get('technicians', []) or [{'name': '—', 'pct': 0, 'share': 0, 'paid': 0, 'debt': 0}]:
         pdf.cell_rtl(
             0,
             7,
-            f"{row['name']} ({row['pct']}%) → {format_toman(int(row['share']))}",
+            (
+                f"{row['name']} ({row['pct']}%) → "
+                f"سهم {format_toman(int(row['share']))} | "
+                f"پرداخت {format_toman(int(row.get('paid') or 0))} | "
+                f"مانده {format_toman(int(row.get('debt') or 0))}"
+            ),
         )
 
     pdf.ln(2)

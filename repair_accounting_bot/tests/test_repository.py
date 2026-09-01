@@ -38,10 +38,14 @@ async def test_create_repair_and_payments(repo) -> None:
     assert 'فاکتور فروش' in invoice
     assert '3,100,000' in invoice
 
+    await repository.add_technician_payment(repair_id, 100_000)
+    repair = await repository.get_repair(repair_id)
+    assert repair['totals'].technician_debt == 140_000
+
     dashboard = await repository.accounting_dashboard()
     report = format_accounting_report(dashboard)
     assert 'سود فروشگاه' in report
-    assert dashboard['technician_share'] == 240_000
+    assert dashboard['technician_debt'] == 140_000
 
 
 @pytest.mark.asyncio

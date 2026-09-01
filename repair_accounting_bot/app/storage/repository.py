@@ -131,6 +131,7 @@ class RepairRepository:
             technician_pct=float(repair['technician_pct']),
             customer_paid=int(repair['customer_paid']),
             supplier_paid=int(repair['supplier_paid']),
+            technician_paid=int(repair.get('technician_paid') or 0),
         )
         return repair
 
@@ -166,6 +167,10 @@ class RepairRepository:
                 COALESCE(SUM(labor_amount + parts_sell - customer_paid), 0) AS customer_debt,
                 COALESCE(SUM(parts_cost - supplier_paid), 0) AS supplier_debt,
                 COALESCE(SUM(ROUND(labor_amount * technician_pct / 100.0)), 0) AS technician_share,
+                COALESCE(SUM(COALESCE(technician_paid, 0)), 0) AS technician_paid,
+                COALESCE(SUM(
+                    ROUND(labor_amount * technician_pct / 100.0)
+                ), 0) - COALESCE(SUM(COALESCE(technician_paid, 0)), 0) AS technician_debt,
                 COALESCE(SUM(
                     (labor_amount + parts_sell) - parts_cost - ROUND(labor_amount * technician_pct / 100.0)
                 ), 0) AS shop_profit
@@ -178,12 +183,16 @@ class RepairRepository:
         cursor = await self.conn.execute(
             """
             SELECT t.name, r.technician_pct AS pct,
-                   SUM(ROUND(r.labor_amount * r.technician_pct / 100.0)) AS share
+                   SUM(ROUND(r.labor_amount * r.technician_pct / 100.0)) AS share,
+                   SUM(COALESCE(r.technician_paid, 0)) AS paid,
+                   SUM(
+                       ROUND(r.labor_amount * r.technician_pct / 100.0)
+                   ) - SUM(COALESCE(r.technician_paid, 0)) AS debt
             FROM repairs r
             JOIN technicians t ON t.id = r.technician_id
             WHERE r.status = 'open'
             GROUP BY t.id
-            ORDER BY share DESC
+            ORDER BY debt DESC
             """,
         )
         technicians = [dict(row) for row in await cursor.fetchall()]
@@ -207,6 +216,8 @@ class RepairRepository:
             'customer_debt': int(totals['customer_debt'] or 0),
             'supplier_debt': int(totals['supplier_debt'] or 0),
             'technician_share': int(totals['technician_share'] or 0),
+            'technician_paid': int(totals['technician_paid'] or 0),
+            'technician_debt': int(totals['technician_debt'] or 0),
             'shop_profit': int(totals['shop_profit'] or 0),
             'technicians': technicians,
             'suppliers': suppliers,
@@ -300,6 +311,17 @@ class RepairRepository:
         await self.conn.execute(
             'INSERT INTO payments (repair_id, kind, amount, note) VALUES (?, ?, ?, ?)',
             (repair_id, 'supplier', amount, note),
+        )
+        await self.conn.commit()
+
+    async def add_technician_payment(self, repair_id: int, amount: int, note: str = '') -> None:
+        await self.conn.execute(
+            'UPDATE repairs SET technician_paid = technician_paid + ? WHERE id = ?',
+            (amount, repair_id),
+        )
+        await self.conn.execute(
+            'INSERT INTO payments (repair_id, kind, amount, note) VALUES (?, ?, ?, ?)',
+            (repair_id, 'technician', amount, note),
         )
         await self.conn.commit()
 
