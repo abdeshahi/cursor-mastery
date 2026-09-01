@@ -237,10 +237,18 @@ async def repair_no_parts(message: Message, state: FSMContext, repo: RepairRepos
     await finalize_repair(message, state, repo)
 
 
+@router.message(NewRepair.part_name, F.text == '✅ ثبت نهایی پذیرش')
+async def repair_finalize_button(message: Message, state: FSMContext, repo: RepairRepository) -> None:
+    await finalize_repair(message, state, repo)
+
+
+@router.message(NewRepair.part_name, F.text == '➕ قطعه دیگر')
+async def repair_add_more_part(message: Message, state: FSMContext) -> None:
+    await message.answer('نام قطعه بعدی:', reply_markup=cancel_keyboard())
+
+
 @router.message(NewRepair.part_name)
 async def repair_part_name(message: Message, state: FSMContext) -> None:
-    if message.text in {'✅ ثبت نهایی پذیرش', '➕ قطعه دیگر'}:
-        return
     await state.update_data(current_part={'part_name': message.text.strip()})
     await state.set_state(NewRepair.part_cost)
     await message.answer('قیمت خرید قطعه از فروشنده (تومان):', reply_markup=cancel_keyboard())
@@ -318,16 +326,6 @@ async def append_part(message: Message, state: FSMContext) -> None:
         'قطعه دیگر یا «✅ ثبت نهایی پذیرش»:',
         reply_markup=parts_more_keyboard(),
     )
-
-
-@router.message(NewRepair.part_name, F.text == '✅ ثبت نهایی پذیرش')
-async def repair_finalize_button(message: Message, state: FSMContext, repo: RepairRepository) -> None:
-    await finalize_repair(message, state, repo)
-
-
-@router.message(NewRepair.part_name, F.text == '➕ قطعه دیگر')
-async def repair_add_more_part(message: Message, state: FSMContext) -> None:
-    await message.answer('نام قطعه بعدی:', reply_markup=cancel_keyboard())
 
 
 async def finalize_repair(message: Message, state: FSMContext, repo: RepairRepository) -> None:
