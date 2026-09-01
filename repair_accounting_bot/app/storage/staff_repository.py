@@ -5,7 +5,7 @@ from typing import Any
 import aiosqlite
 
 from app.config import settings
-from app.staff.roles import ROLE_ADMIN, ROLE_FULL, normalize_role
+from app.staff.roles import MANAGEABLE_ROLES, ROLE_ADMIN, ROLE_FULL, normalize_role
 
 
 class StaffRepository:
@@ -148,3 +148,78 @@ class StaffRepository:
         cursor = await self.conn.execute('SELECT COUNT(*) AS c FROM staff WHERE active = 1')
         row = await cursor.fetchone()
         return int(row['c'] or 0)
+
+    async def create_invite(self, created_by: int, role: str, *, max_uses: int = 1) -> str:
+        from app.bot.invite_utils import new_invite_token
+
+        role = normalize_role(role)
+        if role not in MANAGEABLE_ROLES:
+            role = ROLE_FULL
+        token = new_invite_token()
+        await self.conn.execute(
+            """
+            INSERT INTO staff_invites (token, role, created_by, max_uses, use_count, active)
+            VALUES (?, ?, ?, ?, 0, 1)
+            """,
+            (token, role, created_by, max_uses),
+        )
+        await self.conn.commit()
+        return token
+
+    async def list_invites(self, *, active_only: bool = True) -> list[dict[str, Any]]:
+        query = """
+            SELECT token, role, created_by, max_uses, use_count, active, created_at
+            FROM staff_invites
+        """
+        if active_only:
+            query += ' WHERE active = 1'
+        query += ' ORDER BY created_at DESC'
+        cursor = await self.conn.execute(query)
+        rows = [dict(row) for row in await cursor.fetchall()]
+        for row in rows:
+            row['role'] = normalize_role(row['role'])
+        return rows
+
+    async def revoke_invite(self, token: str) -> bool:
+        cursor = await self.conn.execute(
+            'UPDATE staff_invites SET active = 0 WHERE token = ? AND active = 1',
+            (token,),
+        )
+        await self.conn.commit()
+        return cursor.rowcount > 0
+
+    async def try_redeem_invite(self, token: str, telegram_id: int, name: str) -> str | None:
+        if await self.is_active_staff(telegram_id):
+            return None
+
+        cursor = await self.conn.execute(
+            """
+            SELECT token, role, max_uses, use_count, active
+            FROM staff_invites
+            WHERE token = ?
+            """,
+            (token,),
+        )
+        invite = await cursor.fetchone()
+        if not invite or not invite['active']:
+            return '⛔️ لینک دعوت نامعتبر یا لغو شده است.'
+        if invite['max_uses'] > 0 and invite['use_count'] >= invite['max_uses']:
+            return '⛔️ این لینک دعوت قبلاً استفاده شده است.'
+
+        role = normalize_role(invite['role'])
+        if role not in MANAGEABLE_ROLES:
+            role = ROLE_FULL
+
+        await self.add_staff(telegram_id, name, role=role)
+        new_count = int(invite['use_count']) + 1
+        deactivate = invite['max_uses'] > 0 and new_count >= invite['max_uses']
+        await self.conn.execute(
+            """
+            UPDATE staff_invites
+            SET use_count = ?, active = ?
+            WHERE token = ?
+            """,
+            (new_count, 0 if deactivate else 1, token),
+        )
+        await self.conn.commit()
+        return None

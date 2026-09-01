@@ -5,6 +5,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from app.bot.admin_keyboards import (
+    invite_list_keyboard,
+    invite_role_keyboard,
     staff_detail_keyboard,
     staff_list_keyboard,
     staff_role_pick_keyboard,
@@ -13,9 +15,11 @@ from app.bot.admin_keyboards import (
     technician_detail_keyboard,
     technician_list_keyboard,
 )
+from app.bot.invite_utils import build_invite_link
 from app.bot.keyboards import (
     MGMT_STAFF,
     MGMT_STAFF_ADD,
+    MGMT_STAFF_INVITE,
     MGMT_SUP,
     MGMT_SUP_ADD,
     MGMT_TECH,
@@ -483,3 +487,85 @@ async def admin_sup_add_name(message: Message, state: FSMContext, repo: RepairRe
     sup_id = await repo.add_supplier(message.text.strip())
     await state.clear()
     await message.answer(f'✅ فروشنده #{sup_id} ثبت شد.', reply_markup=sup_manage_menu())
+
+
+async def show_invite_menu(message: Message, staff_repo: StaffRepository) -> None:
+    invites = await staff_repo.list_invites(active_only=True)
+    if not invites:
+        await message.answer(
+            '🔗 **لینک دعوت پرسنل**\n\n'
+            'هنوز لینک فعالی نیست. نقش را انتخاب کنید تا لینک ساخته شود:',
+            parse_mode='Markdown',
+            reply_markup=invite_role_keyboard(),
+        )
+        return
+    lines = ['🔗 **لینک‌های دعوت فعال**', '']
+    for inv in invites:
+        role = ROLE_LABELS.get(inv['role'], inv['role'])
+        uses = f"{inv['use_count']}/{inv['max_uses']}" if inv['max_uses'] > 0 else f"{inv['use_count']}/∞"
+        lines.append(f'• {role} — استفاده: {uses}')
+    lines.append('\nبرای لغو روی دکمه 🚫 بزنید، یا ➕ لینک جدید بسازید.')
+    await message.answer(
+        '\n'.join(lines),
+        parse_mode='Markdown',
+        reply_markup=invite_list_keyboard(invites),
+    )
+
+
+@admin_router.message(F.text == MGMT_STAFF_INVITE)
+async def admin_invite_menu(message: Message, staff_repo: StaffRepository, is_admin: bool) -> None:
+    if not is_admin:
+        await deny_admin(message)
+        return
+    await show_invite_menu(message, staff_repo)
+
+
+@admin_router.callback_query(F.data == 'adm:invite:new')
+async def cb_invite_new(callback: CallbackQuery, is_admin: bool) -> None:
+    if not is_admin:
+        await callback.answer('فقط مدیر', show_alert=True)
+        return
+    await callback.message.answer(
+        'نقش پرسنل دعوت‌شده را انتخاب کنید:',
+        reply_markup=invite_role_keyboard(),
+    )
+    await callback.answer()
+
+
+@admin_router.callback_query(F.data.startswith('adm:invite:create:'))
+async def cb_invite_create(
+    callback: CallbackQuery,
+    staff_repo: StaffRepository,
+    is_admin: bool,
+) -> None:
+    if not is_admin:
+        await callback.answer('فقط مدیر', show_alert=True)
+        return
+    role = callback.data.split(':')[-1]
+    token = await staff_repo.create_invite(callback.from_user.id, role, max_uses=1)
+    bot_info = await callback.message.bot.get_me()
+    link = build_invite_link(bot_info.username, token)
+    role_label = ROLE_LABELS.get(role, role)
+    await callback.message.answer(
+        f'✅ **لینک دعوت ساخته شد**\n\n'
+        f'نقش: {role_label}\n'
+        f'یک‌بار مصرف — بعد از اولین عضویت غیرفعال می‌شود.\n\n'
+        f'🔗 `{link}`\n\n'
+        'این لینک را برای همکار بفرستید. با کلیک و Start خودکار عضو پرسنل می‌شود.',
+        parse_mode='Markdown',
+        reply_markup=staff_manage_menu(),
+    )
+    await callback.answer('لینک ساخته شد ✅')
+
+
+@admin_router.callback_query(F.data.startswith('adm:invite:revoke:'))
+async def cb_invite_revoke(callback: CallbackQuery, staff_repo: StaffRepository, is_admin: bool) -> None:
+    if not is_admin:
+        await callback.answer('فقط مدیر', show_alert=True)
+        return
+    token = callback.data.replace('adm:invite:revoke:', '', 1)
+    if await staff_repo.revoke_invite(token):
+        await callback.answer('لینک لغو شد ✅')
+        await show_invite_menu(callback.message, staff_repo)
+    else:
+        await callback.answer('لینک یافت نشد', show_alert=True)

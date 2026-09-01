@@ -99,3 +99,35 @@ def supplier_detail_keyboard(sup_id: int) -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text='⬅️ لیست فروشندگان', callback_data='adm:sup:list')],
         ],
     )
+
+
+def invite_role_keyboard() -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=ROLE_LABELS[role],
+                callback_data=f'adm:invite:create:{role}',
+            )
+            for role in MANAGEABLE_ROLES[:2]
+        ],
+        [
+            InlineKeyboardButton(
+                text=ROLE_LABELS[MANAGEABLE_ROLES[2]],
+                callback_data=f'adm:invite:create:{MANAGEABLE_ROLES[2]}',
+            ),
+        ],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def invite_list_keyboard(invites: list[dict]) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    for inv in invites[:10]:
+        role_label = ROLE_LABELS.get(inv['role'], inv['role'])
+        uses = f"{inv['use_count']}/{inv['max_uses']}" if inv['max_uses'] > 0 else f"{inv['use_count']}/∞"
+        label = f"🚫 {role_label} ({uses})"
+        rows.append(
+            [InlineKeyboardButton(text=label, callback_data=f'adm:invite:revoke:{inv["token"]}')],
+        )
+    rows.append([InlineKeyboardButton(text='➕ لینک جدید', callback_data='adm:invite:new')])
+    return InlineKeyboardMarkup(inline_keyboard=rows)

@@ -72,6 +72,16 @@ CREATE TABLE IF NOT EXISTS staff (
     active INTEGER NOT NULL DEFAULT 1,
     added_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS staff_invites (
+    token TEXT PRIMARY KEY,
+    role TEXT NOT NULL DEFAULT 'full',
+    created_by INTEGER NOT NULL,
+    max_uses INTEGER NOT NULL DEFAULT 1,
+    use_count INTEGER NOT NULL DEFAULT 0,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
@@ -103,3 +113,17 @@ async def _migrate(conn: aiosqlite.Connection) -> None:
         await conn.execute("ALTER TABLE staff ADD COLUMN role TEXT NOT NULL DEFAULT 'full'")
         await conn.execute("UPDATE staff SET role = 'admin' WHERE is_admin = 1")
         await conn.execute("UPDATE staff SET role = 'full' WHERE is_admin = 0")
+
+    await conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS staff_invites (
+            token TEXT PRIMARY KEY,
+            role TEXT NOT NULL DEFAULT 'full',
+            created_by INTEGER NOT NULL,
+            max_uses INTEGER NOT NULL DEFAULT 1,
+            use_count INTEGER NOT NULL DEFAULT 0,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """,
+    )

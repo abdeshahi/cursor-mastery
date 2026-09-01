@@ -5,6 +5,7 @@ from typing import Any, Awaitable, Callable
 from aiogram import BaseMiddleware
 from aiogram.types import CallbackQuery, Message, TelegramObject, Update
 
+from app.bot.invite_utils import extract_invite_token
 from app.staff.roles import role_permissions
 from app.storage.staff_repository import StaffRepository
 
@@ -31,7 +32,7 @@ def _deny_text(user_id: int) -> str:
     return (
         '⛔️ فقط پرسنل مجاز می‌توانند از این بات استفاده کنند.\n\n'
         f'🆔 آیدی تلگرام شما: `{user_id}`\n'
-        'این عدد را به مدیر بدهید تا با `/addstaff` دسترسی فعال شود.'
+        'از مدیر بخواهید لینک دعوت پرسنل برایتان بفرستد، یا آیدی را به مدیر بدهید.'
     )
 
 
@@ -66,16 +67,36 @@ class StaffGuardMiddleware(BaseMiddleware):
             if isinstance(event, Message):
                 await event.answer(
                     f'🆔 آیدی تلگرام شما:\n`{user_id}`\n\n'
-                    'این عدد را به مدیر بدهید تا دسترسی فعال شود.',
+                    'از مدیر بخواهید لینک دعوت پرسنل برایتان بفرستد.',
                     parse_mode='Markdown',
                 )
             elif isinstance(event, Update) and event.message:
                 await event.message.answer(
                     f'🆔 آیدی تلگرام شما:\n`{user_id}`\n\n'
-                    'این عدد را به مدیر بدهید تا دسترسی فعال شود.',
+                    'از مدیر بخواهید لینک دعوت پرسنل برایتان بفرستد.',
                     parse_mode='Markdown',
                 )
             return None
+
+        if isinstance(event, Message) and event.text and event.from_user:
+            invite_token = extract_invite_token(event.text)
+            if invite_token:
+                was_staff = await self.staff_repo.is_active_staff(user_id)
+                display_name = (
+                    event.from_user.full_name
+                    or event.from_user.first_name
+                    or f'کاربر {user_id}'
+                )
+                invite_error = await self.staff_repo.try_redeem_invite(
+                    invite_token,
+                    user_id,
+                    display_name,
+                )
+                if invite_error:
+                    await event.answer(invite_error)
+                    return None
+                if not was_staff and await self.staff_repo.is_active_staff(user_id):
+                    data['invite_joined'] = True
 
         if not await self.staff_repo.is_active_staff(user_id):
             deny = _deny_text(user_id)

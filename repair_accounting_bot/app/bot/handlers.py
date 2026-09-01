@@ -88,9 +88,13 @@ async def cmd_start(
     can_reception: bool,
     can_accounting: bool,
     can_manage: bool,
+    invite_joined: bool = False,
 ) -> None:
     await state.clear()
-    text = '🔧 **بات پذیرش و حسابداری CTTEL**\n\n'
+    text = ''
+    if invite_joined:
+        text += '✅ **به تیم CTTEL خوش آمدید!**\n\n'
+    text += '🔧 **بات پذیرش و حسابداری CTTEL**\n\n'
     if can_reception:
         text += '📥 **پذیرش** — ثبت، جستجو، فاکتور\n'
     if can_accounting:

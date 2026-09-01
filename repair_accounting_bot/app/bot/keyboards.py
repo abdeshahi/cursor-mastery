@@ -9,6 +9,7 @@ MGMT_STAFF = '👥 پرسنل و دسترسی'
 MGMT_TECH = '👨‍🔧 تعمیرکاران'
 MGMT_SUP = '🏪 قطعه‌فروش'
 MGMT_STAFF_ADD = '➕ افزودن پرسنل'
+MGMT_STAFF_INVITE = '🔗 لینک دعوت پرسنل'
 MGMT_TECH_ADD = '➕ افزودن تعمیرکار'
 MGMT_SUP_ADD = '➕ افزودن فروشنده'
 
@@ -59,7 +60,7 @@ def admin_menu() -> ReplyKeyboardMarkup:
 def staff_manage_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=MGMT_STAFF_ADD)],
+            [KeyboardButton(text=MGMT_STAFF_ADD), KeyboardButton(text=MGMT_STAFF_INVITE)],
             [KeyboardButton(text=BACK_ROOT), KeyboardButton(text=ROOT_MANAGE)],
         ],
         resize_keyboard=True,

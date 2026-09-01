@@ -2,7 +2,7 @@ import pytest
 import pytest_asyncio
 
 from app.config import settings
-from app.staff.roles import ROLE_ACCOUNTANT
+from app.staff.roles import ROLE_ACCOUNTANT, ROLE_RECEPTION
 from app.storage.db import Database
 from app.storage.staff_repository import StaffRepository
 
@@ -44,6 +44,19 @@ async def test_re_add_preserves_admin(staff_repo: StaffRepository) -> None:
     await staff_repo.seed_from_env()
     await staff_repo.add_staff(111, 'مدیر جدید')
     assert await staff_repo.is_admin(111)
+
+
+@pytest.mark.asyncio
+async def test_create_and_redeem_invite(staff_repo: StaffRepository) -> None:
+    await staff_repo.seed_from_env()
+    token = await staff_repo.create_invite(111, ROLE_RECEPTION, max_uses=1)
+    assert token.startswith('inv_')
+    err = await staff_repo.try_redeem_invite(token, 999, 'نهال')
+    assert err is None
+    assert await staff_repo.is_active_staff(999)
+    assert await staff_repo.get_role(999) == ROLE_RECEPTION
+    err2 = await staff_repo.try_redeem_invite(token, 888, 'دیگری')
+    assert err2 is not None
 
 
 @pytest.mark.asyncio
