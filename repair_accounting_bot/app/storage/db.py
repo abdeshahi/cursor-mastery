@@ -63,6 +63,14 @@ CREATE TABLE IF NOT EXISTS payments (
 
 CREATE INDEX IF NOT EXISTS idx_repairs_status ON repairs(status);
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+
+CREATE TABLE IF NOT EXISTS staff (
+    telegram_id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL DEFAULT '',
+    is_admin INTEGER NOT NULL DEFAULT 0,
+    active INTEGER NOT NULL DEFAULT 1,
+    added_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 

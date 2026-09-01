@@ -35,6 +35,7 @@ from app.bot.keyboards import (
     technician_keyboard,
 )
 from app.bot.middleware import RepositoryMiddleware
+from app.bot.staff_middleware import StaffGuardMiddleware
 from app.bot.states import AddSupplier, AddTechnician, InvoiceLookup, NewRepair, Payment, SearchRepair
 from app.config import settings
 from app.services.accounting import format_toman
@@ -46,21 +47,10 @@ from app.services.formatters import (
     format_search_results,
 )
 from app.storage.db import Database
+from app.storage.staff_repository import StaffRepository
 from app.storage.repository import RepairRepository
 
 router = Router()
-
-
-def is_allowed(user_id: int | None) -> bool:
-    return user_id is not None and user_id in settings.allowed_user_ids()
-
-
-def is_admin(user_id: int | None) -> bool:
-    return user_id is not None and user_id in settings.admin_user_ids()
-
-
-def deny_message() -> str:
-    return '⛔️ شما دسترسی به این ربات را ندارید.'
 
 
 async def show_repair(message: Message, repo: RepairRepository, repair_id: int) -> None:
@@ -82,9 +72,6 @@ async def send_export_file(message: Message, path: Path, caption: str) -> None:
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await state.clear()
     await message.answer(
         '🔧 **بات پذیرش و حسابداری CTTEL**\n\n'
@@ -98,9 +85,6 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
 @router.message(Command('help'))
 @router.message(F.text == 'ℹ️ راهنما')
 async def cmd_help(message: Message) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await message.answer(
         '📥 **منوی پذیرش**\n'
         '• پذیرش جدید — ثبت مشتری، دستگاه، تعمیرکار، اجرت، قطعه\n'
@@ -114,7 +98,8 @@ async def cmd_help(message: Message) -> None:
         '• بدهی مشتریان — مانده حساب مشتری‌ها\n'
         '• خروجی Excel / PDF — گزارش کامل حسابداری\n\n'
         'روی هر پرونده: 📊 Excel و 📄 PDF فاکتور\n\n'
-        'دستورات: /repair 12 · /addtech علی|40 · /addsup رضایی',
+        'دستورات مدیر: /addstaff آیدی|نام · /removestaff آیدی · /staff\n'
+        '/addtech علی|40 · /addsup رضایی',
         parse_mode='Markdown',
     )
 
@@ -122,26 +107,18 @@ async def cmd_help(message: Message) -> None:
 @router.message(F.text == BACK_ROOT)
 @router.message(F.text == '❌ انصراف')
 async def back_to_root(message: Message, state: FSMContext) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        return
     await state.clear()
     await message.answer('منوی اصلی', reply_markup=root_menu())
 
 
 @router.message(F.text == ROOT_RECEPTION)
 async def open_reception_menu(message: Message, state: FSMContext) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await state.clear()
     await message.answer('📥 **منوی پذیرش**', reply_markup=reception_menu(), parse_mode='Markdown')
 
 
 @router.message(F.text == ROOT_ACCOUNTING)
 async def open_accounting_menu(message: Message, state: FSMContext) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await state.clear()
     await message.answer('💼 **منوی حسابداری**', reply_markup=accounting_menu(), parse_mode='Markdown')
 
@@ -150,9 +127,6 @@ async def open_accounting_menu(message: Message, state: FSMContext) -> None:
 
 @router.message(F.text == REC_NEW)
 async def start_repair(message: Message, state: FSMContext) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await state.clear()
     await state.set_state(NewRepair.customer_name)
     await state.update_data(parts=[])
@@ -197,9 +171,6 @@ async def repair_issue(message: Message, state: FSMContext, repo: RepairReposito
 
 @router.callback_query(F.data.startswith('tech:'))
 async def pick_technician(callback: CallbackQuery, state: FSMContext, repo: RepairRepository) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     value = callback.data.split(':', 1)[1]
     if value == 'new':
         await state.set_state(AddTechnician.name)
@@ -286,9 +257,6 @@ async def repair_part_sell(message: Message, state: FSMContext, repo: RepairRepo
 
 @router.callback_query(F.data.startswith('sup:'))
 async def pick_supplier(callback: CallbackQuery, state: FSMContext) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     value = callback.data.split(':', 1)[1]
     data = await state.get_data()
     part = data.get('current_part', {})
@@ -357,9 +325,6 @@ async def finalize_repair(message: Message, state: FSMContext, repo: RepairRepos
 
 @router.message(F.text == REC_SEARCH)
 async def start_search(message: Message, state: FSMContext) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await state.set_state(SearchRepair.query)
     await message.answer(
         '🔍 عبارت جستجو:\n'
@@ -383,9 +348,6 @@ async def run_search(message: Message, state: FSMContext, repo: RepairRepository
 
 @router.message(F.text == REC_INVOICE)
 async def start_invoice(message: Message, state: FSMContext) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await state.set_state(InvoiceLookup.repair_id)
     await message.answer('شماره پرونده برای صدور فاکتور:', reply_markup=cancel_keyboard())
 
@@ -405,9 +367,6 @@ async def show_invoice(message: Message, state: FSMContext, repo: RepairReposito
 
 @router.message(F.text == REC_REPORT)
 async def reception_report(message: Message, repo: RepairRepository) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await show_accounting_report(message, repo)
 
 
@@ -415,17 +374,11 @@ async def reception_report(message: Message, repo: RepairRepository) -> None:
 
 @router.message(F.text == ACC_SUMMARY)
 async def accounting_summary(message: Message, repo: RepairRepository) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await show_accounting_report(message, repo)
 
 
 @router.message(F.text == ACC_SHOP_PROFIT)
 async def accounting_shop_profit(message: Message, repo: RepairRepository) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     dashboard = await repo.accounting_dashboard()
     await message.answer(
         f"🏢 **سود فروشگاه** (پرونده‌های باز)\n\n"
@@ -438,9 +391,6 @@ async def accounting_shop_profit(message: Message, repo: RepairRepository) -> No
 
 @router.message(F.text == ACC_TECH_SHARE)
 async def accounting_tech_share(message: Message, repo: RepairRepository) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     dashboard = await repo.accounting_dashboard()
     lines = ['👨‍🔧 **طلب تعمیرکاران**', '']
     if dashboard['technicians']:
@@ -459,9 +409,6 @@ async def accounting_tech_share(message: Message, repo: RepairRepository) -> Non
 
 @router.message(F.text == ACC_SUPPLIER_DEBT)
 async def accounting_supplier_debt(message: Message, repo: RepairRepository) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     dashboard = await repo.accounting_dashboard()
     lines = ['🏪 **بدهی به قطعه‌فروش**', '']
     if dashboard['suppliers']:
@@ -475,9 +422,6 @@ async def accounting_supplier_debt(message: Message, repo: RepairRepository) -> 
 
 @router.message(F.text == ACC_CUSTOMER_DEBT)
 async def accounting_customer_debt(message: Message, repo: RepairRepository) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     rows = await repo.customer_debts()
     lines = ['👥 **بدهی مشتریان**', '']
     if rows:
@@ -492,9 +436,6 @@ async def accounting_customer_debt(message: Message, repo: RepairRepository) -> 
 
 @router.message(F.text == ACC_EXPORT_EXCEL)
 async def export_accounting_excel(message: Message, export_service: ExportService) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await message.answer('⏳ در حال ساخت فایل Excel...')
     path = await export_service.export_accounting_excel()
     await send_export_file(message, path, '📊 گزارش حسابداری Excel')
@@ -502,9 +443,6 @@ async def export_accounting_excel(message: Message, export_service: ExportServic
 
 @router.message(F.text == ACC_EXPORT_PDF)
 async def export_accounting_pdf(message: Message, export_service: ExportService) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     await message.answer('⏳ در حال ساخت فایل PDF...')
     path = await export_service.export_accounting_pdf()
     await send_export_file(message, path, '📄 گزارش حسابداری PDF')
@@ -514,9 +452,6 @@ async def export_accounting_pdf(message: Message, export_service: ExportService)
 
 @router.callback_query(F.data.startswith('xlsx:'))
 async def callback_invoice_excel(callback: CallbackQuery, export_service: ExportService) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     repair_id = int(callback.data.split(':')[1])
     path = await export_service.export_invoice_excel(repair_id)
     if not path:
@@ -531,9 +466,6 @@ async def callback_invoice_excel(callback: CallbackQuery, export_service: Export
 
 @router.callback_query(F.data.startswith('pdf:'))
 async def callback_invoice_pdf(callback: CallbackQuery, export_service: ExportService) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     repair_id = int(callback.data.split(':')[1])
     path = await export_service.export_invoice_pdf(repair_id)
     if not path:
@@ -548,9 +480,6 @@ async def callback_invoice_pdf(callback: CallbackQuery, export_service: ExportSe
 
 @router.callback_query(F.data.startswith('view:'))
 async def view_repair(callback: CallbackQuery, repo: RepairRepository) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     repair_id = int(callback.data.split(':')[1])
     await show_repair(callback.message, repo, repair_id)
     await callback.answer()
@@ -558,9 +487,6 @@ async def view_repair(callback: CallbackQuery, repo: RepairRepository) -> None:
 
 @router.callback_query(F.data.startswith('inv:'))
 async def callback_invoice(callback: CallbackQuery, repo: RepairRepository) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     repair_id = int(callback.data.split(':')[1])
     repair = await repo.get_repair(repair_id)
     if repair:
@@ -570,9 +496,6 @@ async def callback_invoice(callback: CallbackQuery, repo: RepairRepository) -> N
 
 @router.callback_query(F.data.startswith('acc:'))
 async def callback_accounting(callback: CallbackQuery, repo: RepairRepository) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     repair_id = int(callback.data.split(':')[1])
     repair = await repo.get_repair(repair_id)
     if repair:
@@ -591,9 +514,6 @@ async def callback_accounting(callback: CallbackQuery, repo: RepairRepository) -
 
 @router.message(Command('repair'))
 async def cmd_repair(message: Message, repo: RepairRepository) -> None:
-    if not is_allowed(message.from_user.id if message.from_user else None):
-        await message.answer(deny_message())
-        return
     parts = (message.text or '').split(maxsplit=1)
     if len(parts) < 2 or not parts[1].isdigit():
         await message.answer('استفاده: /repair 12')
@@ -603,9 +523,6 @@ async def cmd_repair(message: Message, repo: RepairRepository) -> None:
 
 @router.callback_query(F.data.startswith('pay_t:'))
 async def pay_technician_start(callback: CallbackQuery, state: FSMContext) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     repair_id = int(callback.data.split(':')[1])
     await state.set_state(Payment.amount)
     await state.update_data(repair_id=repair_id, payment_kind='technician')
@@ -615,9 +532,6 @@ async def pay_technician_start(callback: CallbackQuery, state: FSMContext) -> No
 
 @router.callback_query(F.data.startswith('pay_c:'))
 async def pay_customer_start(callback: CallbackQuery, state: FSMContext) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     repair_id = int(callback.data.split(':')[1])
     await state.set_state(Payment.amount)
     await state.update_data(repair_id=repair_id, payment_kind='customer')
@@ -627,9 +541,6 @@ async def pay_customer_start(callback: CallbackQuery, state: FSMContext) -> None
 
 @router.callback_query(F.data.startswith('pay_s:'))
 async def pay_supplier_start(callback: CallbackQuery, state: FSMContext) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     repair_id = int(callback.data.split(':')[1])
     await state.set_state(Payment.amount)
     await state.update_data(repair_id=repair_id, payment_kind='supplier')
@@ -662,18 +573,69 @@ async def payment_amount(message: Message, state: FSMContext, repo: RepairReposi
 
 @router.callback_query(F.data.startswith('close:'))
 async def close_repair(callback: CallbackQuery, repo: RepairRepository) -> None:
-    if not is_allowed(callback.from_user.id):
-        await callback.answer(deny_message(), show_alert=True)
-        return
     repair_id = int(callback.data.split(':')[1])
     await repo.close_repair(repair_id)
     await callback.message.answer(f'پرونده #{repair_id} بسته شد ✅', reply_markup=reception_menu())
     await callback.answer()
 
 
+@router.message(Command('addstaff'))
+async def cmd_addstaff(message: Message, repo: RepairRepository, staff_repo: StaffRepository, is_admin: bool) -> None:
+    if not is_admin:
+        await message.answer('فقط مدیر پرسنل می‌تواند پرسنل اضافه کند.')
+        return
+    parts = (message.text or '').split(maxsplit=1)
+    if len(parts) < 2 or '|' not in parts[1]:
+        await message.answer('استفاده: /addstaff 123456789|علی رضایی')
+        return
+    id_raw, name = parts[1].split('|', 1)
+    if not id_raw.strip().isdigit():
+        await message.answer('آیدی تلگرام باید عدد باشد.')
+        return
+    telegram_id = int(id_raw.strip())
+    await staff_repo.add_staff(telegram_id, name)
+    await message.answer(f'✅ پرسنل اضافه شد: {name.strip()} ({telegram_id})')
+
+
+@router.message(Command('removestaff'))
+async def cmd_removestaff(message: Message, staff_repo: StaffRepository, is_admin: bool) -> None:
+    if not is_admin:
+        await message.answer('فقط مدیر پرسنل می‌تواند پرسنل حذف کند.')
+        return
+    parts = (message.text or '').split(maxsplit=1)
+    if len(parts) < 2 or not parts[1].strip().isdigit():
+        await message.answer('استفاده: /removestaff 123456789')
+        return
+    telegram_id = int(parts[1].strip())
+    if telegram_id == message.from_user.id:
+        await message.answer('نمی‌توانید خودتان را حذف کنید.')
+        return
+    if await staff_repo.remove_staff(telegram_id):
+        await message.answer(f'🚫 دسترسی پرسنل {telegram_id} غیرفعال شد.')
+    else:
+        await message.answer('پرسنل یافت نشد.')
+
+
+@router.message(Command('staff'))
+async def cmd_staff_list(message: Message, staff_repo: StaffRepository, is_admin: bool) -> None:
+    if not is_admin:
+        await message.answer('فقط مدیر می‌تواند لیست پرسنل را ببیند.')
+        return
+    rows = await staff_repo.list_staff()
+    if not rows:
+        await message.answer('پرسنلی ثبت نشده.')
+        return
+    lines = ['👥 **پرسنل مجاز**', '']
+    for row in rows:
+        role = 'مدیر' if row['is_admin'] else 'کارمند'
+        lines.append(f"• {row['name']} — `{row['telegram_id']}` ({role})")
+    lines.append('\n/addstaff آیدی|نام · /removestaff آیدی')
+    await message.answer('\n'.join(lines), parse_mode='Markdown')
+
+
 @router.message(Command('addtech'))
-async def cmd_addtech(message: Message, repo: RepairRepository) -> None:
-    if not is_admin(message.from_user.id if message.from_user else None):
+async def cmd_addtech(message: Message, repo: RepairRepository, is_admin: bool) -> None:
+    if not is_admin:
         await message.answer('فقط ادمین.')
         return
     parts = (message.text or '').split(maxsplit=1)
@@ -713,8 +675,8 @@ async def add_technician_pct(message: Message, state: FSMContext, repo: RepairRe
 
 
 @router.message(Command('addsup'))
-async def cmd_addsup(message: Message, repo: RepairRepository) -> None:
-    if not is_admin(message.from_user.id if message.from_user else None):
+async def cmd_addsup(message: Message, repo: RepairRepository, is_admin: bool) -> None:
+    if not is_admin:
         await message.answer('فقط ادمین.')
         return
     parts = (message.text or '').split(maxsplit=1)
@@ -735,21 +697,30 @@ async def add_supplier_name(message: Message, state: FSMContext, repo: RepairRep
     await append_part(message, state)
 
 
-def create_dispatcher(repo: RepairRepository, export_service: ExportService) -> Dispatcher:
+def create_dispatcher(
+    repo: RepairRepository,
+    export_service: ExportService,
+    staff_repo: StaffRepository,
+) -> Dispatcher:
     dp = Dispatcher()
-    dp.update.middleware(RepositoryMiddleware(repo, export_service))
+    dp.update.middleware(StaffGuardMiddleware(staff_repo))
+    dp.update.middleware(RepositoryMiddleware(repo, export_service, staff_repo))
     dp.include_router(router)
     return dp
 
 
 async def run_bot() -> None:
-    if not settings.allowed_user_ids():
-        raise RuntimeError('ALLOWED_USER_IDS is empty — set at least one Telegram user ID')
     db = Database(settings.DATABASE_PATH)
     conn = await db.connect()
+    staff_repo = StaffRepository(conn)
+    if not settings.allowed_user_ids() and await staff_repo.active_staff_count() == 0:
+        raise RuntimeError(
+            'ALLOWED_USER_IDS is empty and no staff in database — set at least one Telegram user ID',
+        )
+    await staff_repo.seed_from_env()
     repo = RepairRepository(conn)
     export_service = ExportService(repo, Path(settings.EXPORT_DIR))
     session = AiohttpSession(proxy=settings.TELEGRAM_PROXY) if settings.TELEGRAM_PROXY else None
     bot = Bot(token=settings.BOT_TOKEN, session=session)
-    dp = create_dispatcher(repo, export_service)
+    dp = create_dispatcher(repo, export_service, staff_repo)
     await dp.start_polling(bot)

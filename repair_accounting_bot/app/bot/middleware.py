@@ -7,12 +7,19 @@ from aiogram.types import TelegramObject
 
 from app.services.export_service import ExportService
 from app.storage.repository import RepairRepository
+from app.storage.staff_repository import StaffRepository
 
 
 class RepositoryMiddleware(BaseMiddleware):
-    def __init__(self, repo: RepairRepository, export_service: ExportService) -> None:
+    def __init__(
+        self,
+        repo: RepairRepository,
+        export_service: ExportService,
+        staff_repo: StaffRepository,
+    ) -> None:
         self.repo = repo
         self.export_service = export_service
+        self.staff_repo = staff_repo
 
     async def __call__(
         self,
@@ -22,4 +29,5 @@ class RepositoryMiddleware(BaseMiddleware):
     ) -> Any:
         data['repo'] = self.repo
         data['export_service'] = self.export_service
+        data['staff_repo'] = self.staff_repo
         return await handler(event, data)
