@@ -7,6 +7,32 @@ from aiogram.types import CallbackQuery, Message, TelegramObject, Update
 
 from app.storage.staff_repository import StaffRepository
 
+PUBLIC_COMMANDS = {'/myid'}
+
+
+def _message_text(event: TelegramObject) -> str | None:
+    if isinstance(event, Message) and event.text:
+        return event.text.strip()
+    if isinstance(event, Update) and event.message and event.message.text:
+        return event.message.text.strip()
+    return None
+
+
+def _is_public_command(event: TelegramObject) -> bool:
+    text = _message_text(event)
+    if not text:
+        return False
+    command = text.split()[0].lower().split('@')[0]
+    return command in PUBLIC_COMMANDS
+
+
+def _deny_text(user_id: int) -> str:
+    return (
+        '⛔️ فقط پرسنل مجاز می‌توانند از این بات استفاده کنند.\n\n'
+        f'🆔 آیدی تلگرام شما: `{user_id}`\n'
+        'این عدد را به مدیر بدهید تا با `/addstaff` دسترسی فعال شود.'
+    )
+
 
 def _user_id_from_event(event: TelegramObject) -> int | None:
     if isinstance(event, Message) and event.from_user:
@@ -35,17 +61,32 @@ class StaffGuardMiddleware(BaseMiddleware):
         if user_id is None:
             return await handler(event, data)
 
-        if not await self.staff_repo.is_active_staff(user_id):
-            deny = '⛔️ فقط پرسنل مجاز می‌توانند از این بات استفاده کنند.'
+        if _is_public_command(event):
             if isinstance(event, Message):
-                await event.answer(deny)
+                await event.answer(
+                    f'🆔 آیدی تلگرام شما:\n`{user_id}`\n\n'
+                    'این عدد را به مدیر بدهید تا دسترسی فعال شود.',
+                    parse_mode='Markdown',
+                )
+            elif isinstance(event, Update) and event.message:
+                await event.message.answer(
+                    f'🆔 آیدی تلگرام شما:\n`{user_id}`\n\n'
+                    'این عدد را به مدیر بدهید تا دسترسی فعال شود.',
+                    parse_mode='Markdown',
+                )
+            return None
+
+        if not await self.staff_repo.is_active_staff(user_id):
+            deny = _deny_text(user_id)
+            if isinstance(event, Message):
+                await event.answer(deny, parse_mode='Markdown')
             elif isinstance(event, CallbackQuery):
-                await event.answer(deny, show_alert=True)
+                await event.answer('فقط پرسنل مجاز.', show_alert=True)
             elif isinstance(event, Update):
                 if event.message:
-                    await event.message.answer(deny)
+                    await event.message.answer(deny, parse_mode='Markdown')
                 elif event.callback_query:
-                    await event.callback_query.answer(deny, show_alert=True)
+                    await event.callback_query.answer('فقط پرسنل مجاز.', show_alert=True)
             return None
 
         data['is_admin'] = await self.staff_repo.is_admin(user_id)

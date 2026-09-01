@@ -53,6 +53,19 @@ from app.storage.repository import RepairRepository
 router = Router()
 
 
+def parse_staff_args(raw: str) -> tuple[int, str] | None:
+    if '|' not in raw:
+        return None
+    left, right = [part.strip() for part in raw.split('|', 1)]
+    if left.isdigit() and not right.isdigit():
+        return int(left), right
+    if right.isdigit() and not left.isdigit():
+        return int(right), left
+    if left.isdigit() and right.isdigit():
+        return int(left), right
+    return None
+
+
 async def show_repair(message: Message, repo: RepairRepository, repair_id: int) -> None:
     repair = await repo.get_repair(repair_id)
     if not repair:
@@ -99,6 +112,7 @@ async def cmd_help(message: Message) -> None:
         '• خروجی Excel / PDF — گزارش کامل حسابداری\n\n'
         'روی هر پرونده: 📊 Excel و 📄 PDF فاکتور\n\n'
         'دستورات مدیر: /addstaff آیدی|نام · /removestaff آیدی · /staff\n'
+        'برای گرفتن آیدی: /myid\n'
         '/addtech علی|40 · /addsup رضایی',
         parse_mode='Markdown',
     )
@@ -585,14 +599,14 @@ async def cmd_addstaff(message: Message, repo: RepairRepository, staff_repo: Sta
         await message.answer('فقط مدیر پرسنل می‌تواند پرسنل اضافه کند.')
         return
     parts = (message.text or '').split(maxsplit=1)
-    if len(parts) < 2 or '|' not in parts[1]:
+    if len(parts) < 2:
         await message.answer('استفاده: /addstaff 123456789|علی رضایی')
         return
-    id_raw, name = parts[1].split('|', 1)
-    if not id_raw.strip().isdigit():
-        await message.answer('آیدی تلگرام باید عدد باشد.')
+    parsed = parse_staff_args(parts[1])
+    if parsed is None:
+        await message.answer('فرمت درست: /addstaff 123456789|نام\n(آیدی باید عدد باشد)')
         return
-    telegram_id = int(id_raw.strip())
+    telegram_id, name = parsed
     await staff_repo.add_staff(telegram_id, name)
     await message.answer(f'✅ پرسنل اضافه شد: {name.strip()} ({telegram_id})')
 
