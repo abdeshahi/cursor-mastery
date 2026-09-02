@@ -9,17 +9,19 @@ from bidi.algorithm import get_display
 from fpdf import FPDF
 
 from app.services.accounting import format_toman
+from app.services.persian_utils import format_amount_persian, format_jalali_date_persian, to_persian_digits
 
 ASSETS_DIR = Path(__file__).resolve().parents[2] / 'assets'
 FONT_PATH = ASSETS_DIR / 'fonts' / 'Vazirmatn-Regular.ttf'
 LETTERHEAD_PATH = ASSETS_DIR / 'letterhead' / 'a5.jpg'
 
-# A5 content box aligned with the provided letterhead artwork.
 INVOICE_TOP_MM = 42
 INVOICE_BOTTOM_MM = 32
 INVOICE_SIDE_MM = 12
-DATE_X_MM = 108
-DATE_Y_MM = 33
+# Placed immediately left of the printed «تاریخ» label on the letterhead.
+DATE_X_MM = 86
+DATE_Y_MM = 31
+DATE_W_MM = 30
 
 
 def rtl(text: str) -> str:
@@ -40,24 +42,49 @@ class PersianPDF(FPDF):
 class InvoicePDF(PersianPDF):
     def __init__(self) -> None:
         super().__init__(page_format='A5')
-        self._date_text = datetime.now().strftime('%Y/%m/%d')
+        self._date_text = format_jalali_date_persian()
 
     def set_invoice_date(self, value: str) -> None:
         self._date_text = value
 
+    @property
+    def content_width(self) -> float:
+        return self.w - (2 * INVOICE_SIDE_MM)
+
     def header(self) -> None:
         if LETTERHEAD_PATH.exists():
             self.image(str(LETTERHEAD_PATH), x=0, y=0, w=self.w, h=self.h)
-        self.set_font('Vazir', size=9)
+        self.set_font('Vazir', size=10)
         self.set_xy(DATE_X_MM, DATE_Y_MM)
-        self.cell(self.w - DATE_X_MM - INVOICE_SIDE_MM, 5, rtl(self._date_text), align='R')
+        self.cell(DATE_W_MM, 5, rtl(self._date_text), align='R')
         self.set_margins(INVOICE_SIDE_MM, INVOICE_TOP_MM, INVOICE_SIDE_MM)
         self.set_auto_page_break(auto=True, margin=INVOICE_BOTTOM_MM)
         self.set_y(INVOICE_TOP_MM)
 
-    def line_rtl(self, h: float, text: str, *, bold: bool = False, size: int = 10) -> None:
-        self.set_font('Vazir', size=size if not bold else size + 1)
-        self.cell(0, h, rtl(text), ln=True, align='R')
+    def table_row(
+        self,
+        widths: list[float],
+        cells: list[str],
+        *,
+        height: float = 7,
+        header: bool = False,
+        aligns: list[str] | None = None,
+    ) -> None:
+        if aligns is None:
+            aligns = ['C'] * len(cells)
+        self.set_font('Vazir', size=10 if header else 9)
+        if header:
+            self.set_fill_color(235, 235, 235)
+        for width, text, align in zip(widths, cells, aligns):
+            self.cell(
+                width,
+                height,
+                rtl(text),
+                border=1,
+                align=align,
+                fill=header,
+            )
+        self.ln(height)
 
 
 def build_accounting_pdf(
@@ -132,12 +159,21 @@ def build_accounting_pdf(
 def build_invoice_pdf(repair: dict[str, Any], path: Path) -> Path:
     totals = repair['totals']
     pdf = InvoicePDF()
-    pdf.set_invoice_date(datetime.now().strftime('%Y/%m/%d'))
+    pdf.set_invoice_date(format_jalali_date_persian())
     pdf.add_page()
 
-    pdf.line_rtl(8, f"فاکتور فروش #{repair['id']}", bold=True, size=12)
+    w = pdf.content_width
+    label_w = w * 0.28
+    value_w = w - label_w
+    col_row = w * 0.12
+    col_desc = w * 0.56
+    col_amount = w - col_row - col_desc
+
+    pdf.set_font('Vazir', size=12)
+    pdf.cell(w, 8, rtl(f"فاکتور فروش #{to_persian_digits(repair['id'])}"), ln=True, align='C')
     pdf.ln(2)
 
+    pdf.table_row([label_w, value_w], ['مورد', 'مشخصات'], header=True)
     for label, value in [
         ('مشتری', repair['customer_name']),
         ('تماس', repair['customer_phone'] or '—'),
@@ -145,20 +181,55 @@ def build_invoice_pdf(repair: dict[str, Any], path: Path) -> Path:
         ('ایراد', repair['issue']),
         ('تعمیرکار', repair.get('technician_name') or '—'),
     ]:
-        pdf.line_rtl(7, f'{label}: {value}')
+        pdf.table_row([label_w, value_w], [label, str(value)], aligns=['R', 'R'])
 
-    pdf.ln(2)
-    pdf.line_rtl(8, 'اقلام فاکتور', bold=True)
-    pdf.line_rtl(7, f"اجرت تعمیر: {format_toman(totals.labor_amount)}")
+    pdf.ln(3)
+    pdf.table_row(
+        [col_row, col_desc, col_amount],
+        ['ردیف', 'شرح', 'مبلغ (تومان)'],
+        header=True,
+        height=8,
+    )
+
+    row_num = 1
+    pdf.table_row(
+        [col_row, col_desc, col_amount],
+        [to_persian_digits(row_num), 'اجرت تعمیر', format_amount_persian(totals.labor_amount)],
+        aligns=['C', 'R', 'C'],
+    )
+    row_num += 1
     for part in repair['parts']:
-        pdf.line_rtl(7, f"{part['part_name']}: {format_toman(int(part['sell_price']))}")
-    if not repair['parts']:
-        pdf.line_rtl(7, 'بدون قطعه')
+        pdf.table_row(
+            [col_row, col_desc, col_amount],
+            [
+                to_persian_digits(row_num),
+                str(part['part_name']),
+                format_amount_persian(int(part['sell_price'])),
+            ],
+            aligns=['C', 'R', 'C'],
+        )
+        row_num += 1
+    if not repair['parts'] and totals.labor_amount == 0:
+        pdf.table_row(
+            [col_row, col_desc, col_amount],
+            [to_persian_digits(1), '—', to_persian_digits(0)],
+            aligns=['C', 'C', 'C'],
+        )
 
-    pdf.ln(2)
-    pdf.line_rtl(8, f'جمع کل: {format_toman(totals.customer_total)}', bold=True, size=11)
-    pdf.line_rtl(7, f'پرداخت‌شده: {format_toman(totals.customer_paid)}')
-    pdf.line_rtl(7, f'مانده حساب: {format_toman(totals.customer_debt)}', bold=True)
+    pdf.ln(3)
+    summary_label_w = w * 0.62
+    summary_value_w = w - summary_label_w
+    pdf.table_row([summary_label_w, summary_value_w], ['شرح', 'مبلغ (تومان)'], header=True)
+    for label, amount in [
+        ('جمع کل', totals.customer_total),
+        ('پرداخت‌شده', totals.customer_paid),
+        ('مانده حساب', totals.customer_debt),
+    ]:
+        pdf.table_row(
+            [summary_label_w, summary_value_w],
+            [label, format_amount_persian(amount)],
+            aligns=['R', 'C'],
+        )
 
     path.parent.mkdir(parents=True, exist_ok=True)
     pdf.output(str(path))
