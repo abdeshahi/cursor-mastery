@@ -62,3 +62,7 @@ class EditRepair(StatesGroup):
     part_cost = State()
     part_sell = State()
     part_supplier = State()
+
+
+class SettlePayment(StatesGroup):
+    choose_payee = State()

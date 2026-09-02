@@ -239,7 +239,7 @@ def settle_payee_keyboard(payees: list[dict], *, kind: str) -> InlineKeyboardMar
     rows: list[list[InlineKeyboardButton]] = []
     for row in payees[:12]:
         debt = int(row.get('debt') or 0)
-        label = f"{row['name']} — {debt:,}"
+        label = f"{row['name']} — مانده {debt:,}"
         entity_id = int(row['id'])
         rows.append(
             [InlineKeyboardButton(text=label, callback_data=f'settle:{kind}:{entity_id}')],
