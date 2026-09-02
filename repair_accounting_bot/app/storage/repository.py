@@ -517,6 +517,77 @@ class RepairRepository:
             await self.conn.commit()
         return applied
 
+    async def customers_with_debt(self) -> list[dict[str, Any]]:
+        cursor = await self.conn.execute(
+            """
+            SELECT c.id, c.name, c.phone,
+                   SUM(r.labor_amount + r.parts_sell - r.customer_paid) AS debt
+            FROM repairs r
+            JOIN customers c ON c.id = r.customer_id
+            WHERE r.status = 'open'
+              AND (r.labor_amount + r.parts_sell - r.customer_paid) > 0
+            GROUP BY c.id
+            HAVING debt > 0
+            ORDER BY debt DESC
+            """,
+        )
+        return [dict(row) for row in await cursor.fetchall()]
+
+    async def repairs_with_customer_debt(self, customer_id: int) -> list[dict[str, Any]]:
+        cursor = await self.conn.execute(
+            """
+            SELECT r.id, c.name AS customer_name, r.device,
+                   r.labor_amount + r.parts_sell AS customer_total,
+                   r.customer_paid,
+                   r.labor_amount + r.parts_sell - r.customer_paid AS debt
+            FROM repairs r
+            JOIN customers c ON c.id = r.customer_id
+            WHERE r.status = 'open'
+              AND r.customer_id = ?
+              AND (r.labor_amount + r.parts_sell - r.customer_paid) > 0
+            ORDER BY r.id
+            """,
+            (customer_id,),
+        )
+        return [dict(row) for row in await cursor.fetchall()]
+
+    async def allocate_customer_payment(
+        self,
+        customer_id: int,
+        amount: int,
+        *,
+        repair_id: int | None = None,
+    ) -> list[tuple[int, int]]:
+        if amount <= 0:
+            return []
+        if repair_id is not None:
+            targets = await self.repairs_with_customer_debt(customer_id)
+            targets = [r for r in targets if int(r['id']) == repair_id]
+        else:
+            targets = await self.repairs_with_customer_debt(customer_id)
+
+        remaining = amount
+        applied: list[tuple[int, int]] = []
+        for row in targets:
+            if remaining <= 0:
+                break
+            pay = min(remaining, int(row['debt']))
+            if pay <= 0:
+                continue
+            await self.conn.execute(
+                'UPDATE repairs SET customer_paid = customer_paid + ? WHERE id = ?',
+                (pay, int(row['id'])),
+            )
+            await self.conn.execute(
+                'INSERT INTO payments (repair_id, kind, amount, note) VALUES (?, ?, ?, ?)',
+                (int(row['id']), 'customer', pay, f'cust:{customer_id}'),
+            )
+            applied.append((int(row['id']), pay))
+            remaining -= pay
+        if applied:
+            await self.conn.commit()
+        return applied
+
     async def close_repair(self, repair_id: int) -> None:
         await self.conn.execute(
             "UPDATE repairs SET status = 'closed', closed_at = datetime('now') WHERE id = ?",

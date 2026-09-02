@@ -54,6 +54,45 @@ async def test_allocate_technician_payment_full(repo) -> None:
 
 
 @pytest.mark.asyncio
+async def test_allocate_customer_payment(repo) -> None:
+    repository, tech_id = repo
+    customer_id = await repository.find_or_create_customer('مریم', '09123333333')
+    repair_id = await repository.create_repair(
+        customer_id=customer_id,
+        technician_id=tech_id,
+        device='iPhone 13',
+        issue='صفحه',
+        labor_amount=800_000,
+        technician_pct=40,
+        parts=[{'part_name': 'LCD', 'cost': 1_500_000, 'sell_price': 2_000_000, 'supplier_id': None}],
+    )
+    applied = await repository.allocate_customer_payment(customer_id, 1_000_000)
+    assert applied == [(repair_id, 1_000_000)]
+    repair = await repository.get_repair(repair_id)
+    assert repair['totals'].customer_paid == 1_000_000
+    assert repair['totals'].customer_debt == 1_800_000
+
+
+@pytest.mark.asyncio
+async def test_allocate_customer_payment_full(repo) -> None:
+    repository, tech_id = repo
+    customer_id = await repository.find_or_create_customer('سارا', '09124444444')
+    repair_id = await repository.create_repair(
+        customer_id=customer_id,
+        technician_id=tech_id,
+        device='Xiaomi',
+        issue='شارژ',
+        labor_amount=300_000,
+        technician_pct=40,
+        parts=[],
+    )
+    applied = await repository.allocate_customer_payment(customer_id, 500_000)
+    assert applied == [(repair_id, 300_000)]
+    repair = await repository.get_repair(repair_id)
+    assert repair['totals'].customer_debt == 0
+
+
+@pytest.mark.asyncio
 async def test_create_repair_and_payments(repo) -> None:
     repository, tech_id = repo
     customer_id = await repository.find_or_create_customer('رضا', '09120000000')

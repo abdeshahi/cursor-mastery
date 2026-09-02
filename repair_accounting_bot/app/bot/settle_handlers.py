@@ -6,10 +6,12 @@ from aiogram.types import CallbackQuery, Message
 
 from app.bot.keyboards import (
     ACC_PAY_DEBT,
+    ACC_RECEIVE_CUSTOMER,
     accounting_menu,
     settle_action_keyboard,
     settle_kind_keyboard,
     settle_payee_keyboard,
+    settle_receive_action_keyboard,
     settle_repair_keyboard,
 )
 from app.bot.states import Payment
@@ -19,30 +21,48 @@ from app.storage.repository import RepairRepository
 settle_router = Router()
 
 
-async def _show_settle_actions(message: Message, state: FSMContext, name: str, debt: int, prefix: str) -> None:
+def _settle_prefix(kind: str | None) -> str:
+    if kind == 'technician':
+        return '👨‍🔧'
+    if kind == 'customer':
+        return '👥'
+    return '🏪'
+
+
+async def _show_settle_actions(
+    message: Message,
+    name: str,
+    debt: int,
+    prefix: str,
+    *,
+    receive: bool = False,
+) -> None:
+    action = 'دریافت' if receive else 'پرداخت'
+    keyboard = settle_receive_action_keyboard() if receive else settle_action_keyboard()
     await message.answer(
         f'{prefix} **{name}**\n'
         f'مانده: **{format_toman(debt)}**\n\n'
-        'نوع پرداخت را انتخاب کنید:',
+        f'نوع {action} را انتخاب کنید:',
         parse_mode='Markdown',
-        reply_markup=settle_action_keyboard(),
+        reply_markup=keyboard,
     )
 
 
 async def _finish_settle(
     message: Message,
     state: FSMContext,
-    repo: RepairRepository,
     applied: list[tuple[int, int]],
     *,
     name: str,
+    receive: bool = False,
 ) -> None:
     await state.clear()
     if not applied:
         await message.answer('مبلغی ثبت نشد یا بدهی باقی نمانده.', reply_markup=accounting_menu())
         return
     total = sum(amount for _, amount in applied)
-    lines = [f'✅ پرداخت ثبت شد — {name}', f'جمع: {format_toman(total)}', '']
+    verb = 'دریافت' if receive else 'پرداخت'
+    lines = [f'✅ {verb} ثبت شد — {name}', f'جمع: {format_toman(total)}', '']
     for repair_id, amount in applied:
         lines.append(f'• پرونده #{repair_id}: {format_toman(amount)}')
     await message.answer('\n'.join(lines), reply_markup=accounting_menu())
@@ -56,6 +76,22 @@ async def accounting_pay_debt_start(message: Message, state: FSMContext) -> None
         'پرداخت به تعمیرکار یا فروشنده قطعه (جزئی یا کامل):',
         parse_mode='Markdown',
         reply_markup=settle_kind_keyboard(),
+    )
+
+
+@settle_router.message(F.text == ACC_RECEIVE_CUSTOMER)
+async def accounting_receive_customer_start(message: Message, state: FSMContext, repo: RepairRepository) -> None:
+    customers = await repo.customers_with_debt()
+    if not customers:
+        await message.answer('بدهی فعالی از مشتری نیست.', reply_markup=accounting_menu())
+        return
+    await state.clear()
+    await state.update_data(settle_kind='customer')
+    await message.answer(
+        '💵 **دریافت از مشتری**\n\n'
+        'مشتری را انتخاب کنید:',
+        parse_mode='Markdown',
+        reply_markup=settle_payee_keyboard(customers, kind='cust'),
     )
 
 
@@ -110,7 +146,7 @@ async def settle_technician_selected(callback: CallbackQuery, state: FSMContext,
         settle_name=tech['name'],
         settle_total_debt=int(tech['debt']),
     )
-    await _show_settle_actions(callback.message, state, tech['name'], int(tech['debt']), '👨‍🔧')
+    await _show_settle_actions(callback.message, tech['name'], int(tech['debt']), '👨‍🔧')
     await callback.answer()
 
 
@@ -128,7 +164,31 @@ async def settle_supplier_selected(callback: CallbackQuery, state: FSMContext, r
         settle_name=sup['name'],
         settle_total_debt=int(sup['debt']),
     )
-    await _show_settle_actions(callback.message, state, sup['name'], int(sup['debt']), '🏪')
+    await _show_settle_actions(callback.message, sup['name'], int(sup['debt']), '🏪')
+    await callback.answer()
+
+
+@settle_router.callback_query(F.data.startswith('settle:cust:'))
+async def settle_customer_selected(callback: CallbackQuery, state: FSMContext, repo: RepairRepository) -> None:
+    cust_id = int(callback.data.split(':')[-1])
+    customers = await repo.customers_with_debt()
+    customer = next((c for c in customers if int(c['id']) == cust_id), None)
+    if not customer:
+        await callback.answer('بدهی باقی نمانده', show_alert=True)
+        return
+    await state.update_data(
+        settle_kind='customer',
+        settle_entity_id=cust_id,
+        settle_name=customer['name'],
+        settle_total_debt=int(customer['debt']),
+    )
+    await _show_settle_actions(
+        callback.message,
+        customer['name'],
+        int(customer['debt']),
+        '👥',
+        receive=True,
+    )
     await callback.answer()
 
 
@@ -139,6 +199,7 @@ async def settle_pay_full(callback: CallbackQuery, state: FSMContext, repo: Repa
     entity_id = data.get('settle_entity_id')
     name = data.get('settle_name', '')
     repair_id = data.get('settle_repair_id')
+    receive = kind == 'customer'
     if not kind or entity_id is None:
         await callback.answer('ابتدا طرف حساب را انتخاب کنید', show_alert=True)
         return
@@ -151,6 +212,14 @@ async def settle_pay_full(callback: CallbackQuery, state: FSMContext, repo: Repa
         else:
             amount = int(data.get('settle_total_debt') or 0)
             applied = await repo.allocate_technician_payment(int(entity_id), amount)
+    elif kind == 'customer':
+        if repair_id:
+            repairs = await repo.repairs_with_customer_debt(int(entity_id))
+            amount = next((int(r['debt']) for r in repairs if int(r['id']) == int(repair_id)), 0)
+            applied = await repo.allocate_customer_payment(int(entity_id), amount, repair_id=int(repair_id))
+        else:
+            amount = int(data.get('settle_total_debt') or 0)
+            applied = await repo.allocate_customer_payment(int(entity_id), amount)
     else:
         if repair_id:
             repairs = await repo.repairs_with_supplier_debt(int(entity_id))
@@ -160,7 +229,7 @@ async def settle_pay_full(callback: CallbackQuery, state: FSMContext, repo: Repa
             amount = int(data.get('settle_total_debt') or 0)
             applied = await repo.allocate_supplier_payment(int(entity_id), amount)
 
-    await _finish_settle(callback.message, state, repo, applied, name=name)
+    await _finish_settle(callback.message, state, applied, name=name, receive=receive)
     await callback.answer('ثبت شد ✅')
 
 
@@ -172,7 +241,8 @@ async def settle_pay_custom(callback: CallbackQuery, state: FSMContext) -> None:
         return
     await state.set_state(Payment.amount)
     await state.update_data(settle_mode=True)
-    await callback.message.answer('💵 مبلغ پرداختی (تومان) را وارد کنید:')
+    label = 'دریافتی' if data.get('settle_kind') == 'customer' else 'پرداختی'
+    await callback.message.answer(f'💵 مبلغ {label} (تومان) را وارد کنید:')
     await callback.answer()
 
 
@@ -186,6 +256,8 @@ async def settle_pick_repair(callback: CallbackQuery, state: FSMContext, repo: R
         return
     if kind == 'technician':
         repairs = await repo.repairs_with_technician_debt(int(entity_id))
+    elif kind == 'customer':
+        repairs = await repo.repairs_with_customer_debt(int(entity_id))
     else:
         repairs = await repo.repairs_with_supplier_debt(int(entity_id))
     if not repairs:
@@ -201,11 +273,17 @@ async def settle_pick_repair(callback: CallbackQuery, state: FSMContext, repo: R
 @settle_router.callback_query(F.data == 'settle:back')
 async def settle_back_to_actions(callback: CallbackQuery, state: FSMContext) -> None:
     data = await state.get_data()
+    kind = data.get('settle_kind')
     name = data.get('settle_name', '')
     debt = int(data.get('settle_total_debt') or 0)
-    prefix = '👨‍🔧' if data.get('settle_kind') == 'technician' else '🏪'
     await state.update_data(settle_repair_id=None)
-    await _show_settle_actions(callback.message, state, name, debt, prefix)
+    await _show_settle_actions(
+        callback.message,
+        name,
+        debt,
+        _settle_prefix(kind),
+        receive=kind == 'customer',
+    )
     await callback.answer()
 
 
@@ -215,12 +293,15 @@ async def settle_repair_selected(callback: CallbackQuery, state: FSMContext, rep
     data = await state.get_data()
     kind = data.get('settle_kind')
     entity_id = data.get('settle_entity_id')
+    receive = kind == 'customer'
     if not kind or entity_id is None:
         await callback.answer('خطا — دوباره تلاش کنید', show_alert=True)
         return
 
     if kind == 'technician':
         repairs = await repo.repairs_with_technician_debt(int(entity_id))
+    elif kind == 'customer':
+        repairs = await repo.repairs_with_customer_debt(int(entity_id))
     else:
         repairs = await repo.repairs_with_supplier_debt(int(entity_id))
     repair = next((r for r in repairs if int(r['id']) == repair_id), None)
@@ -229,12 +310,14 @@ async def settle_repair_selected(callback: CallbackQuery, state: FSMContext, rep
         return
 
     await state.update_data(settle_repair_id=repair_id, settle_repair_debt=int(repair['debt']))
+    action = 'دریافت' if receive else 'پرداخت'
+    keyboard = settle_receive_action_keyboard() if receive else settle_action_keyboard()
     await callback.message.answer(
         f"📋 پرونده #{repair_id} — {repair.get('customer_name', '')}\n"
         f"مانده: **{format_toman(int(repair['debt']))}**\n\n"
-        'نوع پرداخت را انتخاب کنید:',
+        f'نوع {action} را انتخاب کنید:',
         parse_mode='Markdown',
-        reply_markup=settle_action_keyboard(),
+        reply_markup=keyboard,
     )
     await callback.answer()
 
@@ -248,6 +331,7 @@ async def process_settle_payment(message: Message, state: FSMContext, repo: Repa
     entity_id = data.get('settle_entity_id')
     name = data.get('settle_name', '')
     repair_id = data.get('settle_repair_id')
+    receive = kind == 'customer'
     if not kind or entity_id is None:
         await state.clear()
         await message.answer('خطا — دوباره از منوی حسابداری شروع کنید.', reply_markup=accounting_menu())
@@ -259,6 +343,12 @@ async def process_settle_payment(message: Message, state: FSMContext, repo: Repa
             amount,
             repair_id=int(repair_id) if repair_id else None,
         )
+    elif kind == 'customer':
+        applied = await repo.allocate_customer_payment(
+            int(entity_id),
+            amount,
+            repair_id=int(repair_id) if repair_id else None,
+        )
     else:
         applied = await repo.allocate_supplier_payment(
             int(entity_id),
@@ -266,5 +356,5 @@ async def process_settle_payment(message: Message, state: FSMContext, repo: Repa
             repair_id=int(repair_id) if repair_id else None,
         )
 
-    await _finish_settle(message, state, repo, applied, name=name)
+    await _finish_settle(message, state, applied, name=name, receive=receive)
     return True

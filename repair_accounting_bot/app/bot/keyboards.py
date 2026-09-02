@@ -22,6 +22,7 @@ ACC_SUMMARY = '💰 خلاصه مالی'
 ACC_SHOP_PROFIT = '🏢 سود فروشگاه'
 ACC_TECH_SHARE = '👨‍🔧 طلب تعمیرکاران'
 ACC_PAY_DEBT = '💸 ثبت پرداخت بدهی'
+ACC_RECEIVE_CUSTOMER = '💵 دریافت از مشتری'
 ACC_SUPPLIER_DEBT = '🏪 بدهی قطعه‌فروش'
 ACC_CUSTOMER_DEBT = '👥 بدهی مشتریان'
 ACC_EXPORT_EXCEL = '📊 خروجی Excel'
@@ -104,7 +105,7 @@ def accounting_menu() -> ReplyKeyboardMarkup:
         keyboard=[
             [KeyboardButton(text=ACC_SUMMARY), KeyboardButton(text=ACC_SHOP_PROFIT)],
             [KeyboardButton(text=ACC_TECH_SHARE), KeyboardButton(text=ACC_SUPPLIER_DEBT)],
-            [KeyboardButton(text=ACC_PAY_DEBT)],
+            [KeyboardButton(text=ACC_PAY_DEBT), KeyboardButton(text=ACC_RECEIVE_CUSTOMER)],
             [KeyboardButton(text=ACC_CUSTOMER_DEBT)],
             [KeyboardButton(text=ACC_EXPORT_EXCEL), KeyboardButton(text=ACC_EXPORT_PDF)],
             [KeyboardButton(text=BACK_ROOT)],
@@ -215,6 +216,17 @@ def settle_action_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text='✅ پرداخت کامل', callback_data='settle:full')],
+            [InlineKeyboardButton(text='✏️ مبلغ جزئی', callback_data='settle:custom')],
+            [InlineKeyboardButton(text='📋 انتخاب پرونده', callback_data='settle:pick')],
+            [InlineKeyboardButton(text='❌ انصراف', callback_data='settle:cancel')],
+        ],
+    )
+
+
+def settle_receive_action_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text='✅ دریافت کامل', callback_data='settle:full')],
             [InlineKeyboardButton(text='✏️ مبلغ جزئی', callback_data='settle:custom')],
             [InlineKeyboardButton(text='📋 انتخاب پرونده', callback_data='settle:pick')],
             [InlineKeyboardButton(text='❌ انصراف', callback_data='settle:cancel')],
