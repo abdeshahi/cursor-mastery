@@ -52,3 +52,5 @@ async def test_export_invoice_files(export_service) -> None:
     pdf = await service.export_invoice_pdf(1)
     assert xlsx is not None and xlsx.exists()
     assert pdf is not None and pdf.exists()
+    # Letterhead artwork makes invoice PDFs noticeably larger than a plain text PDF.
+    assert pdf.stat().st_size > 20_000

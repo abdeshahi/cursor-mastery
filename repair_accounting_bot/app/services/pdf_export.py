@@ -10,7 +10,16 @@ from fpdf import FPDF
 
 from app.services.accounting import format_toman
 
-FONT_PATH = Path(__file__).resolve().parents[2] / 'assets' / 'fonts' / 'Vazirmatn-Regular.ttf'
+ASSETS_DIR = Path(__file__).resolve().parents[2] / 'assets'
+FONT_PATH = ASSETS_DIR / 'fonts' / 'Vazirmatn-Regular.ttf'
+LETTERHEAD_PATH = ASSETS_DIR / 'letterhead' / 'a5.jpg'
+
+# A5 content box aligned with the provided letterhead artwork.
+INVOICE_TOP_MM = 42
+INVOICE_BOTTOM_MM = 32
+INVOICE_SIDE_MM = 12
+DATE_X_MM = 108
+DATE_Y_MM = 33
 
 
 def rtl(text: str) -> str:
@@ -18,14 +27,37 @@ def rtl(text: str) -> str:
 
 
 class PersianPDF(FPDF):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *, page_format: str | tuple[float, float] = 'A4') -> None:
+        super().__init__(orientation='P', unit='mm', format=page_format)
         self.add_font('Vazir', '', str(FONT_PATH))
         self.set_auto_page_break(auto=True, margin=12)
 
     def cell_rtl(self, w: float, h: float, text: str, *, ln: bool = True, bold: bool = False) -> None:
         self.set_font('Vazir', size=10 if not bold else 12)
         self.cell(w, h, rtl(text), ln=int(ln), align='R')
+
+
+class InvoicePDF(PersianPDF):
+    def __init__(self) -> None:
+        super().__init__(page_format='A5')
+        self._date_text = datetime.now().strftime('%Y/%m/%d')
+
+    def set_invoice_date(self, value: str) -> None:
+        self._date_text = value
+
+    def header(self) -> None:
+        if LETTERHEAD_PATH.exists():
+            self.image(str(LETTERHEAD_PATH), x=0, y=0, w=self.w, h=self.h)
+        self.set_font('Vazir', size=9)
+        self.set_xy(DATE_X_MM, DATE_Y_MM)
+        self.cell(self.w - DATE_X_MM - INVOICE_SIDE_MM, 5, rtl(self._date_text), align='R')
+        self.set_margins(INVOICE_SIDE_MM, INVOICE_TOP_MM, INVOICE_SIDE_MM)
+        self.set_auto_page_break(auto=True, margin=INVOICE_BOTTOM_MM)
+        self.set_y(INVOICE_TOP_MM)
+
+    def line_rtl(self, h: float, text: str, *, bold: bool = False, size: int = 10) -> None:
+        self.set_font('Vazir', size=size if not bold else size + 1)
+        self.cell(0, h, rtl(text), ln=True, align='R')
 
 
 def build_accounting_pdf(
@@ -99,12 +131,12 @@ def build_accounting_pdf(
 
 def build_invoice_pdf(repair: dict[str, Any], path: Path) -> Path:
     totals = repair['totals']
-    pdf = PersianPDF()
+    pdf = InvoicePDF()
+    pdf.set_invoice_date(datetime.now().strftime('%Y/%m/%d'))
     pdf.add_page()
-    pdf.cell_rtl(0, 10, f"فاکتور فروش #{repair['id']}", bold=True)
-    pdf.cell_rtl(0, 8, 'CTTEL · سی تی تل')
-    pdf.cell_rtl(0, 8, datetime.now().strftime('%Y-%m-%d %H:%M'))
-    pdf.ln(3)
+
+    pdf.line_rtl(8, f"فاکتور فروش #{repair['id']}", bold=True, size=12)
+    pdf.ln(2)
 
     for label, value in [
         ('مشتری', repair['customer_name']),
@@ -112,21 +144,21 @@ def build_invoice_pdf(repair: dict[str, Any], path: Path) -> Path:
         ('دستگاه', repair['device']),
         ('ایراد', repair['issue']),
         ('تعمیرکار', repair.get('technician_name') or '—'),
-        ('درصد تعمیرکار', f"{repair['technician_pct']}%"),
     ]:
-        pdf.cell_rtl(0, 8, f'{label}: {value}')
+        pdf.line_rtl(7, f'{label}: {value}')
 
     pdf.ln(2)
-    pdf.cell_rtl(0, 9, f'اجرت تعمیر: {format_toman(totals.labor_amount)}', bold=True)
+    pdf.line_rtl(8, 'اقلام فاکتور', bold=True)
+    pdf.line_rtl(7, f"اجرت تعمیر: {format_toman(totals.labor_amount)}")
     for part in repair['parts']:
-        pdf.cell_rtl(0, 7, f"{part['part_name']}: {format_toman(int(part['sell_price']))}")
+        pdf.line_rtl(7, f"{part['part_name']}: {format_toman(int(part['sell_price']))}")
     if not repair['parts']:
-        pdf.cell_rtl(0, 7, 'بدون قطعه')
+        pdf.line_rtl(7, 'بدون قطعه')
 
     pdf.ln(2)
-    pdf.cell_rtl(0, 9, f'جمع کل: {format_toman(totals.customer_total)}', bold=True)
-    pdf.cell_rtl(0, 8, f'پرداخت‌شده: {format_toman(totals.customer_paid)}')
-    pdf.cell_rtl(0, 8, f'مانده: {format_toman(totals.customer_debt)}')
+    pdf.line_rtl(8, f'جمع کل: {format_toman(totals.customer_total)}', bold=True, size=11)
+    pdf.line_rtl(7, f'پرداخت‌شده: {format_toman(totals.customer_paid)}')
+    pdf.line_rtl(7, f'مانده حساب: {format_toman(totals.customer_debt)}', bold=True)
 
     path.parent.mkdir(parents=True, exist_ok=True)
     pdf.output(str(path))
