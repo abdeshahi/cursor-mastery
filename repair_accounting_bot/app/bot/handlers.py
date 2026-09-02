@@ -38,6 +38,7 @@ from app.bot.middleware import RepositoryMiddleware
 from app.bot.parsing import parse_staff_args
 from app.bot.staff_middleware import StaffGuardMiddleware
 from app.bot.admin_handlers import admin_router
+from app.bot.edit_handlers import edit_router
 from app.bot.settle_handlers import process_settle_payment, settle_router
 from app.bot.states import AddSupplier, AddTechnician, InvoiceLookup, NewRepair, Payment, SearchRepair
 from app.config import settings
@@ -70,7 +71,11 @@ async def show_repair(message: Message, repo: RepairRepository, repair_id: int) 
     if not repair:
         await message.answer('پرونده یافت نشد.')
         return
-    await message.answer(format_repair_summary(repair), reply_markup=repair_actions(repair_id))
+    is_open = repair.get('status') == 'open'
+    await message.answer(
+        format_repair_summary(repair),
+        reply_markup=repair_actions(repair_id, is_open=is_open),
+    )
 
 
 async def show_accounting_report(message: Message, repo: RepairRepository) -> None:
@@ -115,6 +120,7 @@ async def cmd_help(message: Message) -> None:
     await message.answer(
         '📥 **منوی پذیرش**\n'
         '• پذیرش جدید — ثبت مشتری، دستگاه، تعمیرکار، اجرت، قطعه\n'
+        '• ✏️ ویرایش پرونده — تغییر اجرت یا افزودن قطعه (از داخل پرونده)\n'
         '• جستجو — با شماره پرونده، نام، موبایل یا مدل دستگاه\n'
         '• فاکتور — صدور فاکتور فروش برای مشتری\n'
         '• گزارش حسابداری — خلاصه مالی\n\n'
@@ -125,6 +131,7 @@ async def cmd_help(message: Message) -> None:
         '• بدهی مشتریان — مانده حساب مشتری‌ها\n'
         '• 💸 ثبت پرداخت بدهی — پرداخت به تعمیرکار یا فروشنده\n'
         '• 💵 دریافت از مشتری — ثبت پرداخت بدهی مشتری (کامل یا جزئی)\n'
+        '• ✏️ ویرایش پرونده — تغییر اجرت یا افزودن قطعه بعد از پذیرش\n'
         '• خروجی Excel / PDF — گزارش کامل حسابداری\n\n'
         'روی هر پرونده: 📊 Excel و 📄 PDF فاکتور\n\n'
         '⚙️ **مدیریت (فقط مدیر):** پرسنل، لینک دعوت، تعمیرکاران، قطعه‌فروش\n'
@@ -357,7 +364,7 @@ async def finalize_repair(message: Message, state: FSMContext, repo: RepairRepos
     )
     repair = await repo.get_repair(repair_id)
     await state.clear()
-    await message.answer(format_repair_summary(repair), reply_markup=repair_actions(repair_id))
+    await message.answer(format_repair_summary(repair), reply_markup=repair_actions(repair_id, is_open=True))
     await message.answer(
         format_invoice(repair),
         parse_mode='Markdown',
@@ -612,7 +619,7 @@ async def payment_amount(message: Message, state: FSMContext, repo: RepairReposi
     await state.clear()
     await message.answer(
         '✅ ثبت شد\n\n' + format_repair_summary(repair),
-        reply_markup=repair_actions(repair_id),
+        reply_markup=repair_actions(repair_id, is_open=repair.get('status') == 'open'),
     )
     await message.answer('منوی حسابداری', reply_markup=accounting_menu())
 
@@ -752,6 +759,7 @@ def create_dispatcher(
     dp.update.middleware(StaffGuardMiddleware(staff_repo))
     dp.update.middleware(RepositoryMiddleware(repo, export_service, staff_repo))
     dp.include_router(settle_router)
+    dp.include_router(edit_router)
     dp.include_router(admin_router)
     dp.include_router(router)
     return dp

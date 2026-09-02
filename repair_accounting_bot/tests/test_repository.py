@@ -93,6 +93,66 @@ async def test_allocate_customer_payment_full(repo) -> None:
 
 
 @pytest.mark.asyncio
+async def test_update_repair_labor(repo) -> None:
+    repository, tech_id = repo
+    customer_id = await repository.find_or_create_customer('کامیل', '09125555555')
+    repair_id = await repository.create_repair(
+        customer_id=customer_id,
+        technician_id=tech_id,
+        device='Nokia',
+        issue='باتری',
+        labor_amount=0,
+        technician_pct=40,
+        parts=[],
+    )
+    assert await repository.update_repair_labor(repair_id, 450_000)
+    repair = await repository.get_repair(repair_id)
+    assert repair['labor_amount'] == 450_000
+    assert repair['totals'].technician_share == 180_000
+
+
+@pytest.mark.asyncio
+async def test_add_repair_part(repo) -> None:
+    repository, tech_id = repo
+    customer_id = await repository.find_or_create_customer('نیما', '09126666666')
+    repair_id = await repository.create_repair(
+        customer_id=customer_id,
+        technician_id=tech_id,
+        device='Huawei',
+        issue='LCD',
+        labor_amount=200_000,
+        technician_pct=40,
+        parts=[],
+    )
+    assert await repository.add_repair_part(
+        repair_id,
+        {'part_name': 'LCD', 'cost': 800_000, 'sell_price': 1_100_000, 'supplier_id': None},
+    )
+    repair = await repository.get_repair(repair_id)
+    assert len(repair['parts']) == 1
+    assert repair['parts_cost'] == 800_000
+    assert repair['parts_sell'] == 1_100_000
+    assert repair['totals'].customer_total == 1_300_000
+
+
+@pytest.mark.asyncio
+async def test_update_repair_labor_closed(repo) -> None:
+    repository, tech_id = repo
+    customer_id = await repository.find_or_create_customer('بسته', '09127777777')
+    repair_id = await repository.create_repair(
+        customer_id=customer_id,
+        technician_id=tech_id,
+        device='LG',
+        issue='test',
+        labor_amount=100_000,
+        technician_pct=40,
+        parts=[],
+    )
+    await repository.close_repair(repair_id)
+    assert not await repository.update_repair_labor(repair_id, 200_000)
+
+
+@pytest.mark.asyncio
 async def test_create_repair_and_payments(repo) -> None:
     repository, tech_id = repo
     customer_id = await repository.find_or_create_customer('رضا', '09120000000')

@@ -54,3 +54,11 @@ class AdminSupAdd(StatesGroup):
 
 class AdminStaffRename(StatesGroup):
     name = State()
+
+
+class EditRepair(StatesGroup):
+    labor_amount = State()
+    part_name = State()
+    part_cost = State()
+    part_sell = State()
+    part_supplier = State()

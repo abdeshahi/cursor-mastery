@@ -135,6 +135,49 @@ class RepairRepository:
         await self.conn.commit()
         return repair_id
 
+    async def update_repair_labor(self, repair_id: int, labor_amount: int) -> bool:
+        cursor = await self.conn.execute(
+            """
+            UPDATE repairs SET labor_amount = ?
+            WHERE id = ? AND status = 'open'
+            """,
+            (labor_amount, repair_id),
+        )
+        await self.conn.commit()
+        return cursor.rowcount > 0
+
+    async def add_repair_part(self, repair_id: int, part: dict[str, Any]) -> bool:
+        cursor = await self.conn.execute(
+            "SELECT id FROM repairs WHERE id = ? AND status = 'open'",
+            (repair_id,),
+        )
+        if not await cursor.fetchone():
+            return False
+        await self.conn.execute(
+            """
+            INSERT INTO repair_parts (repair_id, supplier_id, part_name, cost, sell_price)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                repair_id,
+                part.get('supplier_id'),
+                part['part_name'],
+                int(part['cost']),
+                int(part['sell_price']),
+            ),
+        )
+        await self.conn.execute(
+            """
+            UPDATE repairs SET
+                parts_cost = parts_cost + ?,
+                parts_sell = parts_sell + ?
+            WHERE id = ?
+            """,
+            (int(part['cost']), int(part['sell_price']), repair_id),
+        )
+        await self.conn.commit()
+        return True
+
     async def get_repair(self, repair_id: int) -> dict[str, Any] | None:
         cursor = await self.conn.execute(
             """

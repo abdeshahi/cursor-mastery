@@ -157,17 +157,21 @@ def supplier_keyboard(suppliers: list[dict]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def repair_actions(repair_id: int) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text='📊 Excel', callback_data=f'xlsx:{repair_id}'),
-                InlineKeyboardButton(text='📄 PDF', callback_data=f'pdf:{repair_id}'),
-            ],
-            [
-                InlineKeyboardButton(text='🧾 فاکتور', callback_data=f'inv:{repair_id}'),
-                InlineKeyboardButton(text='💼 حسابداری', callback_data=f'acc:{repair_id}'),
-            ],
+def repair_actions(repair_id: int, *, is_open: bool = True) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(text='📊 Excel', callback_data=f'xlsx:{repair_id}'),
+            InlineKeyboardButton(text='📄 PDF', callback_data=f'pdf:{repair_id}'),
+        ],
+        [
+            InlineKeyboardButton(text='🧾 فاکتور', callback_data=f'inv:{repair_id}'),
+            InlineKeyboardButton(text='💼 حسابداری', callback_data=f'acc:{repair_id}'),
+        ],
+    ]
+    if is_open:
+        rows.append([InlineKeyboardButton(text='✏️ ویرایش پرونده', callback_data=f'edit:menu:{repair_id}')])
+    rows.extend(
+        [
             [
                 InlineKeyboardButton(text='💵 دریافت مشتری', callback_data=f'pay_c:{repair_id}'),
                 InlineKeyboardButton(text='💸 پرداخت قطعه‌فروش', callback_data=f'pay_s:{repair_id}'),
@@ -175,9 +179,41 @@ def repair_actions(repair_id: int) -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(text='💸 پرداخت تعمیرکار', callback_data=f'pay_t:{repair_id}'),
             ],
-            [InlineKeyboardButton(text='✅ بستن پرونده', callback_data=f'close:{repair_id}')],
         ],
     )
+    if is_open:
+        rows.append([InlineKeyboardButton(text='✅ بستن پرونده', callback_data=f'close:{repair_id}')])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def edit_repair_menu_keyboard(repair_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text='💼 تغییر اجرت', callback_data=f'edit:labor:{repair_id}')],
+            [InlineKeyboardButton(text='➕ افزودن قطعه', callback_data=f'edit:part:{repair_id}')],
+            [InlineKeyboardButton(text='❌ انصراف', callback_data='edit:cancel')],
+        ],
+    )
+
+
+def edit_parts_done_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text='➕ قطعه دیگر')],
+            [KeyboardButton(text='✅ پایان ویرایش')],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def edit_supplier_keyboard(suppliers: list[dict]) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(text=s['name'], callback_data=f'edit:sup:{s["id"]}')]
+        for s in suppliers
+    ]
+    rows.append([InlineKeyboardButton(text='➕ فروشنده قطعه جدید', callback_data='edit:sup:new')])
+    rows.append([InlineKeyboardButton(text='⏭ بدون فروشنده', callback_data='edit:sup:skip')])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def search_result_keyboard(results: list[dict]) -> InlineKeyboardMarkup:
