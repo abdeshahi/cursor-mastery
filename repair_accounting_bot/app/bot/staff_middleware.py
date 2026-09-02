@@ -12,11 +12,18 @@ from app.storage.staff_repository import StaffRepository
 PUBLIC_COMMANDS = {'/myid'}
 
 
+def _get_message(event: TelegramObject) -> Message | None:
+    if isinstance(event, Message):
+        return event
+    if isinstance(event, Update) and event.message:
+        return event.message
+    return None
+
+
 def _message_text(event: TelegramObject) -> str | None:
-    if isinstance(event, Message) and event.text:
-        return event.text.strip()
-    if isinstance(event, Update) and event.message and event.message.text:
-        return event.message.text.strip()
+    message = _get_message(event)
+    if message and message.text:
+        return message.text.strip()
     return None
 
 
@@ -37,16 +44,29 @@ def _deny_text(user_id: int) -> str:
 
 
 def _user_id_from_event(event: TelegramObject) -> int | None:
-    if isinstance(event, Message) and event.from_user:
-        return event.from_user.id
+    message = _get_message(event)
+    if message and message.from_user:
+        return message.from_user.id
     if isinstance(event, CallbackQuery) and event.from_user:
         return event.from_user.id
-    if isinstance(event, Update):
-        if event.message and event.message.from_user:
-            return event.message.from_user.id
-        if event.callback_query and event.callback_query.from_user:
-            return event.callback_query.from_user.id
+    if isinstance(event, Update) and event.callback_query and event.callback_query.from_user:
+        return event.callback_query.from_user.id
     return None
+
+
+async def _answer_deny(event: TelegramObject, text: str) -> None:
+    message = _get_message(event)
+    if message:
+        await message.answer(text, parse_mode='Markdown')
+        return
+    if isinstance(event, CallbackQuery):
+        await event.answer('فقط پرسنل مجاز.', show_alert=True)
+        return
+    if isinstance(event, Update):
+        if event.message:
+            await event.message.answer(text, parse_mode='Markdown')
+        elif event.callback_query:
+            await event.callback_query.answer('فقط پرسنل مجاز.', show_alert=True)
 
 
 class StaffGuardMiddleware(BaseMiddleware):
@@ -64,27 +84,23 @@ class StaffGuardMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         if _is_public_command(event):
-            if isinstance(event, Message):
-                await event.answer(
-                    f'🆔 آیدی تلگرام شما:\n`{user_id}`\n\n'
-                    'از مدیر بخواهید لینک دعوت پرسنل برایتان بفرستد.',
-                    parse_mode='Markdown',
-                )
-            elif isinstance(event, Update) and event.message:
-                await event.message.answer(
-                    f'🆔 آیدی تلگرام شما:\n`{user_id}`\n\n'
-                    'از مدیر بخواهید لینک دعوت پرسنل برایتان بفرستد.',
-                    parse_mode='Markdown',
-                )
+            reply = (
+                f'🆔 آیدی تلگرام شما:\n`{user_id}`\n\n'
+                'از مدیر بخواهید لینک دعوت پرسنل برایتان بفرستد.'
+            )
+            message = _get_message(event)
+            if message:
+                await message.answer(reply, parse_mode='Markdown')
             return None
 
-        if isinstance(event, Message) and event.text and event.from_user:
-            invite_token = extract_invite_token(event.text)
+        message = _get_message(event)
+        if message and message.text and message.from_user:
+            invite_token = extract_invite_token(message.text)
             if invite_token:
                 was_staff = await self.staff_repo.is_active_staff(user_id)
                 display_name = (
-                    event.from_user.full_name
-                    or event.from_user.first_name
+                    message.from_user.full_name
+                    or message.from_user.first_name
                     or f'کاربر {user_id}'
                 )
                 invite_error = await self.staff_repo.try_redeem_invite(
@@ -93,22 +109,13 @@ class StaffGuardMiddleware(BaseMiddleware):
                     display_name,
                 )
                 if invite_error:
-                    await event.answer(invite_error)
+                    await message.answer(invite_error)
                     return None
                 if not was_staff and await self.staff_repo.is_active_staff(user_id):
                     data['invite_joined'] = True
 
         if not await self.staff_repo.is_active_staff(user_id):
-            deny = _deny_text(user_id)
-            if isinstance(event, Message):
-                await event.answer(deny, parse_mode='Markdown')
-            elif isinstance(event, CallbackQuery):
-                await event.answer('فقط پرسنل مجاز.', show_alert=True)
-            elif isinstance(event, Update):
-                if event.message:
-                    await event.message.answer(deny, parse_mode='Markdown')
-                elif event.callback_query:
-                    await event.callback_query.answer('فقط پرسنل مجاز.', show_alert=True)
+            await _answer_deny(event, _deny_text(user_id))
             return None
 
         role = await self.staff_repo.get_role(user_id) or 'full'
