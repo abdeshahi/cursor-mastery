@@ -38,6 +38,7 @@ from app.bot.middleware import RepositoryMiddleware
 from app.bot.parsing import parse_staff_args
 from app.bot.staff_middleware import StaffGuardMiddleware
 from app.bot.admin_handlers import admin_router
+from app.bot.settle_handlers import process_settle_payment, settle_router
 from app.bot.states import AddSupplier, AddTechnician, InvoiceLookup, NewRepair, Payment, SearchRepair
 from app.config import settings
 from app.services.accounting import format_toman
@@ -122,6 +123,7 @@ async def cmd_help(message: Message) -> None:
         '• طلب تعمیرکاران — سهم، پرداخت‌شده و مانده طلب هر نفر\n'
         '• بدهی قطعه‌فروش — طلب فروشندگان قطعه\n'
         '• بدهی مشتریان — مانده حساب مشتری‌ها\n'
+        '• 💸 ثبت پرداخت بدهی — پرداخت به تعمیرکار یا فروشنده\n'
         '• خروجی Excel / PDF — گزارش کامل حسابداری\n\n'
         'روی هر پرونده: 📊 Excel و 📄 PDF فاکتور\n\n'
         '⚙️ **مدیریت (فقط مدیر):** پرسنل، لینک دعوت، تعمیرکاران، قطعه‌فروش\n'
@@ -594,9 +596,11 @@ async def payment_amount(message: Message, state: FSMContext, repo: RepairReposi
     if not message.text.strip().isdigit():
         await message.answer('لطفاً فقط عدد وارد کنید.')
         return
+    amount = int(message.text.strip())
+    if await process_settle_payment(message, state, repo, amount):
+        return
     data = await state.get_data()
     repair_id = int(data['repair_id'])
-    amount = int(message.text.strip())
     if data['payment_kind'] == 'customer':
         await repo.add_customer_payment(repair_id, amount)
     elif data['payment_kind'] == 'supplier':
@@ -746,6 +750,7 @@ def create_dispatcher(
     dp = Dispatcher()
     dp.update.middleware(StaffGuardMiddleware(staff_repo))
     dp.update.middleware(RepositoryMiddleware(repo, export_service, staff_repo))
+    dp.include_router(settle_router)
     dp.include_router(admin_router)
     dp.include_router(router)
     return dp

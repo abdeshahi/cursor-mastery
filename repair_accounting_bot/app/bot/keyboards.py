@@ -21,7 +21,7 @@ REC_REPORT = '📊 گزارش حسابداری'
 ACC_SUMMARY = '💰 خلاصه مالی'
 ACC_SHOP_PROFIT = '🏢 سود فروشگاه'
 ACC_TECH_SHARE = '👨‍🔧 طلب تعمیرکاران'
-ACC_TECH_SETTLE = '💸 تسویه تعمیرکار'
+ACC_PAY_DEBT = '💸 ثبت پرداخت بدهی'
 ACC_SUPPLIER_DEBT = '🏪 بدهی قطعه‌فروش'
 ACC_CUSTOMER_DEBT = '👥 بدهی مشتریان'
 ACC_EXPORT_EXCEL = '📊 خروجی Excel'
@@ -104,6 +104,7 @@ def accounting_menu() -> ReplyKeyboardMarkup:
         keyboard=[
             [KeyboardButton(text=ACC_SUMMARY), KeyboardButton(text=ACC_SHOP_PROFIT)],
             [KeyboardButton(text=ACC_TECH_SHARE), KeyboardButton(text=ACC_SUPPLIER_DEBT)],
+            [KeyboardButton(text=ACC_PAY_DEBT)],
             [KeyboardButton(text=ACC_CUSTOMER_DEBT)],
             [KeyboardButton(text=ACC_EXPORT_EXCEL), KeyboardButton(text=ACC_EXPORT_PDF)],
             [KeyboardButton(text=BACK_ROOT)],
@@ -183,4 +184,51 @@ def search_result_keyboard(results: list[dict]) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=f"#{r['id']} {r['customer_name'][:12]}", callback_data=f"view:{r['id']}")]
         for r in results[:8]
     ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def settle_kind_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text='👨‍🔧 تعمیرکار', callback_data='settle:kind:tech'),
+                InlineKeyboardButton(text='🏪 فروشنده قطعه', callback_data='settle:kind:sup'),
+            ],
+        ],
+    )
+
+
+def settle_payee_keyboard(payees: list[dict], *, kind: str) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    for row in payees[:12]:
+        debt = int(row.get('debt') or 0)
+        label = f"{row['name']} — {debt:,}"
+        entity_id = int(row['id'])
+        rows.append(
+            [InlineKeyboardButton(text=label, callback_data=f'settle:{kind}:{entity_id}')],
+        )
+    rows.append([InlineKeyboardButton(text='❌ انصراف', callback_data='settle:cancel')])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def settle_action_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text='✅ پرداخت کامل', callback_data='settle:full')],
+            [InlineKeyboardButton(text='✏️ مبلغ جزئی', callback_data='settle:custom')],
+            [InlineKeyboardButton(text='📋 انتخاب پرونده', callback_data='settle:pick')],
+            [InlineKeyboardButton(text='❌ انصراف', callback_data='settle:cancel')],
+        ],
+    )
+
+
+def settle_repair_keyboard(repairs: list[dict]) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    for repair in repairs[:10]:
+        debt = int(repair.get('debt') or 0)
+        label = f"#{repair['id']} {repair.get('customer_name', '')[:10]} — {debt:,}"
+        rows.append(
+            [InlineKeyboardButton(text=label, callback_data=f"settle:repair:{repair['id']}")],
+        )
+    rows.append([InlineKeyboardButton(text='⬅️ بازگشت', callback_data='settle:back')])
     return InlineKeyboardMarkup(inline_keyboard=rows)

@@ -353,6 +353,170 @@ class RepairRepository:
         )
         await self.conn.commit()
 
+    async def technicians_with_debt(self) -> list[dict[str, Any]]:
+        cursor = await self.conn.execute(
+            """
+            SELECT t.id, t.name, r.technician_pct AS pct,
+                   SUM(ROUND(r.labor_amount * r.technician_pct / 100.0)) AS share,
+                   SUM(COALESCE(r.technician_paid, 0)) AS paid,
+                   SUM(ROUND(r.labor_amount * r.technician_pct / 100.0))
+                       - SUM(COALESCE(r.technician_paid, 0)) AS debt
+            FROM repairs r
+            JOIN technicians t ON t.id = r.technician_id
+            WHERE r.status = 'open'
+            GROUP BY t.id
+            HAVING debt > 0
+            ORDER BY debt DESC
+            """,
+        )
+        return [dict(row) for row in await cursor.fetchall()]
+
+    async def suppliers_with_debt(self) -> list[dict[str, Any]]:
+        cursor = await self.conn.execute(
+            """
+            SELECT COALESCE(s.id, 0) AS id,
+                   COALESCE(s.name, 'بدون فروشنده') AS name,
+                   SUM(rp.cost) AS debt
+            FROM repair_parts rp
+            JOIN repairs r ON r.id = rp.repair_id
+            LEFT JOIN suppliers s ON s.id = rp.supplier_id
+            WHERE r.status = 'open' AND (r.parts_cost - r.supplier_paid) > 0
+            GROUP BY COALESCE(s.id, 0), COALESCE(s.name, 'بدون فروشنده')
+            HAVING debt > 0
+            ORDER BY debt DESC
+            """,
+        )
+        return [dict(row) for row in await cursor.fetchall()]
+
+    async def repairs_with_technician_debt(self, technician_id: int) -> list[dict[str, Any]]:
+        cursor = await self.conn.execute(
+            """
+            SELECT r.id, c.name AS customer_name, r.device,
+                   ROUND(r.labor_amount * r.technician_pct / 100.0) AS share,
+                   COALESCE(r.technician_paid, 0) AS paid,
+                   ROUND(r.labor_amount * r.technician_pct / 100.0)
+                       - COALESCE(r.technician_paid, 0) AS debt
+            FROM repairs r
+            JOIN customers c ON c.id = r.customer_id
+            WHERE r.status = 'open'
+              AND r.technician_id = ?
+              AND (
+                  ROUND(r.labor_amount * r.technician_pct / 100.0)
+                  - COALESCE(r.technician_paid, 0)
+              ) > 0
+            ORDER BY r.id
+            """,
+            (technician_id,),
+        )
+        return [dict(row) for row in await cursor.fetchall()]
+
+    async def repairs_with_supplier_debt(self, supplier_id: int) -> list[dict[str, Any]]:
+        if supplier_id == 0:
+            supplier_filter = 'rp.supplier_id IS NULL'
+        else:
+            supplier_filter = 'rp.supplier_id = ?'
+        params: tuple[Any, ...] = (supplier_id,) if supplier_id else ()
+        cursor = await self.conn.execute(
+            f"""
+            SELECT r.id, c.name AS customer_name, r.device,
+                   r.parts_cost - r.supplier_paid AS repair_supplier_debt,
+                   SUM(rp.cost) AS supplier_part_cost
+            FROM repair_parts rp
+            JOIN repairs r ON r.id = rp.repair_id
+            JOIN customers c ON c.id = r.customer_id
+            WHERE r.status = 'open'
+              AND (r.parts_cost - r.supplier_paid) > 0
+              AND {supplier_filter}
+            GROUP BY r.id
+            ORDER BY r.id
+            """,
+            params,
+        )
+        rows = []
+        for row in await cursor.fetchall():
+            item = dict(row)
+            item['debt'] = min(
+                int(item['repair_supplier_debt'] or 0),
+                int(item['supplier_part_cost'] or 0),
+            )
+            if item['debt'] > 0:
+                rows.append(item)
+        return rows
+
+    async def allocate_technician_payment(
+        self,
+        technician_id: int,
+        amount: int,
+        *,
+        repair_id: int | None = None,
+    ) -> list[tuple[int, int]]:
+        if amount <= 0:
+            return []
+        if repair_id is not None:
+            repairs = await self.repairs_with_technician_debt(technician_id)
+            targets = [r for r in repairs if int(r['id']) == repair_id]
+        else:
+            targets = await self.repairs_with_technician_debt(technician_id)
+
+        remaining = amount
+        applied: list[tuple[int, int]] = []
+        for row in targets:
+            if remaining <= 0:
+                break
+            pay = min(remaining, int(row['debt']))
+            if pay <= 0:
+                continue
+            await self.conn.execute(
+                'UPDATE repairs SET technician_paid = technician_paid + ? WHERE id = ?',
+                (pay, int(row['id'])),
+            )
+            await self.conn.execute(
+                'INSERT INTO payments (repair_id, kind, amount, note) VALUES (?, ?, ?, ?)',
+                (int(row['id']), 'technician', pay, f'tech:{technician_id}'),
+            )
+            applied.append((int(row['id']), pay))
+            remaining -= pay
+        if applied:
+            await self.conn.commit()
+        return applied
+
+    async def allocate_supplier_payment(
+        self,
+        supplier_id: int,
+        amount: int,
+        *,
+        repair_id: int | None = None,
+    ) -> list[tuple[int, int]]:
+        if amount <= 0:
+            return []
+        if repair_id is not None:
+            repairs = await self.repairs_with_supplier_debt(supplier_id)
+            targets = [r for r in repairs if int(r['id']) == repair_id]
+        else:
+            targets = await self.repairs_with_supplier_debt(supplier_id)
+
+        remaining = amount
+        applied: list[tuple[int, int]] = []
+        for row in targets:
+            if remaining <= 0:
+                break
+            pay = min(remaining, int(row['debt']))
+            if pay <= 0:
+                continue
+            await self.conn.execute(
+                'UPDATE repairs SET supplier_paid = supplier_paid + ? WHERE id = ?',
+                (pay, int(row['id'])),
+            )
+            await self.conn.execute(
+                'INSERT INTO payments (repair_id, kind, amount, note) VALUES (?, ?, ?, ?)',
+                (int(row['id']), 'supplier', pay, f'sup:{supplier_id}'),
+            )
+            applied.append((int(row['id']), pay))
+            remaining -= pay
+        if applied:
+            await self.conn.commit()
+        return applied
+
     async def close_repair(self, repair_id: int) -> None:
         await self.conn.execute(
             "UPDATE repairs SET status = 'closed', closed_at = datetime('now') WHERE id = ?",
