@@ -173,7 +173,7 @@ def build_invoice_pdf(repair: dict[str, Any], path: Path) -> Path:
     pdf.cell(w, 8, rtl(f"فاکتور فروش #{to_persian_digits(repair['id'])}"), ln=True, align='C')
     pdf.ln(2)
 
-    pdf.table_row([label_w, value_w], ['مورد', 'مشخصات'], header=True)
+    pdf.table_row([value_w, label_w], ['مشخصات', 'مورد'], header=True)
     for label, value in [
         ('مشتری', repair['customer_name']),
         ('تماس', repair['customer_phone'] or '—'),
@@ -181,54 +181,54 @@ def build_invoice_pdf(repair: dict[str, Any], path: Path) -> Path:
         ('ایراد', repair['issue']),
         ('تعمیرکار', repair.get('technician_name') or '—'),
     ]:
-        pdf.table_row([label_w, value_w], [label, str(value)], aligns=['R', 'R'])
+        pdf.table_row([value_w, label_w], [str(value), label], aligns=['R', 'R'])
 
     pdf.ln(3)
     pdf.table_row(
-        [col_row, col_desc, col_amount],
-        ['ردیف', 'شرح', 'مبلغ (تومان)'],
+        [col_amount, col_desc, col_row],
+        ['مبلغ (تومان)', 'شرح', 'ردیف'],
         header=True,
         height=8,
     )
 
     row_num = 1
     pdf.table_row(
-        [col_row, col_desc, col_amount],
-        [to_persian_digits(row_num), 'اجرت تعمیر', format_amount_persian(totals.labor_amount)],
+        [col_amount, col_desc, col_row],
+        [format_amount_persian(totals.labor_amount), 'اجرت تعمیر', to_persian_digits(row_num)],
         aligns=['C', 'R', 'C'],
     )
     row_num += 1
     for part in repair['parts']:
         pdf.table_row(
-            [col_row, col_desc, col_amount],
+            [col_amount, col_desc, col_row],
             [
-                to_persian_digits(row_num),
-                str(part['part_name']),
                 format_amount_persian(int(part['sell_price'])),
+                str(part['part_name']),
+                to_persian_digits(row_num),
             ],
             aligns=['C', 'R', 'C'],
         )
         row_num += 1
     if not repair['parts'] and totals.labor_amount == 0:
         pdf.table_row(
-            [col_row, col_desc, col_amount],
-            [to_persian_digits(1), '—', to_persian_digits(0)],
+            [col_amount, col_desc, col_row],
+            [to_persian_digits(0), '—', to_persian_digits(1)],
             aligns=['C', 'C', 'C'],
         )
 
     pdf.ln(3)
     summary_label_w = w * 0.62
     summary_value_w = w - summary_label_w
-    pdf.table_row([summary_label_w, summary_value_w], ['شرح', 'مبلغ (تومان)'], header=True)
+    pdf.table_row([summary_value_w, summary_label_w], ['مبلغ (تومان)', 'شرح'], header=True)
     for label, amount in [
         ('جمع کل', totals.customer_total),
         ('پرداخت‌شده', totals.customer_paid),
         ('مانده حساب', totals.customer_debt),
     ]:
         pdf.table_row(
-            [summary_label_w, summary_value_w],
-            [label, format_amount_persian(amount)],
-            aligns=['R', 'C'],
+            [summary_value_w, summary_label_w],
+            [format_amount_persian(amount), label],
+            aligns=['C', 'R'],
         )
 
     path.parent.mkdir(parents=True, exist_ok=True)
