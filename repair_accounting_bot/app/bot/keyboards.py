@@ -1,117 +1,117 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 
-ROOT_RECEPTION = '📥 پذیرش'
-ROOT_ACCOUNTING = '💼 حسابداری'
-ROOT_MANAGE = '⚙️ مدیریت'
-BACK_ROOT = '⬅️ منوی اصلی'
-
-MGMT_STAFF = '👥 پرسنل و دسترسی'
-MGMT_TECH = '👨‍🔧 تعمیرکاران'
-MGMT_SUP = '🏪 قطعه‌فروش'
-MGMT_STAFF_ADD = '➕ افزودن پرسنل'
-MGMT_STAFF_INVITE = '🔗 لینک دعوت پرسنل'
-MGMT_TECH_ADD = '➕ افزودن تعمیرکار'
-MGMT_SUP_ADD = '➕ افزودن فروشنده'
-
-REC_NEW = '📝 پذیرش جدید'
-REC_SEARCH = '🔍 جستجو'
-REC_INVOICE = '🧾 فاکتور'
-REC_REPORT = '📊 گزارش حسابداری'
-
-ACC_SUMMARY = '💰 خلاصه مالی'
-ACC_SHOP_PROFIT = '🏢 سود فروشگاه'
-ACC_TECH_SHARE = '👨‍🔧 طلب تعمیرکاران'
-ACC_PAY_DEBT = '💸 ثبت پرداخت بدهی'
-ACC_RECEIVE_CUSTOMER = '💵 دریافت از مشتری'
-ACC_SUPPLIER_DEBT = '🏪 بدهی قطعه‌فروش'
-ACC_CUSTOMER_DEBT = '👥 بدهی مشتریان'
-ACC_EXPORT_EXCEL = '📊 خروجی Excel'
-ACC_EXPORT_PDF = '📄 خروجی PDF'
+from app.ui.themes import Theme, list_themes
 
 
-def root_menu(*, can_reception: bool = True, can_accounting: bool = True, can_manage: bool = False) -> ReplyKeyboardMarkup:
+def _btn(theme: Theme, key: str) -> KeyboardButton:
+    return KeyboardButton(text=theme.label(key))
+
+
+def root_menu(
+    theme: Theme,
+    *,
+    can_reception: bool = True,
+    can_accounting: bool = True,
+    can_manage: bool = False,
+) -> ReplyKeyboardMarkup:
     row: list[KeyboardButton] = []
     rows: list[list[KeyboardButton]] = []
     if can_reception:
-        row.append(KeyboardButton(text=ROOT_RECEPTION))
+        row.append(_btn(theme, 'root_reception'))
     if can_accounting:
         if row:
             rows.append(row)
             row = []
-        row.append(KeyboardButton(text=ROOT_ACCOUNTING))
+        row.append(_btn(theme, 'root_accounting'))
     if row:
         rows.append(row)
     if can_manage:
-        rows.append([KeyboardButton(text=ROOT_MANAGE)])
-    rows.append([KeyboardButton(text='ℹ️ راهنما')])
+        rows.append([_btn(theme, 'root_manage')])
+    rows.append([_btn(theme, 'help')])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
 
-def admin_menu() -> ReplyKeyboardMarkup:
+def admin_menu(theme: Theme) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=MGMT_STAFF)],
-            [KeyboardButton(text=MGMT_TECH), KeyboardButton(text=MGMT_SUP)],
-            [KeyboardButton(text=BACK_ROOT)],
+            [_btn(theme, 'mgmt_staff'), _btn(theme, 'mgmt_theme')],
+            [_btn(theme, 'mgmt_tech'), _btn(theme, 'mgmt_sup')],
+            [_btn(theme, 'back_root')],
         ],
         resize_keyboard=True,
     )
 
 
-def staff_manage_menu() -> ReplyKeyboardMarkup:
+def staff_manage_menu(theme: Theme) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=MGMT_STAFF_ADD), KeyboardButton(text=MGMT_STAFF_INVITE)],
-            [KeyboardButton(text=BACK_ROOT), KeyboardButton(text=ROOT_MANAGE)],
+            [_btn(theme, 'mgmt_staff_add'), _btn(theme, 'mgmt_staff_invite')],
+            [_btn(theme, 'back_root'), _btn(theme, 'root_manage')],
         ],
         resize_keyboard=True,
     )
 
 
-def tech_manage_menu() -> ReplyKeyboardMarkup:
+def tech_manage_menu(theme: Theme) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=MGMT_TECH_ADD)],
-            [KeyboardButton(text=BACK_ROOT), KeyboardButton(text=ROOT_MANAGE)],
+            [_btn(theme, 'mgmt_tech_add')],
+            [_btn(theme, 'back_root'), _btn(theme, 'root_manage')],
         ],
         resize_keyboard=True,
     )
 
 
-def sup_manage_menu() -> ReplyKeyboardMarkup:
+def sup_manage_menu(theme: Theme) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=MGMT_SUP_ADD)],
-            [KeyboardButton(text=BACK_ROOT), KeyboardButton(text=ROOT_MANAGE)],
+            [_btn(theme, 'mgmt_sup_add')],
+            [_btn(theme, 'back_root'), _btn(theme, 'root_manage')],
         ],
         resize_keyboard=True,
     )
 
 
-def reception_menu() -> ReplyKeyboardMarkup:
+def reception_menu(theme: Theme) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=REC_NEW), KeyboardButton(text=REC_SEARCH)],
-            [KeyboardButton(text=REC_INVOICE), KeyboardButton(text=REC_REPORT)],
-            [KeyboardButton(text=ACC_EXPORT_EXCEL), KeyboardButton(text=ACC_EXPORT_PDF)],
-            [KeyboardButton(text=BACK_ROOT)],
+            [_btn(theme, 'rec_new'), _btn(theme, 'rec_search')],
+            [_btn(theme, 'rec_invoice'), _btn(theme, 'rec_report')],
+            [_btn(theme, 'acc_export_excel'), _btn(theme, 'acc_export_pdf')],
+            [_btn(theme, 'back_root')],
         ],
         resize_keyboard=True,
     )
 
 
-def accounting_menu() -> ReplyKeyboardMarkup:
+def accounting_menu(theme: Theme) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=ACC_SUMMARY), KeyboardButton(text=ACC_SHOP_PROFIT)],
-            [KeyboardButton(text=ACC_TECH_SHARE), KeyboardButton(text=ACC_SUPPLIER_DEBT)],
-            [KeyboardButton(text=ACC_PAY_DEBT), KeyboardButton(text=ACC_RECEIVE_CUSTOMER)],
-            [KeyboardButton(text=ACC_CUSTOMER_DEBT)],
-            [KeyboardButton(text=ACC_EXPORT_EXCEL), KeyboardButton(text=ACC_EXPORT_PDF)],
-            [KeyboardButton(text=BACK_ROOT)],
+            [_btn(theme, 'acc_summary'), _btn(theme, 'acc_shop_profit')],
+            [_btn(theme, 'acc_tech_share'), _btn(theme, 'acc_supplier_debt')],
+            [_btn(theme, 'acc_pay_debt'), _btn(theme, 'acc_receive_customer')],
+            [_btn(theme, 'acc_customer_debt')],
+            [_btn(theme, 'acc_export_excel'), _btn(theme, 'acc_export_pdf')],
+            [_btn(theme, 'back_root')],
         ],
         resize_keyboard=True,
     )
+
+
+def theme_picker_keyboard(current_id: str) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    for theme in list_themes():
+        mark = '✅ ' if theme.id == current_id else ''
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=f'{mark}{theme.name_fa}',
+                    callback_data=f'adm:theme:{theme.id}',
+                ),
+            ],
+        )
+    rows.append([InlineKeyboardButton(text='⬅️ بازگشت', callback_data='adm:theme:back')])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def skip_keyboard() -> ReplyKeyboardMarkup:

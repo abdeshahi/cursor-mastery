@@ -3,6 +3,7 @@ import pytest_asyncio
 
 from app.services.export_service import ExportService
 from app.storage.db import Database
+from app.storage.settings_repository import SettingsRepository
 from app.storage.repository import RepairRepository
 
 
@@ -11,6 +12,7 @@ async def export_service(tmp_path):
     db = Database(str(tmp_path / 'test.db'))
     conn = await db.connect()
     repo = RepairRepository(conn)
+    settings_repo = SettingsRepository(conn)
     tech_id = await repo.add_technician('علی', 40)
     customer_id = await repo.find_or_create_customer('رضا', '09120000000')
     await repo.create_repair(
@@ -22,7 +24,7 @@ async def export_service(tmp_path):
         technician_pct=40,
         parts=[{'part_name': 'LCD', 'cost': 1_000_000, 'sell_price': 1_300_000, 'supplier_id': None}],
     )
-    service = ExportService(repo, tmp_path / 'exports')
+    service = ExportService(repo, tmp_path / 'exports', settings_repo)
     yield service, repo
     await conn.close()
 

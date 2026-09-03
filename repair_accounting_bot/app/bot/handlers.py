@@ -9,20 +9,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, FSInputFile, Message
 
 from app.bot.keyboards import (
-    ACC_CUSTOMER_DEBT,
-    ACC_EXPORT_EXCEL,
-    ACC_EXPORT_PDF,
-    ACC_SHOP_PROFIT,
-    ACC_SUMMARY,
-    ACC_SUPPLIER_DEBT,
-    ACC_TECH_SHARE,
-    BACK_ROOT,
-    REC_INVOICE,
-    REC_NEW,
-    REC_REPORT,
-    REC_SEARCH,
-    ROOT_ACCOUNTING,
-    ROOT_RECEPTION,
     accounting_menu,
     cancel_keyboard,
     parts_more_keyboard,
@@ -34,6 +20,7 @@ from app.bot.keyboards import (
     supplier_keyboard,
     technician_keyboard,
 )
+from app.bot.menu_filter import MenuFilter
 from app.bot.middleware import RepositoryMiddleware
 from app.bot.parsing import parse_staff_args
 from app.bot.staff_middleware import StaffGuardMiddleware
@@ -52,14 +39,16 @@ from app.services.formatters import (
 )
 from app.storage.db import Database
 from app.storage.staff_repository import StaffRepository
-from app.storage.repository import RepairRepository
+from app.storage.settings_repository import SettingsRepository
 from app.staff.roles import ROLE_LABELS
+from app.ui.themes import Theme
 
 router = Router()
 
 
-def user_root_menu(can_reception: bool, can_accounting: bool, can_manage: bool):
+def user_root_menu(can_reception: bool, can_accounting: bool, can_manage: bool, theme: Theme):
     return root_menu(
+        theme,
         can_reception=can_reception,
         can_accounting=can_accounting,
         can_manage=can_manage,
@@ -100,13 +89,14 @@ async def cmd_start(
     can_reception: bool,
     can_accounting: bool,
     can_manage: bool,
+    theme: Theme,
     invite_joined: bool = False,
 ) -> None:
     await state.clear()
     text = ''
     if invite_joined:
         text += '✅ **به تیم CTTEL خوش آمدید!**\n\n'
-    text += '🔧 **بات پذیرش و حسابداری CTTEL**\n\n'
+    text += f"{theme.banner}\n\n🔧 **بات پذیرش و حسابداری CTTEL**\n\n"
     if can_reception:
         text += '📥 **پذیرش** — ثبت، جستجو، فاکتور\n'
     if can_accounting:
@@ -115,14 +105,14 @@ async def cmd_start(
         text += '⚙️ **مدیریت** — پرسنل، تعمیرکار، فروشنده\n'
     await message.answer(
         text,
-        reply_markup=user_root_menu(can_reception, can_accounting, can_manage),
+        reply_markup=user_root_menu(can_reception, can_accounting, can_manage, theme),
         parse_mode='Markdown',
     )
 
 
 @router.message(Command('help'))
-@router.message(F.text == 'ℹ️ راهنما')
-async def cmd_help(message: Message) -> None:
+@router.message(MenuFilter('help'))
+async def cmd_help(message: Message, theme: Theme) -> None:
     await message.answer(
         '📥 **منوی پذیرش**\n'
         '• پذیرش جدید — ثبت مشتری، دستگاه، تعمیرکار، اجرت، قطعه\n'
@@ -140,13 +130,13 @@ async def cmd_help(message: Message) -> None:
         '• ✏️ ویرایش پرونده — تغییر اجرت یا افزودن قطعه بعد از پذیرش\n'
         '• خروجی Excel / PDF — گزارش کامل حسابداری\n\n'
         'روی هر پرونده: 📊 Excel و 📄 PDF فاکتور\n\n'
-        '⚙️ **مدیریت (فقط مدیر):** پرسنل، لینک دعوت، تعمیرکاران، قطعه‌فروش، دسترسی ویرایش پرونده\n'
+        '⚙️ **مدیریت (فقط مدیر):** پرسنل، لینک دعوت، تعمیرکاران، قطعه‌فروش، دسترسی ویرایش، 🎨 تم رنگی\n'
         'برای گرفتن آیدی: /myid',
         parse_mode='Markdown',
     )
 
 
-@router.message(F.text == BACK_ROOT)
+@router.message(MenuFilter('back_root'))
 @router.message(F.text == '❌ انصراف')
 async def back_to_root(
     message: Message,
@@ -154,36 +144,37 @@ async def back_to_root(
     can_reception: bool,
     can_accounting: bool,
     can_manage: bool,
+    theme: Theme,
 ) -> None:
     await state.clear()
     await message.answer(
         'منوی اصلی',
-        reply_markup=user_root_menu(can_reception, can_accounting, can_manage),
+        reply_markup=user_root_menu(can_reception, can_accounting, can_manage, theme),
     )
 
 
-@router.message(F.text == ROOT_RECEPTION)
-async def open_reception_menu(message: Message, state: FSMContext, can_reception: bool) -> None:
+@router.message(MenuFilter('root_reception'))
+async def open_reception_menu(message: Message, state: FSMContext, can_reception: bool, theme: Theme) -> None:
     if not can_reception:
         await message.answer('⛔️ دسترسی پذیرش برای شما فعال نیست.')
         return
     await state.clear()
-    await message.answer('📥 **منوی پذیرش**', reply_markup=reception_menu(), parse_mode='Markdown')
+    await message.answer(f"{theme.banner}\n\n📥 **منوی پذیرش**", reply_markup=reception_menu(theme), parse_mode='Markdown')
 
 
-@router.message(F.text == ROOT_ACCOUNTING)
-async def open_accounting_menu(message: Message, state: FSMContext, can_accounting: bool) -> None:
+@router.message(MenuFilter('root_accounting'))
+async def open_accounting_menu(message: Message, state: FSMContext, can_accounting: bool, theme: Theme) -> None:
     if not can_accounting:
         await message.answer('⛔️ دسترسی حسابداری برای شما فعال نیست.')
         return
     await state.clear()
-    await message.answer('💼 **منوی حسابداری**', reply_markup=accounting_menu(), parse_mode='Markdown')
+    await message.answer(f"{theme.banner}\n\n💼 **منوی حسابداری**", reply_markup=accounting_menu(theme), parse_mode='Markdown')
 
 
 # --- Reception: new repair flow ---
 
-@router.message(F.text == REC_NEW)
-async def start_repair(message: Message, state: FSMContext) -> None:
+@router.message(MenuFilter('rec_new'))
+async def start_repair(message: Message, state: FSMContext, theme: Theme) -> None:
     await state.clear()
     await state.set_state(NewRepair.customer_name)
     await state.update_data(parts=[])
@@ -261,13 +252,13 @@ async def repair_labor(message: Message, state: FSMContext) -> None:
 
 
 @router.message(NewRepair.part_name, F.text == '⏭ بدون قطعه / ادامه')
-async def repair_no_parts(message: Message, state: FSMContext, repo: RepairRepository, can_edit_repair: bool = False) -> None:
-    await finalize_repair(message, state, repo, can_edit_repair=can_edit_repair)
+async def repair_no_parts(message: Message, state: FSMContext, repo: RepairRepository, theme: Theme, can_edit_repair: bool = False) -> None:
+    await finalize_repair(message, state, repo, theme, can_edit_repair=can_edit_repair)
 
 
 @router.message(NewRepair.part_name, F.text == '✅ ثبت نهایی پذیرش')
-async def repair_finalize_button(message: Message, state: FSMContext, repo: RepairRepository, can_edit_repair: bool = False) -> None:
-    await finalize_repair(message, state, repo, can_edit_repair=can_edit_repair)
+async def repair_finalize_button(message: Message, state: FSMContext, repo: RepairRepository, theme: Theme, can_edit_repair: bool = False) -> None:
+    await finalize_repair(message, state, repo, theme, can_edit_repair=can_edit_repair)
 
 
 @router.message(NewRepair.part_name, F.text == '➕ قطعه دیگر')
@@ -357,6 +348,7 @@ async def finalize_repair(
     message: Message,
     state: FSMContext,
     repo: RepairRepository,
+    theme: Theme,
     *,
     can_edit_repair: bool = False,
 ) -> None:
@@ -380,13 +372,13 @@ async def finalize_repair(
     await message.answer(
         format_invoice(repair),
         parse_mode='Markdown',
-        reply_markup=reception_menu(),
+        reply_markup=reception_menu(theme),
     )
 
 
 # --- Reception: search & invoice ---
 
-@router.message(F.text == REC_SEARCH)
+@router.message(MenuFilter('rec_search'))
 async def start_search(message: Message, state: FSMContext) -> None:
     await state.set_state(SearchRepair.query)
     await message.answer(
@@ -397,63 +389,63 @@ async def start_search(message: Message, state: FSMContext) -> None:
 
 
 @router.message(SearchRepair.query)
-async def run_search(message: Message, state: FSMContext, repo: RepairRepository) -> None:
+async def run_search(message: Message, state: FSMContext, repo: RepairRepository, theme: Theme) -> None:
     results = await repo.search_repairs(message.text.strip())
     await state.clear()
     await message.answer(
         format_search_results(results),
         parse_mode='Markdown',
-        reply_markup=search_result_keyboard(results) if results else reception_menu(),
+        reply_markup=search_result_keyboard(results) if results else reception_menu(theme),
     )
     if results:
-        await message.answer('یک پرونده را انتخاب کنید یا /repair شماره', reply_markup=reception_menu())
+        await message.answer('یک پرونده را انتخاب کنید یا /repair شماره', reply_markup=reception_menu(theme))
 
 
-@router.message(F.text == REC_INVOICE)
+@router.message(MenuFilter('rec_invoice'))
 async def start_invoice(message: Message, state: FSMContext) -> None:
     await state.set_state(InvoiceLookup.repair_id)
     await message.answer('شماره پرونده برای صدور فاکتور:', reply_markup=cancel_keyboard())
 
 
 @router.message(InvoiceLookup.repair_id)
-async def show_invoice(message: Message, state: FSMContext, repo: RepairRepository) -> None:
+async def show_invoice(message: Message, state: FSMContext, repo: RepairRepository, theme: Theme) -> None:
     if not message.text.strip().isdigit():
         await message.answer('لطفاً شماره پرونده را وارد کنید.')
         return
     repair = await repo.get_repair(int(message.text.strip()))
     await state.clear()
     if not repair:
-        await message.answer('پرونده یافت نشد.', reply_markup=reception_menu())
+        await message.answer('پرونده یافت نشد.', reply_markup=reception_menu(theme))
         return
-    await message.answer(format_invoice(repair), parse_mode='Markdown', reply_markup=reception_menu())
+    await message.answer(format_invoice(repair), parse_mode='Markdown', reply_markup=reception_menu(theme))
 
 
-@router.message(F.text == REC_REPORT)
+@router.message(MenuFilter('rec_report'))
 async def reception_report(message: Message, repo: RepairRepository) -> None:
     await show_accounting_report(message, repo)
 
 
 # --- Accounting menu ---
 
-@router.message(F.text == ACC_SUMMARY)
+@router.message(MenuFilter('acc_summary'))
 async def accounting_summary(message: Message, repo: RepairRepository) -> None:
     await show_accounting_report(message, repo)
 
 
-@router.message(F.text == ACC_SHOP_PROFIT)
-async def accounting_shop_profit(message: Message, repo: RepairRepository) -> None:
+@router.message(MenuFilter('acc_shop_profit'))
+async def accounting_shop_profit(message: Message, repo: RepairRepository, theme: Theme) -> None:
     dashboard = await repo.accounting_dashboard()
     await message.answer(
         f"🏢 **سود فروشگاه** (پرونده‌های باز)\n\n"
         f"💰 {format_toman(dashboard['shop_profit'])}\n\n"
         f"📂 تعداد پرونده: {dashboard['open_count']}",
         parse_mode='Markdown',
-        reply_markup=accounting_menu(),
+        reply_markup=accounting_menu(theme),
     )
 
 
-@router.message(F.text == ACC_TECH_SHARE)
-async def accounting_tech_share(message: Message, repo: RepairRepository) -> None:
+@router.message(MenuFilter('acc_tech_share'))
+async def accounting_tech_share(message: Message, repo: RepairRepository, theme: Theme) -> None:
     dashboard = await repo.accounting_dashboard()
     lines = ['👨‍🔧 **طلب تعمیرکاران**', '']
     if dashboard['technicians']:
@@ -467,11 +459,11 @@ async def accounting_tech_share(message: Message, repo: RepairRepository) -> Non
     else:
         lines.append('• پرونده بازی با تعمیرکار ثبت نشده')
     lines.append(f"\n📊 **جمع مانده طلب:** {format_toman(dashboard.get('technician_debt', 0))}")
-    await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu())
+    await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu(theme))
 
 
-@router.message(F.text == ACC_SUPPLIER_DEBT)
-async def accounting_supplier_debt(message: Message, repo: RepairRepository) -> None:
+@router.message(MenuFilter('acc_supplier_debt'))
+async def accounting_supplier_debt(message: Message, repo: RepairRepository, theme: Theme) -> None:
     dashboard = await repo.accounting_dashboard()
     lines = ['🏪 **بدهی به قطعه‌فروش**', '']
     if dashboard['suppliers']:
@@ -480,11 +472,11 @@ async def accounting_supplier_debt(message: Message, repo: RepairRepository) -> 
     else:
         lines.append('• بدهی فعالی ثبت نشده')
     lines.append(f"\n📊 **جمع:** {format_toman(dashboard['supplier_debt'])}")
-    await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu())
+    await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu(theme))
 
 
-@router.message(F.text == ACC_CUSTOMER_DEBT)
-async def accounting_customer_debt(message: Message, repo: RepairRepository) -> None:
+@router.message(MenuFilter('acc_customer_debt'))
+async def accounting_customer_debt(message: Message, repo: RepairRepository, theme: Theme) -> None:
     rows = await repo.customer_debts()
     lines = ['👥 **بدهی مشتریان**', '']
     if rows:
@@ -494,18 +486,18 @@ async def accounting_customer_debt(message: Message, repo: RepairRepository) -> 
         lines.append('• بدهی فعالی ثبت نشده')
     dashboard = await repo.accounting_dashboard()
     lines.append(f"\n📊 **جمع:** {format_toman(dashboard['customer_debt'])}")
-    await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu())
+    await message.answer('\n'.join(lines), parse_mode='Markdown', reply_markup=accounting_menu(theme))
 
 
-@router.message(F.text == ACC_EXPORT_EXCEL)
-async def export_accounting_excel(message: Message, export_service: ExportService) -> None:
+@router.message(MenuFilter('acc_export_excel'))
+async def export_accounting_excel(message: Message, export_service: ExportService, theme: Theme) -> None:
     await message.answer('⏳ در حال ساخت فایل Excel...')
     path = await export_service.export_accounting_excel()
     await send_export_file(message, path, '📊 گزارش حسابداری Excel')
 
 
-@router.message(F.text == ACC_EXPORT_PDF)
-async def export_accounting_pdf(message: Message, export_service: ExportService) -> None:
+@router.message(MenuFilter('acc_export_pdf'))
+async def export_accounting_pdf(message: Message, export_service: ExportService, theme: Theme) -> None:
     await message.answer('⏳ در حال ساخت فایل PDF...')
     path = await export_service.export_accounting_pdf()
     await send_export_file(message, path, '📄 گزارش حسابداری PDF')
@@ -616,13 +608,14 @@ async def payment_amount(
     message: Message,
     state: FSMContext,
     repo: RepairRepository,
+    theme: Theme,
     can_edit_repair: bool = False,
 ) -> None:
     if not message.text.strip().isdigit():
         await message.answer('لطفاً فقط عدد وارد کنید.')
         return
     amount = int(message.text.strip())
-    if await process_settle_payment(message, state, repo, amount):
+    if await process_settle_payment(message, state, repo, amount, theme):
         return
     data = await state.get_data()
     repair_id = int(data['repair_id'])
@@ -642,14 +635,14 @@ async def payment_amount(
             can_edit=can_edit_repair,
         ),
     )
-    await message.answer('منوی حسابداری', reply_markup=accounting_menu())
+    await message.answer('منوی حسابداری', reply_markup=accounting_menu(theme))
 
 
 @router.callback_query(F.data.startswith('close:'))
-async def close_repair(callback: CallbackQuery, repo: RepairRepository) -> None:
+async def close_repair(callback: CallbackQuery, repo: RepairRepository, theme: Theme) -> None:
     repair_id = int(callback.data.split(':')[1])
     await repo.close_repair(repair_id)
-    await callback.message.answer(f'پرونده #{repair_id} بسته شد ✅', reply_markup=reception_menu())
+    await callback.message.answer(f'پرونده #{repair_id} بسته شد ✅', reply_markup=reception_menu(theme))
     await callback.answer()
 
 
@@ -775,10 +768,11 @@ def create_dispatcher(
     repo: RepairRepository,
     export_service: ExportService,
     staff_repo: StaffRepository,
+    settings_repo: SettingsRepository,
 ) -> Dispatcher:
     dp = Dispatcher()
     dp.update.middleware(StaffGuardMiddleware(staff_repo))
-    dp.update.middleware(RepositoryMiddleware(repo, export_service, staff_repo))
+    dp.update.middleware(RepositoryMiddleware(repo, export_service, staff_repo, settings_repo))
     dp.include_router(settle_router)
     dp.include_router(edit_router)
     dp.include_router(admin_router)
@@ -796,8 +790,9 @@ async def run_bot() -> None:
         )
     await staff_repo.seed_from_env()
     repo = RepairRepository(conn)
-    export_service = ExportService(repo, Path(settings.EXPORT_DIR))
+    settings_repo = SettingsRepository(conn)
+    export_service = ExportService(repo, Path(settings.EXPORT_DIR), settings_repo)
     session = AiohttpSession(proxy=settings.TELEGRAM_PROXY) if settings.TELEGRAM_PROXY else None
     bot = Bot(token=settings.BOT_TOKEN, session=session)
-    dp = create_dispatcher(repo, export_service, staff_repo)
+    dp = create_dispatcher(repo, export_service, staff_repo, settings_repo)
     await dp.start_polling(bot)

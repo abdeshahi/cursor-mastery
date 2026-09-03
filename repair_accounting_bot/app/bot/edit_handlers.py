@@ -16,6 +16,7 @@ from app.bot.states import EditRepair
 from app.services.accounting import format_toman
 from app.services.formatters import format_repair_summary
 from app.storage.repository import RepairRepository
+from app.ui.themes import Theme
 
 edit_router = Router()
 
@@ -24,6 +25,7 @@ async def _show_repair(
     message: Message,
     repo: RepairRepository,
     repair_id: int,
+    theme: Theme,
     *,
     can_edit_repair: bool = False,
 ) -> None:
@@ -48,7 +50,7 @@ async def _require_open_repair(repo: RepairRepository, repair_id: int) -> dict |
 
 
 @edit_router.callback_query(F.data.startswith('edit:menu:'))
-async def edit_menu(callback: CallbackQuery, repo: RepairRepository, can_edit_repair: bool = False) -> None:
+async def edit_menu(callback: CallbackQuery, repo: RepairRepository, can_edit_repair: bool = False, theme: Theme) -> None:
     if not can_edit_repair:
         await callback.answer('⛔️ دسترسی ویرایش پرونده ندارید.', show_alert=True)
         return
@@ -70,9 +72,9 @@ async def edit_menu(callback: CallbackQuery, repo: RepairRepository, can_edit_re
 
 
 @edit_router.callback_query(F.data == 'edit:cancel')
-async def edit_cancel(callback: CallbackQuery, state: FSMContext) -> None:
+async def edit_cancel(callback: CallbackQuery, state: FSMContext, theme: Theme) -> None:
     await state.clear()
-    await callback.message.answer('ویرایش لغو شد.', reply_markup=reception_menu())
+    await callback.message.answer('ویرایش لغو شد.', reply_markup=reception_menu(theme))
     await callback.answer()
 
 
@@ -82,7 +84,7 @@ async def edit_labor_start(
     state: FSMContext,
     repo: RepairRepository,
     can_edit_repair: bool = False,
-) -> None:
+, theme: Theme) -> None:
     if not can_edit_repair:
         await callback.answer('⛔️ دسترسی ویرایش پرونده ندارید.', show_alert=True)
         return
@@ -109,10 +111,10 @@ async def edit_labor_save(
     state: FSMContext,
     repo: RepairRepository,
     can_edit_repair: bool = False,
-) -> None:
+, theme: Theme) -> None:
     if not can_edit_repair:
         await state.clear()
-        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu())
+        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
         return
     if not message.text.strip().isdigit():
         await message.answer('لطفاً فقط عدد وارد کنید.')
@@ -122,12 +124,12 @@ async def edit_labor_save(
     labor_amount = int(message.text.strip())
     if not await repo.update_repair_labor(repair_id, labor_amount):
         await state.clear()
-        await message.answer('پرونده باز یافت نشد یا بسته شده.', reply_markup=reception_menu())
+        await message.answer('پرونده باز یافت نشد یا بسته شده.', reply_markup=reception_menu(theme))
         return
     await state.clear()
     await message.answer(f'✅ اجرت پرونده #{repair_id} به‌روز شد.')
-    await _show_repair(message, repo, repair_id, can_edit_repair=can_edit_repair)
-    await message.answer('منوی پذیرش', reply_markup=reception_menu())
+    await _show_repair(message, repo, repair_id, theme, can_edit_repair=can_edit_repair)
+    await message.answer('منوی پذیرش', reply_markup=reception_menu(theme))
 
 
 @edit_router.callback_query(F.data.startswith('edit:part:'))
@@ -136,7 +138,7 @@ async def edit_part_start(
     state: FSMContext,
     repo: RepairRepository,
     can_edit_repair: bool = False,
-) -> None:
+, theme: Theme) -> None:
     if not can_edit_repair:
         await callback.answer('⛔️ دسترسی ویرایش پرونده ندارید.', show_alert=True)
         return
@@ -162,7 +164,7 @@ async def edit_parts_finish(
     state: FSMContext,
     repo: RepairRepository,
     can_edit_repair: bool = False,
-) -> None:
+, theme: Theme) -> None:
     data = await state.get_data()
     repair_id = int(data['edit_repair_id'])
     added = int(data.get('edit_parts_added') or 0)
@@ -171,24 +173,24 @@ async def edit_parts_finish(
         await message.answer(f'✅ {added} قطعه به پرونده #{repair_id} اضافه شد.')
     else:
         await message.answer('قطعه‌ای اضافه نشد.')
-    await _show_repair(message, repo, repair_id, can_edit_repair=can_edit_repair)
-    await message.answer('منوی پذیرش', reply_markup=reception_menu())
+    await _show_repair(message, repo, repair_id, theme, can_edit_repair=can_edit_repair)
+    await message.answer('منوی پذیرش', reply_markup=reception_menu(theme))
 
 
 @edit_router.message(EditRepair.part_name, F.text == '➕ قطعه دیگر')
-async def edit_part_add_more(message: Message, state: FSMContext, can_edit_repair: bool = False) -> None:
+async def edit_part_add_more(message: Message, state: FSMContext, can_edit_repair: bool = False, theme: Theme) -> None:
     if not can_edit_repair:
         await state.clear()
-        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu())
+        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
         return
     await message.answer('نام قطعه بعدی:', reply_markup=cancel_keyboard())
 
 
 @edit_router.message(EditRepair.part_name)
-async def edit_part_name(message: Message, state: FSMContext, can_edit_repair: bool = False) -> None:
+async def edit_part_name(message: Message, state: FSMContext, can_edit_repair: bool = False, theme: Theme) -> None:
     if not can_edit_repair:
         await state.clear()
-        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu())
+        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
         return
     await state.update_data(current_part={'part_name': message.text.strip()})
     await state.set_state(EditRepair.part_cost)
@@ -196,10 +198,10 @@ async def edit_part_name(message: Message, state: FSMContext, can_edit_repair: b
 
 
 @edit_router.message(EditRepair.part_cost)
-async def edit_part_cost(message: Message, state: FSMContext, can_edit_repair: bool = False) -> None:
+async def edit_part_cost(message: Message, state: FSMContext, can_edit_repair: bool = False, theme: Theme) -> None:
     if not can_edit_repair:
         await state.clear()
-        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu())
+        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
         return
     if not message.text.strip().isdigit():
         await message.answer('لطفاً فقط عدد وارد کنید.')
@@ -218,10 +220,10 @@ async def edit_part_sell(
     state: FSMContext,
     repo: RepairRepository,
     can_edit_repair: bool = False,
-) -> None:
+, theme: Theme) -> None:
     if not can_edit_repair:
         await state.clear()
-        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu())
+        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
         return
     if not message.text.strip().isdigit():
         await message.answer('لطفاً فقط عدد وارد کنید.')
@@ -244,7 +246,7 @@ async def edit_pick_supplier(
     state: FSMContext,
     repo: RepairRepository,
     can_edit_repair: bool = False,
-) -> None:
+, theme: Theme) -> None:
     if not can_edit_repair:
         await callback.answer('⛔️ دسترسی ویرایش پرونده ندارید.', show_alert=True)
         return
@@ -269,10 +271,10 @@ async def edit_part_supplier_text(
     state: FSMContext,
     repo: RepairRepository,
     can_edit_repair: bool = False,
-) -> None:
+, theme: Theme) -> None:
     if not can_edit_repair:
         await state.clear()
-        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu())
+        await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
         return
     data = await state.get_data()
     part = data.get('current_part', {})
@@ -294,7 +296,7 @@ async def _save_edit_part(message: Message, state: FSMContext, repo: RepairRepos
     part = data['current_part']
     if not await repo.add_repair_part(repair_id, part):
         await state.clear()
-        await message.answer('پرونده باز یافت نشد یا بسته شده.', reply_markup=reception_menu())
+        await message.answer('پرونده باز یافت نشد یا بسته شده.', reply_markup=reception_menu(theme))
         return
     added = int(data.get('edit_parts_added') or 0) + 1
     await state.update_data(edit_parts_added=added, current_part={})

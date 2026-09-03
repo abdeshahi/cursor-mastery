@@ -17,23 +17,19 @@ from app.bot.admin_keyboards import (
 )
 from app.bot.invite_utils import build_invite_link
 from app.bot.keyboards import (
-    MGMT_STAFF,
-    MGMT_STAFF_ADD,
-    MGMT_STAFF_INVITE,
-    MGMT_SUP,
-    MGMT_SUP_ADD,
-    MGMT_TECH,
-    MGMT_TECH_ADD,
-    ROOT_MANAGE,
     admin_menu,
     root_menu,
     staff_manage_menu,
     sup_manage_menu,
     tech_manage_menu,
+    theme_picker_keyboard,
 )
+from app.bot.menu_filter import MenuFilter
 from app.bot.parsing import parse_staff_args
 from app.bot.states import AdminStaffAdd, AdminStaffRename, AdminSupAdd, AdminTechAdd
 from app.staff.roles import ROLE_ADMIN, ROLE_LABELS
+from app.ui.themes import Theme
+from app.storage.settings_repository import SettingsRepository
 from app.storage.repository import RepairRepository
 from app.storage.staff_repository import StaffRepository
 
@@ -44,42 +40,42 @@ async def deny_admin(message: Message) -> None:
     await message.answer('⛔️ این بخش فقط برای مدیر است.')
 
 
-@admin_router.message(F.text == ROOT_MANAGE)
-async def open_admin_menu(message: Message, state: FSMContext, is_admin: bool) -> None:
+@admin_router.message(MenuFilter('root_manage'))
+async def open_admin_menu(message: Message, state: FSMContext, is_admin: bool, theme: Theme) -> None:
     if not is_admin:
         await deny_admin(message)
         return
     await state.clear()
-    await message.answer('⚙️ **مدیریت سیستم**', reply_markup=admin_menu(), parse_mode='Markdown')
+    await message.answer(f"{theme.banner}\n\n⚙️ **مدیریت سیستم**", reply_markup=admin_menu(theme), parse_mode='Markdown')
 
 
-@admin_router.message(F.text == MGMT_STAFF)
-async def admin_staff_menu(message: Message, state: FSMContext, staff_repo: StaffRepository, is_admin: bool) -> None:
+@admin_router.message(MenuFilter('mgmt_staff'))
+async def admin_staff_menu(message: Message, state: FSMContext, staff_repo: StaffRepository, is_admin: bool, theme: Theme) -> None:
     if not is_admin:
         await deny_admin(message)
         return
     await state.clear()
-    await message.answer('👥 **پرسنل و دسترسی**', reply_markup=staff_manage_menu(), parse_mode='Markdown')
+    await message.answer('👥 **پرسنل و دسترسی**', reply_markup=staff_manage_menu(theme), parse_mode='Markdown')
     await show_staff_list(message, staff_repo)
 
 
-@admin_router.message(F.text == MGMT_TECH)
-async def admin_tech_menu(message: Message, state: FSMContext, repo: RepairRepository, is_admin: bool) -> None:
+@admin_router.message(MenuFilter('mgmt_tech'))
+async def admin_tech_menu(message: Message, state: FSMContext, repo: RepairRepository, is_admin: bool, theme: Theme) -> None:
     if not is_admin:
         await deny_admin(message)
         return
     await state.clear()
-    await message.answer('👨‍🔧 **تعمیرکاران**', reply_markup=tech_manage_menu(), parse_mode='Markdown')
+    await message.answer('👨‍🔧 **تعمیرکاران**', reply_markup=tech_manage_menu(theme), parse_mode='Markdown')
     await show_technician_list(message, repo)
 
 
-@admin_router.message(F.text == MGMT_SUP)
-async def admin_sup_menu(message: Message, state: FSMContext, repo: RepairRepository, is_admin: bool) -> None:
+@admin_router.message(MenuFilter('mgmt_sup'))
+async def admin_sup_menu(message: Message, state: FSMContext, repo: RepairRepository, is_admin: bool, theme: Theme) -> None:
     if not is_admin:
         await deny_admin(message)
         return
     await state.clear()
-    await message.answer('🏪 **قطعه‌فروشان**', reply_markup=sup_manage_menu(), parse_mode='Markdown')
+    await message.answer('🏪 **قطعه‌فروشان**', reply_markup=sup_manage_menu(theme), parse_mode='Markdown')
     await show_supplier_list(message, repo)
 
 
@@ -290,7 +286,7 @@ async def admin_staff_rename_save(
         await state.clear()
         await message.answer(
             f'✅ نام «{old_name}» به «{new_name}» تغییر کرد.',
-            reply_markup=staff_manage_menu(),
+            reply_markup=staff_manage_menu(theme),
         )
         await show_staff_list(message, staff_repo)
     else:
@@ -312,8 +308,8 @@ async def cb_staff_add_start(callback: CallbackQuery, state: FSMContext, is_admi
     await callback.answer()
 
 
-@admin_router.message(F.text == MGMT_STAFF_ADD)
-async def admin_staff_add_start(message: Message, state: FSMContext, is_admin: bool) -> None:
+@admin_router.message(MenuFilter('mgmt_staff_add'))
+async def admin_staff_add_start(message: Message, state: FSMContext, is_admin: bool, theme: Theme) -> None:
     if not is_admin:
         await deny_admin(message)
         return
@@ -379,7 +375,7 @@ async def admin_staff_add_role(
     await state.clear()
     await callback.message.answer(
         f'✅ پرسنل اضافه شد: {name} ({ROLE_LABELS[role]})',
-        reply_markup=admin_menu(),
+        reply_markup=admin_menu(theme),
     )
     await show_staff_list(callback.message, staff_repo)
     await callback.answer()
@@ -437,8 +433,8 @@ async def cb_tech_add_start(callback: CallbackQuery, state: FSMContext, is_admin
     await callback.answer()
 
 
-@admin_router.message(F.text == MGMT_TECH_ADD)
-async def admin_tech_add_start(message: Message, state: FSMContext, is_admin: bool) -> None:
+@admin_router.message(MenuFilter('mgmt_tech_add'))
+async def admin_tech_add_start(message: Message, state: FSMContext, is_admin: bool, theme: Theme) -> None:
     if not is_admin:
         await deny_admin(message)
         return
@@ -464,7 +460,7 @@ async def admin_tech_add_pct(message: Message, state: FSMContext, repo: RepairRe
     await state.clear()
     await message.answer(
         f'✅ تعمیرکار #{tech_id} ثبت شد: {data["admin_tech_name"]} ({pct}%)',
-        reply_markup=tech_manage_menu(),
+        reply_markup=tech_manage_menu(theme),
     )
 
 
@@ -520,8 +516,8 @@ async def cb_sup_add_start(callback: CallbackQuery, state: FSMContext, is_admin:
     await callback.answer()
 
 
-@admin_router.message(F.text == MGMT_SUP_ADD)
-async def admin_sup_add_start(message: Message, state: FSMContext, is_admin: bool) -> None:
+@admin_router.message(MenuFilter('mgmt_sup_add'))
+async def admin_sup_add_start(message: Message, state: FSMContext, is_admin: bool, theme: Theme) -> None:
     if not is_admin:
         await deny_admin(message)
         return
@@ -533,7 +529,7 @@ async def admin_sup_add_start(message: Message, state: FSMContext, is_admin: boo
 async def admin_sup_add_name(message: Message, state: FSMContext, repo: RepairRepository) -> None:
     sup_id = await repo.add_supplier(message.text.strip())
     await state.clear()
-    await message.answer(f'✅ فروشنده #{sup_id} ثبت شد.', reply_markup=sup_manage_menu())
+    await message.answer(f'✅ فروشنده #{sup_id} ثبت شد.', reply_markup=sup_manage_menu(theme))
 
 
 async def show_invite_menu(message: Message, staff_repo: StaffRepository) -> None:
@@ -559,7 +555,7 @@ async def show_invite_menu(message: Message, staff_repo: StaffRepository) -> Non
     )
 
 
-@admin_router.message(F.text == MGMT_STAFF_INVITE)
+@admin_router.message(MenuFilter('mgmt_staff_invite'))
 async def admin_invite_menu(message: Message, staff_repo: StaffRepository, is_admin: bool) -> None:
     if not is_admin:
         await deny_admin(message)
@@ -600,7 +596,7 @@ async def cb_invite_create(
         f'🔗 `{link}`\n\n'
         'این لینک را برای همکار بفرستید. با کلیک و Start خودکار عضو پرسنل می‌شود.',
         parse_mode='Markdown',
-        reply_markup=staff_manage_menu(),
+        reply_markup=staff_manage_menu(theme),
     )
     await callback.answer('لینک ساخته شد ✅')
 
@@ -616,3 +612,52 @@ async def cb_invite_revoke(callback: CallbackQuery, staff_repo: StaffRepository,
         await show_invite_menu(callback.message, staff_repo)
     else:
         await callback.answer('لینک یافت نشد', show_alert=True)
+
+@admin_router.message(MenuFilter('mgmt_theme'))
+async def admin_theme_menu(message: Message, settings_repo: SettingsRepository, is_admin: bool, theme: Theme) -> None:
+    if not is_admin:
+        await deny_admin(message)
+        return
+    current_id = await settings_repo.get_theme_id()
+    await message.answer(
+        f"{theme.banner}\n\n🎨 **انتخاب تم رنگی**\n\n"
+        'تم فعال با ✅ مشخص شده است.\n'
+        'تم روی **منوها** و **رنگ فاکتور PDF** اعمال می‌شود.',
+        parse_mode='Markdown',
+        reply_markup=theme_picker_keyboard(current_id),
+    )
+
+
+@admin_router.callback_query(F.data.startswith('adm:theme:'))
+async def cb_set_theme(
+    callback: CallbackQuery,
+    settings_repo: SettingsRepository,
+    is_admin: bool,
+    theme: Theme,
+) -> None:
+    if not is_admin:
+        await callback.answer('فقط مدیر', show_alert=True)
+        return
+    theme_id = callback.data.split(':')[-1]
+    if theme_id == 'back':
+        await callback.message.answer(
+            f"{theme.banner}\n\n⚙️ **مدیریت سیستم**",
+            parse_mode='Markdown',
+            reply_markup=admin_menu(theme),
+        )
+        await callback.answer()
+        return
+    from app.ui.themes import THEMES, get_theme
+    if theme_id not in THEMES:
+        await callback.answer('تم نامعتبر', show_alert=True)
+        return
+    await settings_repo.set_theme_id(theme_id)
+    new_theme = get_theme(theme_id)
+    await callback.message.answer(
+        f"{new_theme.banner}\n\n✅ تم **{new_theme.name_fa}** فعال شد.\n"
+        'منوها با تم جدید به‌روز شدند.',
+        parse_mode='Markdown',
+        reply_markup=admin_menu(new_theme),
+    )
+    await callback.answer('تم ذخیره شد ✅')
+

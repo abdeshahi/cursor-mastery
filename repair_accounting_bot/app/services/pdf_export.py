@@ -69,12 +69,14 @@ class InvoicePDF(PersianPDF):
         height: float = 7,
         header: bool = False,
         aligns: list[str] | None = None,
+        header_fill: tuple[int, int, int] | None = None,
     ) -> None:
         if aligns is None:
             aligns = ['C'] * len(cells)
         self.set_font('Vazir', size=10 if header else 9)
         if header:
-            self.set_fill_color(235, 235, 235)
+            fill = header_fill or (235, 235, 235)
+            self.set_fill_color(*fill)
         for width, text, align in zip(widths, cells, aligns):
             self.cell(
                 width,
@@ -87,15 +89,23 @@ class InvoicePDF(PersianPDF):
         self.ln(height)
 
 
+from app.ui.themes import Theme, get_theme
+
+
 def build_accounting_pdf(
     dashboard: dict[str, Any],
     repairs: list[dict[str, Any]],
     customer_debts: list[dict[str, Any]],
     path: Path,
+    *,
+    theme: Theme | None = None,
 ) -> Path:
+    theme = theme or get_theme(None)
     pdf = PersianPDF()
     pdf.add_page()
+    pdf.set_text_color(*theme.primary)
     pdf.cell_rtl(0, 10, 'گزارش حسابداری CTTEL', bold=True)
+    pdf.set_text_color(0, 0, 0)
     pdf.cell_rtl(0, 8, datetime.now().strftime('%Y-%m-%d %H:%M'))
     pdf.ln(4)
 
@@ -156,11 +166,18 @@ def build_accounting_pdf(
     return path
 
 
-def build_invoice_pdf(repair: dict[str, Any], path: Path) -> Path:
+def build_invoice_pdf(
+    repair: dict[str, Any],
+    path: Path,
+    *,
+    theme: Theme | None = None,
+) -> Path:
+    theme = theme or get_theme(None)
     totals = repair['totals']
     pdf = InvoicePDF()
     pdf.set_invoice_date(format_jalali_date_persian())
     pdf.add_page()
+    header_fill = theme.secondary
 
     w = pdf.content_width
     label_w = w * 0.28
@@ -170,10 +187,12 @@ def build_invoice_pdf(repair: dict[str, Any], path: Path) -> Path:
     col_amount = w - col_row - col_desc
 
     pdf.set_font('Vazir', size=12)
+    pdf.set_text_color(*theme.primary)
     pdf.cell(w, 8, rtl(f"فاکتور فروش #{to_persian_digits(repair['id'])}"), ln=True, align='C')
+    pdf.set_text_color(0, 0, 0)
     pdf.ln(2)
 
-    pdf.table_row([value_w, label_w], ['مشخصات', 'مورد'], header=True)
+    pdf.table_row([value_w, label_w], ['مشخصات', 'مورد'], header=True, header_fill=header_fill)
     for label, value in [
         ('مشتری', repair['customer_name']),
         ('تماس', repair['customer_phone'] or '—'),
@@ -189,6 +208,7 @@ def build_invoice_pdf(repair: dict[str, Any], path: Path) -> Path:
         ['مبلغ (تومان)', 'شرح', 'ردیف'],
         header=True,
         height=8,
+        header_fill=header_fill,
     )
 
     row_num = 1
@@ -219,7 +239,7 @@ def build_invoice_pdf(repair: dict[str, Any], path: Path) -> Path:
     pdf.ln(3)
     summary_label_w = w * 0.62
     summary_value_w = w - summary_label_w
-    pdf.table_row([summary_value_w, summary_label_w], ['مبلغ (تومان)', 'شرح'], header=True)
+    pdf.table_row([summary_value_w, summary_label_w], ['مبلغ (تومان)', 'شرح'], header=True, header_fill=header_fill)
     for label, amount in [
         ('جمع کل', totals.customer_total),
         ('پرداخت‌شده', totals.customer_paid),
