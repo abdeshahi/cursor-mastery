@@ -114,6 +114,16 @@ def theme_picker_keyboard(current_id: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def labor_amount_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text='⏭ بدون اجرت / ادامه')],
+            [KeyboardButton(text='❌ انصراف')],
+        ],
+        resize_keyboard=True,
+    )
+
+
 def skip_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text='⏭ بدون قطعه / ادامه')]],

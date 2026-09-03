@@ -11,6 +11,7 @@ from aiogram.types import CallbackQuery, FSInputFile, Message
 from app.bot.keyboards import (
     accounting_menu,
     cancel_keyboard,
+    labor_amount_keyboard,
     parts_more_keyboard,
     reception_menu,
     repair_actions,
@@ -116,7 +117,7 @@ async def cmd_start(
 async def cmd_help(message: Message, theme: Theme) -> None:
     await message.answer(
         '📥 **منوی پذیرش**\n'
-        '• پذیرش جدید — ثبت مشتری، دستگاه، تعمیرکار، اجرت، قطعه\n'
+        '• پذیرش جدید — ثبت مشتری، دستگاه، تعمیرکار، اجرت (اختیاری)، قطعه\n'
         '• ✏️ ویرایش پرونده — تغییر اجرت یا افزودن قطعه (با اجازه مدیر)\n'
         '• جستجو — با شماره پرونده، نام، موبایل یا مدل دستگاه\n'
         '• فاکتور — صدور فاکتور فروش برای مشتری\n'
@@ -236,18 +237,26 @@ async def pick_technician(callback: CallbackQuery, state: FSMContext, repo: Repa
     await state.set_state(NewRepair.labor_amount)
     await callback.message.answer(
         f"تعمیرکار: {tech['name']} ({tech['default_pct']}%)\n"
-        'مبلغ اجرت تعمیر (تومان):',
-        reply_markup=cancel_keyboard(),
+        'مبلغ اجرت تعمیر (تومان) یا «⏭ بدون اجرت / ادامه»:',
+        reply_markup=labor_amount_keyboard(),
     )
     await callback.answer()
 
 
 @router.message(NewRepair.labor_amount)
 async def repair_labor(message: Message, state: FSMContext) -> None:
-    if not message.text.strip().isdigit():
-        await message.answer('لطفاً فقط عدد وارد کنید.')
+    text = message.text.strip()
+    if text == '⏭ بدون اجرت / ادامه':
+        labor_amount = 0
+    elif not text.isdigit():
+        await message.answer(
+            'لطفاً فقط عدد وارد کنید یا «⏭ بدون اجرت / ادامه» را بزنید.',
+            reply_markup=labor_amount_keyboard(),
+        )
         return
-    await state.update_data(labor_amount=int(message.text.strip()))
+    else:
+        labor_amount = int(text)
+    await state.update_data(labor_amount=labor_amount)
     await state.set_state(NewRepair.part_name)
     await message.answer('نام قطعه (یا «⏭ بدون قطعه / ادامه»):', reply_markup=skip_keyboard())
 
@@ -363,7 +372,7 @@ async def finalize_repair(
         technician_id=data.get('technician_id'),
         device=data['device'],
         issue=data['issue'],
-        labor_amount=int(data['labor_amount']),
+        labor_amount=int(data.get('labor_amount') or 0),
         technician_pct=float(data.get('technician_pct', 40)),
         parts=list(data.get('parts', [])),
     )
@@ -737,8 +746,8 @@ async def add_technician_pct(message: Message, state: FSMContext, repo: RepairRe
     await state.set_state(NewRepair.labor_amount)
     await message.answer(
         f"تعمیرکار {data['tech_name']} ({pct}%) ثبت شد.\n"
-        'مبلغ اجرت تعمیر (تومان):',
-        reply_markup=cancel_keyboard(),
+        'مبلغ اجرت تعمیر (تومان) یا «⏭ بدون اجرت / ادامه»:',
+        reply_markup=labor_amount_keyboard(),
     )
 
 
