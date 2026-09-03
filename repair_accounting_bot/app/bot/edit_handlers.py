@@ -50,7 +50,7 @@ async def _require_open_repair(repo: RepairRepository, repair_id: int) -> dict |
 
 
 @edit_router.callback_query(F.data.startswith('edit:menu:'))
-async def edit_menu(callback: CallbackQuery, repo: RepairRepository, can_edit_repair: bool = False, theme: Theme) -> None:
+async def edit_menu(callback: CallbackQuery, repo: RepairRepository, theme: Theme, can_edit_repair: bool = False) -> None:
     if not can_edit_repair:
         await callback.answer('⛔️ دسترسی ویرایش پرونده ندارید.', show_alert=True)
         return
@@ -83,8 +83,7 @@ async def edit_labor_start(
     callback: CallbackQuery,
     state: FSMContext,
     repo: RepairRepository,
-    can_edit_repair: bool = False,
-, theme: Theme) -> None:
+    theme: Theme, can_edit_repair: bool = False) -> None:
     if not can_edit_repair:
         await callback.answer('⛔️ دسترسی ویرایش پرونده ندارید.', show_alert=True)
         return
@@ -110,8 +109,7 @@ async def edit_labor_save(
     message: Message,
     state: FSMContext,
     repo: RepairRepository,
-    can_edit_repair: bool = False,
-, theme: Theme) -> None:
+    theme: Theme, can_edit_repair: bool = False) -> None:
     if not can_edit_repair:
         await state.clear()
         await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
@@ -137,8 +135,7 @@ async def edit_part_start(
     callback: CallbackQuery,
     state: FSMContext,
     repo: RepairRepository,
-    can_edit_repair: bool = False,
-, theme: Theme) -> None:
+    theme: Theme, can_edit_repair: bool = False) -> None:
     if not can_edit_repair:
         await callback.answer('⛔️ دسترسی ویرایش پرونده ندارید.', show_alert=True)
         return
@@ -163,8 +160,7 @@ async def edit_parts_finish(
     message: Message,
     state: FSMContext,
     repo: RepairRepository,
-    can_edit_repair: bool = False,
-, theme: Theme) -> None:
+    theme: Theme, can_edit_repair: bool = False) -> None:
     data = await state.get_data()
     repair_id = int(data['edit_repair_id'])
     added = int(data.get('edit_parts_added') or 0)
@@ -178,7 +174,7 @@ async def edit_parts_finish(
 
 
 @edit_router.message(EditRepair.part_name, F.text == '➕ قطعه دیگر')
-async def edit_part_add_more(message: Message, state: FSMContext, can_edit_repair: bool = False, theme: Theme) -> None:
+async def edit_part_add_more(message: Message, state: FSMContext, theme: Theme, can_edit_repair: bool = False) -> None:
     if not can_edit_repair:
         await state.clear()
         await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
@@ -187,7 +183,7 @@ async def edit_part_add_more(message: Message, state: FSMContext, can_edit_repai
 
 
 @edit_router.message(EditRepair.part_name)
-async def edit_part_name(message: Message, state: FSMContext, can_edit_repair: bool = False, theme: Theme) -> None:
+async def edit_part_name(message: Message, state: FSMContext, theme: Theme, can_edit_repair: bool = False) -> None:
     if not can_edit_repair:
         await state.clear()
         await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
@@ -198,7 +194,7 @@ async def edit_part_name(message: Message, state: FSMContext, can_edit_repair: b
 
 
 @edit_router.message(EditRepair.part_cost)
-async def edit_part_cost(message: Message, state: FSMContext, can_edit_repair: bool = False, theme: Theme) -> None:
+async def edit_part_cost(message: Message, state: FSMContext, theme: Theme, can_edit_repair: bool = False) -> None:
     if not can_edit_repair:
         await state.clear()
         await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
@@ -219,8 +215,7 @@ async def edit_part_sell(
     message: Message,
     state: FSMContext,
     repo: RepairRepository,
-    can_edit_repair: bool = False,
-, theme: Theme) -> None:
+    theme: Theme, can_edit_repair: bool = False) -> None:
     if not can_edit_repair:
         await state.clear()
         await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
@@ -245,8 +240,7 @@ async def edit_pick_supplier(
     callback: CallbackQuery,
     state: FSMContext,
     repo: RepairRepository,
-    can_edit_repair: bool = False,
-, theme: Theme) -> None:
+    theme: Theme, can_edit_repair: bool = False) -> None:
     if not can_edit_repair:
         await callback.answer('⛔️ دسترسی ویرایش پرونده ندارید.', show_alert=True)
         return
@@ -261,7 +255,7 @@ async def edit_pick_supplier(
     if value != 'skip':
         part['supplier_id'] = int(value)
     await state.update_data(current_part=part, edit_new_supplier=False)
-    await _save_edit_part(callback.message, state, repo)
+    await _save_edit_part(callback.message, state, repo, theme)
     await callback.answer()
 
 
@@ -270,8 +264,7 @@ async def edit_part_supplier_text(
     message: Message,
     state: FSMContext,
     repo: RepairRepository,
-    can_edit_repair: bool = False,
-, theme: Theme) -> None:
+    theme: Theme, can_edit_repair: bool = False) -> None:
     if not can_edit_repair:
         await state.clear()
         await message.answer('⛔️ دسترسی ویرایش پرونده ندارید.', reply_markup=reception_menu(theme))
@@ -281,16 +274,16 @@ async def edit_part_supplier_text(
     if data.get('edit_new_supplier'):
         part['supplier_id'] = await repo.add_supplier(message.text.strip())
         await state.update_data(current_part=part, edit_new_supplier=False)
-        await _save_edit_part(message, state, repo)
+        await _save_edit_part(message, state, repo, theme)
         return
     name = message.text.strip()
     if name != '-':
         part['supplier_id'] = await repo.add_supplier(name)
     await state.update_data(current_part=part)
-    await _save_edit_part(message, state, repo)
+    await _save_edit_part(message, state, repo, theme)
 
 
-async def _save_edit_part(message: Message, state: FSMContext, repo: RepairRepository) -> None:
+async def _save_edit_part(message: Message, state: FSMContext, repo: RepairRepository, theme: Theme) -> None:
     data = await state.get_data()
     repair_id = int(data['edit_repair_id'])
     part = data['current_part']
