@@ -66,7 +66,13 @@ def user_root_menu(can_reception: bool, can_accounting: bool, can_manage: bool):
     )
 
 
-async def show_repair(message: Message, repo: RepairRepository, repair_id: int) -> None:
+async def show_repair(
+    message: Message,
+    repo: RepairRepository,
+    repair_id: int,
+    *,
+    can_edit_repair: bool = False,
+) -> None:
     repair = await repo.get_repair(repair_id)
     if not repair:
         await message.answer('پرونده یافت نشد.')
@@ -74,7 +80,7 @@ async def show_repair(message: Message, repo: RepairRepository, repair_id: int) 
     is_open = repair.get('status') == 'open'
     await message.answer(
         format_repair_summary(repair),
-        reply_markup=repair_actions(repair_id, is_open=is_open),
+        reply_markup=repair_actions(repair_id, is_open=is_open, can_edit=can_edit_repair),
     )
 
 
@@ -120,7 +126,7 @@ async def cmd_help(message: Message) -> None:
     await message.answer(
         '📥 **منوی پذیرش**\n'
         '• پذیرش جدید — ثبت مشتری، دستگاه، تعمیرکار، اجرت، قطعه\n'
-        '• ✏️ ویرایش پرونده — تغییر اجرت یا افزودن قطعه (از داخل پرونده)\n'
+        '• ✏️ ویرایش پرونده — تغییر اجرت یا افزودن قطعه (با اجازه مدیر)\n'
         '• جستجو — با شماره پرونده، نام، موبایل یا مدل دستگاه\n'
         '• فاکتور — صدور فاکتور فروش برای مشتری\n'
         '• گزارش حسابداری — خلاصه مالی\n\n'
@@ -134,7 +140,7 @@ async def cmd_help(message: Message) -> None:
         '• ✏️ ویرایش پرونده — تغییر اجرت یا افزودن قطعه بعد از پذیرش\n'
         '• خروجی Excel / PDF — گزارش کامل حسابداری\n\n'
         'روی هر پرونده: 📊 Excel و 📄 PDF فاکتور\n\n'
-        '⚙️ **مدیریت (فقط مدیر):** پرسنل، لینک دعوت، تعمیرکاران، قطعه‌فروش\n'
+        '⚙️ **مدیریت (فقط مدیر):** پرسنل، لینک دعوت، تعمیرکاران، قطعه‌فروش، دسترسی ویرایش پرونده\n'
         'برای گرفتن آیدی: /myid',
         parse_mode='Markdown',
     )
@@ -255,13 +261,13 @@ async def repair_labor(message: Message, state: FSMContext) -> None:
 
 
 @router.message(NewRepair.part_name, F.text == '⏭ بدون قطعه / ادامه')
-async def repair_no_parts(message: Message, state: FSMContext, repo: RepairRepository) -> None:
-    await finalize_repair(message, state, repo)
+async def repair_no_parts(message: Message, state: FSMContext, repo: RepairRepository, can_edit_repair: bool = False) -> None:
+    await finalize_repair(message, state, repo, can_edit_repair=can_edit_repair)
 
 
 @router.message(NewRepair.part_name, F.text == '✅ ثبت نهایی پذیرش')
-async def repair_finalize_button(message: Message, state: FSMContext, repo: RepairRepository) -> None:
-    await finalize_repair(message, state, repo)
+async def repair_finalize_button(message: Message, state: FSMContext, repo: RepairRepository, can_edit_repair: bool = False) -> None:
+    await finalize_repair(message, state, repo, can_edit_repair=can_edit_repair)
 
 
 @router.message(NewRepair.part_name, F.text == '➕ قطعه دیگر')
@@ -347,7 +353,13 @@ async def append_part(message: Message, state: FSMContext) -> None:
     )
 
 
-async def finalize_repair(message: Message, state: FSMContext, repo: RepairRepository) -> None:
+async def finalize_repair(
+    message: Message,
+    state: FSMContext,
+    repo: RepairRepository,
+    *,
+    can_edit_repair: bool = False,
+) -> None:
     data = await state.get_data()
     customer_id = await repo.find_or_create_customer(
         data['customer_name'],
@@ -364,7 +376,7 @@ async def finalize_repair(message: Message, state: FSMContext, repo: RepairRepos
     )
     repair = await repo.get_repair(repair_id)
     await state.clear()
-    await message.answer(format_repair_summary(repair), reply_markup=repair_actions(repair_id, is_open=True))
+    await message.answer(format_repair_summary(repair), reply_markup=repair_actions(repair_id, is_open=True, can_edit=can_edit_repair))
     await message.answer(
         format_invoice(repair),
         parse_mode='Markdown',
@@ -530,9 +542,9 @@ async def callback_invoice_pdf(callback: CallbackQuery, export_service: ExportSe
 
 
 @router.callback_query(F.data.startswith('view:'))
-async def view_repair(callback: CallbackQuery, repo: RepairRepository) -> None:
+async def view_repair(callback: CallbackQuery, repo: RepairRepository, can_edit_repair: bool = False) -> None:
     repair_id = int(callback.data.split(':')[1])
-    await show_repair(callback.message, repo, repair_id)
+    await show_repair(callback.message, repo, repair_id, can_edit_repair=can_edit_repair)
     await callback.answer()
 
 
@@ -564,12 +576,12 @@ async def callback_accounting(callback: CallbackQuery, repo: RepairRepository) -
 
 
 @router.message(Command('repair'))
-async def cmd_repair(message: Message, repo: RepairRepository) -> None:
+async def cmd_repair(message: Message, repo: RepairRepository, can_edit_repair: bool = False) -> None:
     parts = (message.text or '').split(maxsplit=1)
     if len(parts) < 2 or not parts[1].isdigit():
         await message.answer('استفاده: /repair 12')
         return
-    await show_repair(message, repo, int(parts[1]))
+    await show_repair(message, repo, int(parts[1]), can_edit_repair=can_edit_repair)
 
 
 @router.callback_query(F.data.startswith('pay_t:'))
@@ -600,7 +612,12 @@ async def pay_supplier_start(callback: CallbackQuery, state: FSMContext) -> None
 
 
 @router.message(Payment.amount)
-async def payment_amount(message: Message, state: FSMContext, repo: RepairRepository) -> None:
+async def payment_amount(
+    message: Message,
+    state: FSMContext,
+    repo: RepairRepository,
+    can_edit_repair: bool = False,
+) -> None:
     if not message.text.strip().isdigit():
         await message.answer('لطفاً فقط عدد وارد کنید.')
         return
@@ -619,7 +636,11 @@ async def payment_amount(message: Message, state: FSMContext, repo: RepairReposi
     await state.clear()
     await message.answer(
         '✅ ثبت شد\n\n' + format_repair_summary(repair),
-        reply_markup=repair_actions(repair_id, is_open=repair.get('status') == 'open'),
+        reply_markup=repair_actions(
+            repair_id,
+            is_open=repair.get('status') == 'open',
+            can_edit=can_edit_repair,
+        ),
     )
     await message.answer('منوی حسابداری', reply_markup=accounting_menu())
 

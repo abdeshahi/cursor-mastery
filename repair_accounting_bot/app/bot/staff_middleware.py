@@ -125,4 +125,5 @@ class StaffGuardMiddleware(BaseMiddleware):
         data['can_manage'] = perms['manage']
         data['can_reception'] = perms['reception']
         data['can_accounting'] = perms['accounting']
+        data['can_edit_repair'] = await self.staff_repo.can_edit_repair(user_id)
         return await handler(event, data)

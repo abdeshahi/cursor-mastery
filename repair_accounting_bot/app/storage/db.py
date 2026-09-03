@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS staff (
     name TEXT NOT NULL DEFAULT '',
     is_admin INTEGER NOT NULL DEFAULT 0,
     role TEXT NOT NULL DEFAULT 'full',
+    can_edit_repair INTEGER NOT NULL DEFAULT 0,
     active INTEGER NOT NULL DEFAULT 1,
     added_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -127,3 +128,14 @@ async def _migrate(conn: aiosqlite.Connection) -> None:
         )
         """,
     )
+
+    if staff_columns and 'can_edit_repair' not in staff_columns:
+        await conn.execute(
+            'ALTER TABLE staff ADD COLUMN can_edit_repair INTEGER NOT NULL DEFAULT 0',
+        )
+        await conn.execute(
+            """
+            UPDATE staff SET can_edit_repair = 1
+            WHERE is_admin = 1 OR role IN ('admin', 'full', 'reception')
+            """,
+        )

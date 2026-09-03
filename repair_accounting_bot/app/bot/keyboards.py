@@ -157,7 +157,7 @@ def supplier_keyboard(suppliers: list[dict]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def repair_actions(repair_id: int, *, is_open: bool = True) -> InlineKeyboardMarkup:
+def repair_actions(repair_id: int, *, is_open: bool = True, can_edit: bool = False) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = [
         [
             InlineKeyboardButton(text='📊 Excel', callback_data=f'xlsx:{repair_id}'),
@@ -168,7 +168,7 @@ def repair_actions(repair_id: int, *, is_open: bool = True) -> InlineKeyboardMar
             InlineKeyboardButton(text='💼 حسابداری', callback_data=f'acc:{repair_id}'),
         ],
     ]
-    if is_open:
+    if is_open and can_edit:
         rows.append([InlineKeyboardButton(text='✏️ ویرایش پرونده', callback_data=f'edit:menu:{repair_id}')])
     rows.extend(
         [

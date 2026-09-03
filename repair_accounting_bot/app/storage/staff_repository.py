@@ -36,11 +36,46 @@ class StaffRepository:
 
     async def get_staff(self, telegram_id: int) -> dict[str, Any] | None:
         cursor = await self.conn.execute(
-            'SELECT telegram_id, name, is_admin, role, active, added_at FROM staff WHERE telegram_id = ?',
+            """
+            SELECT telegram_id, name, is_admin, role, can_edit_repair, active, added_at
+            FROM staff WHERE telegram_id = ?
+            """,
             (telegram_id,),
         )
         row = await cursor.fetchone()
         return dict(row) if row else None
+
+    async def can_edit_repair(self, telegram_id: int) -> bool:
+        if await self.is_admin(telegram_id):
+            return True
+        cursor = await self.conn.execute(
+            'SELECT can_edit_repair FROM staff WHERE telegram_id = ? AND active = 1',
+            (telegram_id,),
+        )
+        row = await cursor.fetchone()
+        return bool(row and row['can_edit_repair'])
+
+    async def set_can_edit_repair(self, telegram_id: int, enabled: bool) -> bool:
+        if await self.is_admin(telegram_id):
+            return False
+        cursor = await self.conn.execute(
+            """
+            UPDATE staff SET can_edit_repair = ?
+            WHERE telegram_id = ? AND active = 1 AND is_admin = 0
+            """,
+            (1 if enabled else 0, telegram_id),
+        )
+        await self.conn.commit()
+        return cursor.rowcount > 0
+
+    async def toggle_can_edit_repair(self, telegram_id: int) -> bool | None:
+        row = await self.get_staff(telegram_id)
+        if not row or not row['active'] or row['is_admin']:
+            return None
+        new_value = not bool(row.get('can_edit_repair'))
+        if await self.set_can_edit_repair(telegram_id, new_value):
+            return new_value
+        return None
 
     async def is_active_staff(self, telegram_id: int) -> bool:
         cursor = await self.conn.execute(
@@ -133,7 +168,7 @@ class StaffRepository:
     async def list_staff(self) -> list[dict[str, Any]]:
         cursor = await self.conn.execute(
             """
-            SELECT telegram_id, name, is_admin, role, active, added_at
+            SELECT telegram_id, name, is_admin, role, can_edit_repair, active, added_at
             FROM staff
             WHERE active = 1
             ORDER BY is_admin DESC, name

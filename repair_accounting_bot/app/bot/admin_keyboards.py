@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from app.staff.roles import MANAGEABLE_ROLES, ROLE_LABELS
+from app.staff.roles import MANAGEABLE_ROLES, ROLE_ADMIN, ROLE_LABELS
 
 
 def staff_list_keyboard(staff_rows: list[dict], *, current_user_id: int) -> InlineKeyboardMarkup:
@@ -17,7 +17,13 @@ def staff_list_keyboard(staff_rows: list[dict], *, current_user_id: int) -> Inli
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def staff_detail_keyboard(telegram_id: int, *, current_user_id: int) -> InlineKeyboardMarkup:
+def staff_detail_keyboard(
+    telegram_id: int,
+    *,
+    current_user_id: int,
+    can_edit_repair: bool = False,
+    is_admin_user: bool = False,
+) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = [
         [InlineKeyboardButton(text='✏️ ویرایش نام', callback_data=f'adm:staff:rename:{telegram_id}')],
     ]
@@ -30,6 +36,15 @@ def staff_detail_keyboard(telegram_id: int, *, current_user_id: int) -> InlineKe
             for role in MANAGEABLE_ROLES
         ]
         rows.append(role_row)
+        if not is_admin_user:
+            toggle_label = (
+                '✅ ویرایش پرونده: روشن'
+                if can_edit_repair
+                else '❌ ویرایش پرونده: خاموش'
+            )
+            rows.append(
+                [InlineKeyboardButton(text=toggle_label, callback_data=f'adm:staff:toggleedit:{telegram_id}')],
+            )
         rows.append(
             [InlineKeyboardButton(text='🚫 حذف دسترسی', callback_data=f'adm:staff:del:{telegram_id}')],
         )

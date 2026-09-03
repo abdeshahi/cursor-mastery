@@ -33,7 +33,7 @@ from app.bot.keyboards import (
 )
 from app.bot.parsing import parse_staff_args
 from app.bot.states import AdminStaffAdd, AdminStaffRename, AdminSupAdd, AdminTechAdd
-from app.staff.roles import ROLE_LABELS
+from app.staff.roles import ROLE_ADMIN, ROLE_LABELS
 from app.storage.repository import RepairRepository
 from app.storage.staff_repository import StaffRepository
 
@@ -146,19 +146,66 @@ async def cb_staff_view(callback: CallbackQuery, staff_repo: StaffRepository, is
         await callback.answer('پرسنل یافت نشد', show_alert=True)
         return
     role = ROLE_LABELS.get(row.get('role') or 'full', 'کارمند')
-    hint = 'نام یا نقش را ویرایش کنید:' if telegram_id == callback.from_user.id else 'نام یا نقش را ویرایش کنید، یا دسترسی را حذف کنید:'
+    is_admin_user = row.get('role') == ROLE_ADMIN or bool(row.get('is_admin'))
+    if is_admin_user:
+        edit_status = 'همیشه فعال (مدیر)'
+    else:
+        edit_status = '✅ فعال' if row.get('can_edit_repair') else '❌ غیرفعال'
+    hint = 'نام یا نقش را ویرایش کنید:' if telegram_id == callback.from_user.id else 'نام، نقش، یا دسترسی ویرایش پرونده را تنظیم کنید:'
     text = (
         f"👤 **{row['name']}**\n\n"
         f"آیدی: `{telegram_id}`\n"
-        f"نقش: {role}\n\n"
+        f"نقش: {role}\n"
+        f"✏️ ویرایش پرونده: {edit_status}\n\n"
         f'{hint}'
     )
     await callback.message.answer(
         text,
         parse_mode='Markdown',
-        reply_markup=staff_detail_keyboard(telegram_id, current_user_id=callback.from_user.id),
+        reply_markup=staff_detail_keyboard(
+            telegram_id,
+            current_user_id=callback.from_user.id,
+            can_edit_repair=bool(row.get('can_edit_repair')),
+            is_admin_user=is_admin_user,
+        ),
     )
     await callback.answer()
+
+
+@admin_router.callback_query(F.data.startswith('adm:staff:toggleedit:'))
+async def cb_staff_toggle_edit(callback: CallbackQuery, staff_repo: StaffRepository, is_admin: bool) -> None:
+    if not is_admin:
+        await callback.answer('فقط مدیر', show_alert=True)
+        return
+    telegram_id = int(callback.data.split(':')[-1])
+    if telegram_id == callback.from_user.id:
+        await callback.answer('دسترسی مدیر همیشه فعال است.', show_alert=True)
+        return
+    new_value = await staff_repo.toggle_can_edit_repair(telegram_id)
+    if new_value is None:
+        await callback.answer('تغییر دسترسی ممکن نیست', show_alert=True)
+        return
+    status = 'فعال ✅' if new_value else 'غیرفعال ❌'
+    await callback.answer(f'ویرایش پرونده: {status}')
+    row = await staff_repo.get_staff(telegram_id)
+    if row and row['active']:
+        role = ROLE_LABELS.get(row.get('role') or 'full', 'کارمند')
+        is_admin_user = row.get('role') == ROLE_ADMIN or bool(row.get('is_admin'))
+        edit_status = '✅ فعال' if new_value else '❌ غیرفعال'
+        await callback.message.edit_text(
+            f"👤 **{row['name']}**\n\n"
+            f"آیدی: `{telegram_id}`\n"
+            f"نقش: {role}\n"
+            f"✏️ ویرایش پرونده: {edit_status}\n\n"
+            'نام، نقش، یا دسترسی ویرایش پرونده را تنظیم کنید:',
+            parse_mode='Markdown',
+            reply_markup=staff_detail_keyboard(
+                telegram_id,
+                current_user_id=callback.from_user.id,
+                can_edit_repair=new_value,
+                is_admin_user=is_admin_user,
+            ),
+        )
 
 
 @admin_router.callback_query(F.data.startswith('adm:staff:role:'))
