@@ -4,7 +4,7 @@ from typing import Any
 
 import aiosqlite
 
-from app.services.accounting import calculate_repair_totals
+from app.services.accounting import calculate_repair_totals, technician_share_sql
 
 
 class RepairRepository:
@@ -231,19 +231,19 @@ class RepairRepository:
         }
 
     async def accounting_dashboard(self) -> dict[str, Any]:
+        share_expr = technician_share_sql()
         cursor = await self.conn.execute(
-            """
+            f"""
             SELECT
                 COUNT(*) AS open_count,
                 COALESCE(SUM(labor_amount + parts_sell - customer_paid), 0) AS customer_debt,
                 COALESCE(SUM(parts_cost - supplier_paid), 0) AS supplier_debt,
-                COALESCE(SUM(ROUND(labor_amount * technician_pct / 100.0)), 0) AS technician_share,
+                COALESCE(SUM({share_expr}), 0) AS technician_share,
                 COALESCE(SUM(COALESCE(technician_paid, 0)), 0) AS technician_paid,
+                COALESCE(SUM({share_expr}), 0)
+                    - COALESCE(SUM(COALESCE(technician_paid, 0)), 0) AS technician_debt,
                 COALESCE(SUM(
-                    ROUND(labor_amount * technician_pct / 100.0)
-                ), 0) - COALESCE(SUM(COALESCE(technician_paid, 0)), 0) AS technician_debt,
-                COALESCE(SUM(
-                    (labor_amount + parts_sell) - parts_cost - ROUND(labor_amount * technician_pct / 100.0)
+                    (labor_amount + parts_sell) - parts_cost - ({share_expr})
                 ), 0) AS shop_profit
             FROM repairs
             WHERE status = 'open'
@@ -251,14 +251,13 @@ class RepairRepository:
         )
         totals = dict(await cursor.fetchone())
 
+        share_expr_r = technician_share_sql('r.')
         cursor = await self.conn.execute(
-            """
+            f"""
             SELECT t.name, r.technician_pct AS pct,
-                   SUM(ROUND(r.labor_amount * r.technician_pct / 100.0)) AS share,
+                   SUM({share_expr_r}) AS share,
                    SUM(COALESCE(r.technician_paid, 0)) AS paid,
-                   SUM(
-                       ROUND(r.labor_amount * r.technician_pct / 100.0)
-                   ) - SUM(COALESCE(r.technician_paid, 0)) AS debt
+                   SUM({share_expr_r}) - SUM(COALESCE(r.technician_paid, 0)) AS debt
             FROM repairs r
             JOIN technicians t ON t.id = r.technician_id
             WHERE r.status = 'open'
@@ -439,13 +438,13 @@ class RepairRepository:
         await self.conn.commit()
 
     async def technicians_with_debt(self) -> list[dict[str, Any]]:
+        share_expr_r = technician_share_sql('r.')
         cursor = await self.conn.execute(
-            """
+            f"""
             SELECT t.id, t.name, r.technician_pct AS pct,
-                   SUM(ROUND(r.labor_amount * r.technician_pct / 100.0)) AS share,
+                   SUM({share_expr_r}) AS share,
                    SUM(COALESCE(r.technician_paid, 0)) AS paid,
-                   SUM(ROUND(r.labor_amount * r.technician_pct / 100.0))
-                       - SUM(COALESCE(r.technician_paid, 0)) AS debt
+                   SUM({share_expr_r}) - SUM(COALESCE(r.technician_paid, 0)) AS debt
             FROM repairs r
             JOIN technicians t ON t.id = r.technician_id
             WHERE r.status = 'open'
@@ -474,21 +473,18 @@ class RepairRepository:
         return [dict(row) for row in await cursor.fetchall()]
 
     async def repairs_with_technician_debt(self, technician_id: int) -> list[dict[str, Any]]:
+        share_expr_r = technician_share_sql('r.')
         cursor = await self.conn.execute(
-            """
+            f"""
             SELECT r.id, c.name AS customer_name, r.device,
-                   ROUND(r.labor_amount * r.technician_pct / 100.0) AS share,
+                   {share_expr_r} AS share,
                    COALESCE(r.technician_paid, 0) AS paid,
-                   ROUND(r.labor_amount * r.technician_pct / 100.0)
-                       - COALESCE(r.technician_paid, 0) AS debt
+                   {share_expr_r} - COALESCE(r.technician_paid, 0) AS debt
             FROM repairs r
             JOIN customers c ON c.id = r.customer_id
             WHERE r.status = 'open'
               AND r.technician_id = ?
-              AND (
-                  ROUND(r.labor_amount * r.technician_pct / 100.0)
-                  - COALESCE(r.technician_paid, 0)
-              ) > 0
+              AND ({share_expr_r} - COALESCE(r.technician_paid, 0)) > 0
             ORDER BY r.id
             """,
             (technician_id,),

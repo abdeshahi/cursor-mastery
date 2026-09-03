@@ -133,6 +133,9 @@ async def test_add_repair_part(repo) -> None:
     assert repair['parts_cost'] == 800_000
     assert repair['parts_sell'] == 1_100_000
     assert repair['totals'].customer_total == 1_300_000
+    assert repair['totals'].technician_labor_share == 80_000
+    assert repair['totals'].technician_parts_share == 120_000
+    assert repair['totals'].technician_share == 200_000
 
 
 @pytest.mark.asyncio
@@ -168,7 +171,7 @@ async def test_create_repair_and_payments(repo) -> None:
     repair = await repository.get_repair(repair_id)
     assert repair is not None
     assert repair['totals'].customer_total == 3_100_000
-    assert repair['totals'].shop_profit == 860_000
+    assert repair['totals'].shop_profit == 660_000
 
     invoice = format_invoice(repair)
     assert 'فاکتور فروش' in invoice
@@ -176,12 +179,12 @@ async def test_create_repair_and_payments(repo) -> None:
 
     await repository.add_technician_payment(repair_id, 100_000)
     repair = await repository.get_repair(repair_id)
-    assert repair['totals'].technician_debt == 140_000
+    assert repair['totals'].technician_debt == 340_000
 
     dashboard = await repository.accounting_dashboard()
     report = format_accounting_report(dashboard)
     assert 'سود فروشگاه' in report
-    assert dashboard['technician_debt'] == 140_000
+    assert dashboard['technician_debt'] == 340_000
 
 
 @pytest.mark.asyncio

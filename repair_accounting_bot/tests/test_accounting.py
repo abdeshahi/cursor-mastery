@@ -15,8 +15,25 @@ def test_calculate_repair_totals_with_parts_and_debts() -> None:
     assert totals.customer_total == 950_000
     assert totals.customer_debt == 750_000
     assert totals.supplier_debt == 200_000
-    assert totals.technician_share == 200_000
-    assert totals.shop_profit == 450_000
+    assert totals.technician_labor_share == 200_000
+    assert totals.technician_parts_share == 60_000
+    assert totals.technician_share == 260_000
+    assert totals.shop_profit == 390_000
+
+
+def test_calculate_repair_totals_technician_gets_parts_profit_share() -> None:
+    totals = calculate_repair_totals(
+        labor_amount=1_000_000,
+        parts_cost=700_000,
+        parts_sell=1_000_000,
+        technician_pct=30,
+        customer_paid=0,
+        supplier_paid=0,
+    )
+    assert totals.technician_labor_share == 300_000
+    assert totals.technician_parts_share == 90_000
+    assert totals.technician_share == 390_000
+    assert totals.shop_profit == 910_000
 
 
 def test_calculate_repair_totals_with_technician_settlement() -> None:

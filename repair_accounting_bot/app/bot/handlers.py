@@ -157,7 +157,7 @@ async def cmd_help(message: Message, theme: Theme) -> None:
         '• گزارش حسابداری — خلاصه مالی\n\n'
         '💼 **منوی حسابداری**\n'
         '• سود فروشگاه — سود خالص پرونده‌های باز\n'
-        '• طلب تعمیرکاران — سهم، پرداخت‌شده و مانده طلب هر نفر\n'
+        '• طلب تعمیرکاران — سهم از اجرت و سود قطعه، پرداخت‌شده و مانده طلب هر نفر\n'
         '• بدهی قطعه‌فروش — طلب فروشندگان قطعه\n'
         '• بدهی مشتریان — مانده حساب مشتری‌ها\n'
         '• 💸 ثبت پرداخت بدهی — پرداخت به تعمیرکار یا فروشنده (کامل یا جزئی)\n'
@@ -626,6 +626,8 @@ async def callback_accounting(callback: CallbackQuery, repo: RepairRepository) -
         await callback.message.answer(
             f"💼 حسابداری پرونده #{repair_id}\n\n"
             f"👨‍🔧 سهم تعمیرکار ({repair['technician_pct']}%): {format_toman(totals.technician_share)}\n"
+            f"  • از اجرت: {format_toman(totals.technician_labor_share)}\n"
+            f"  • از سود قطعه: {format_toman(totals.technician_parts_share)}\n"
             f"✅ پرداخت‌شده: {format_toman(totals.technician_paid)}\n"
             f"📋 مانده طلب: {format_toman(totals.technician_debt)}\n"
             f"🏪 بدهی قطعه‌فروش: {format_toman(totals.supplier_debt)}\n"
