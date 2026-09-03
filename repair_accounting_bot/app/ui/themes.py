@@ -32,6 +32,7 @@ MODERN_LABELS: dict[str, str] = {
     'mgmt_tech_add': '➕ افزودن تعمیرکار',
     'mgmt_sup_add': '➕ افزودن فروشنده',
     'rec_new': '📝 پذیرش جدید',
+    'rec_list': '📋 لیست پرونده‌ها',
     'rec_search': '🔍 جستجو',
     'rec_invoice': '🧾 فاکتور',
     'rec_report': '📊 گزارش حسابداری',

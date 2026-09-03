@@ -302,7 +302,7 @@ class RepairRepository:
         if query.isdigit():
             cursor = await self.conn.execute(
                 """
-                SELECT r.id, r.device, r.status, c.name AS customer_name
+                SELECT r.id, r.device, r.issue, r.status, c.name AS customer_name, c.phone AS customer_phone
                 FROM repairs r
                 JOIN customers c ON c.id = r.customer_id
                 WHERE r.id = ?
@@ -315,7 +315,7 @@ class RepairRepository:
         pattern = f'%{query}%'
         cursor = await self.conn.execute(
             """
-            SELECT r.id, r.device, r.status, c.name AS customer_name
+            SELECT r.id, r.device, r.issue, r.status, c.name AS customer_name, c.phone AS customer_phone
             FROM repairs r
             JOIN customers c ON c.id = r.customer_id
             WHERE c.name LIKE ? OR c.phone LIKE ? OR r.device LIKE ? OR r.issue LIKE ?
@@ -326,6 +326,48 @@ class RepairRepository:
         )
         rows = await cursor.fetchall()
         return [dict(row) for row in rows]
+
+    async def count_repairs(self, status: str | None = None) -> int:
+        if status in ('open', 'closed'):
+            cursor = await self.conn.execute(
+                'SELECT COUNT(*) AS cnt FROM repairs WHERE status = ?',
+                (status,),
+            )
+        else:
+            cursor = await self.conn.execute('SELECT COUNT(*) AS cnt FROM repairs')
+        row = await cursor.fetchone()
+        return int(row['cnt'] or 0)
+
+    async def list_repairs_brief(
+        self,
+        *,
+        status: str | None = 'open',
+        limit: int = 15,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        if status in ('open', 'closed'):
+            where = 'WHERE r.status = ?'
+            params: list[Any] = [status]
+        else:
+            where = ''
+            params = []
+        params.extend([limit, offset])
+        cursor = await self.conn.execute(
+            f"""
+            SELECT r.id, r.device, r.issue, r.status, r.created_at,
+                   r.labor_amount + r.parts_sell AS customer_total,
+                   c.name AS customer_name, c.phone AS customer_phone,
+                   t.name AS technician_name
+            FROM repairs r
+            JOIN customers c ON c.id = r.customer_id
+            LEFT JOIN technicians t ON t.id = r.technician_id
+            {where}
+            ORDER BY r.id DESC
+            LIMIT ? OFFSET ?
+            """,
+            params,
+        )
+        return [dict(row) for row in await cursor.fetchall()]
 
     async def list_open_repairs(self, limit: int = 20) -> list[dict[str, Any]]:
         cursor = await self.conn.execute(

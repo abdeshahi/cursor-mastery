@@ -108,9 +108,50 @@ def format_search_results(results: list[dict]) -> str:
     lines = ['🔍 **نتایج جستجو:**', '']
     for row in results:
         status = 'باز' if row['status'] == 'open' else 'بسته'
+        issue = (row.get('issue') or '')[:35]
+        phone = row.get('customer_phone') or '—'
         lines.append(
-            f"#{row['id']} | {row['customer_name']} | {row['device']} | {status}",
+            f"#{row['id']} | {status} | {row['customer_name']}\n"
+            f"📱 {row['device']}" + (f" | 🔧 {issue}" if issue else '') + f"\n📞 {phone}",
         )
-    lines.append('\nبرای جزئیات: /repair شماره')
-    lines.append('برای فاکتور: دکمه 🧾 فاکتور')
+        lines.append('')
+    lines.append('برای جزئیات روی دکمه زیر بزنید.')
+    return '\n'.join(lines)
+
+
+REPAIR_LIST_PAGE_SIZE = 8
+
+_LIST_TITLES = {
+    'open': '📋 **پرونده‌های باز**',
+    'closed': '📁 **پرونده‌های بسته**',
+    'all': '📋 **همه پرونده‌ها**',
+}
+
+
+def format_repair_list(
+    repairs: list[dict],
+    *,
+    status_filter: str = 'open',
+    page: int = 0,
+    total: int = 0,
+) -> str:
+    title = _LIST_TITLES.get(status_filter, _LIST_TITLES['open'])
+    if not repairs:
+        return f'{title}\n\nپرونده‌ای یافت نشد.'
+    lines = [title, f'تعداد: {total}', '']
+    for row in repairs:
+        status = 'باز' if row['status'] == 'open' else 'بسته'
+        phone = row.get('customer_phone') or '—'
+        tech = row.get('technician_name') or '—'
+        issue = (row.get('issue') or '—')[:40]
+        total_amt = int(row.get('customer_total') or 0)
+        lines.append(
+            f"#{row['id']} | {status} | {row['customer_name']}\n"
+            f"📱 {row['device']} | 🔧 {issue}\n"
+            f"📞 {phone} | 👨‍🔧 {tech} | 💰 {format_toman(total_amt)}",
+        )
+        lines.append('')
+    page_count = max(1, (total + REPAIR_LIST_PAGE_SIZE - 1) // REPAIR_LIST_PAGE_SIZE)
+    lines.append(f'صفحه {page + 1} از {page_count}')
+    lines.append('برای جزئیات روی دکمه زیر بزنید.')
     return '\n'.join(lines)

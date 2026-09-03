@@ -75,8 +75,9 @@ def sup_manage_menu(theme: Theme) -> ReplyKeyboardMarkup:
 def reception_menu(theme: Theme) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [_btn(theme, 'rec_new'), _btn(theme, 'rec_search')],
-            [_btn(theme, 'rec_invoice'), _btn(theme, 'rec_report')],
+            [_btn(theme, 'rec_new'), _btn(theme, 'rec_list')],
+            [_btn(theme, 'rec_search'), _btn(theme, 'rec_invoice')],
+            [_btn(theme, 'rec_report')],
             [_btn(theme, 'acc_export_excel'), _btn(theme, 'acc_export_pdf')],
             [_btn(theme, 'back_root')],
         ],
@@ -228,9 +229,57 @@ def edit_supplier_keyboard(suppliers: list[dict]) -> InlineKeyboardMarkup:
 
 def search_result_keyboard(results: list[dict]) -> InlineKeyboardMarkup:
     rows = [
-        [InlineKeyboardButton(text=f"#{r['id']} {r['customer_name'][:12]}", callback_data=f"view:{r['id']}")]
+        [
+            InlineKeyboardButton(
+                text=f"#{r['id']} {r['device'][:14]} — {r['customer_name'][:10]}",
+                callback_data=f"view:{r['id']}",
+            ),
+        ]
         for r in results[:8]
     ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def repair_list_keyboard(
+    repairs: list[dict],
+    *,
+    page: int,
+    total: int,
+    page_size: int,
+    status_filter: str,
+) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text=f"#{r['id']} {r['device'][:14]} — {r['customer_name'][:10]}",
+                callback_data=f"view:{r['id']}",
+            ),
+        ]
+        for r in repairs
+    ]
+    nav: list[InlineKeyboardButton] = []
+    if page > 0:
+        nav.append(InlineKeyboardButton(text='◀️ قبلی', callback_data=f'list:{status_filter}:{page - 1}'))
+    if (page + 1) * page_size < total:
+        nav.append(InlineKeyboardButton(text='بعدی ▶️', callback_data=f'list:{status_filter}:{page + 1}'))
+    if nav:
+        rows.append(nav)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text='📂 باز' + (' ✓' if status_filter == 'open' else ''),
+                callback_data='list:open:0',
+            ),
+            InlineKeyboardButton(
+                text='📁 بسته' + (' ✓' if status_filter == 'closed' else ''),
+                callback_data='list:closed:0',
+            ),
+            InlineKeyboardButton(
+                text='📋 همه' + (' ✓' if status_filter == 'all' else ''),
+                callback_data='list:all:0',
+            ),
+        ],
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 

@@ -185,6 +185,29 @@ async def test_create_repair_and_payments(repo) -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_repairs_brief(repo) -> None:
+    repository, tech_id = repo
+    customer_id = await repository.find_or_create_customer('مریم', '09123334444')
+    repair_id = await repository.create_repair(
+        customer_id=customer_id,
+        technician_id=tech_id,
+        device='iPhone 13',
+        issue='تاچ',
+        labor_amount=300_000,
+        technician_pct=40,
+        parts=[],
+    )
+    assert await repository.count_repairs('open') >= 1
+    rows = await repository.list_repairs_brief(status='open', limit=10)
+    assert any(row['id'] == repair_id for row in rows)
+    match = next(row for row in rows if row['id'] == repair_id)
+    assert match['device'] == 'iPhone 13'
+    assert match['issue'] == 'تاچ'
+    assert match['customer_name'] == 'مریم'
+    assert match['customer_phone'] == '09123334444'
+
+
+@pytest.mark.asyncio
 async def test_search_repairs(repo) -> None:
     repository, tech_id = repo
     customer_id = await repository.find_or_create_customer('حسین', '09121111111')

@@ -15,6 +15,7 @@ from app.bot.keyboards import (
     parts_more_keyboard,
     reception_menu,
     repair_actions,
+    repair_list_keyboard,
     root_menu,
     search_result_keyboard,
     skip_keyboard,
@@ -33,9 +34,11 @@ from app.config import settings
 from app.services.accounting import format_toman
 from app.services.export_service import ExportService
 from app.services.formatters import (
+    REPAIR_LIST_PAGE_SIZE,
     format_accounting_report,
     format_invoice,
     format_repair_summary,
+    format_repair_list,
     format_search_results,
 )
 from app.storage.db import Database
@@ -75,6 +78,35 @@ async def show_repair(
     )
 
 
+async def show_repair_list(
+    message: Message,
+    repo: RepairRepository,
+    *,
+    status_filter: str = 'open',
+    page: int = 0,
+    edit_message: bool = False,
+) -> None:
+    db_status = status_filter if status_filter in ('open', 'closed') else None
+    total = await repo.count_repairs(db_status)
+    repairs = await repo.list_repairs_brief(
+        status=db_status,
+        limit=REPAIR_LIST_PAGE_SIZE,
+        offset=page * REPAIR_LIST_PAGE_SIZE,
+    )
+    text = format_repair_list(repairs, status_filter=status_filter, page=page, total=total)
+    keyboard = repair_list_keyboard(
+        repairs,
+        page=page,
+        total=total,
+        page_size=REPAIR_LIST_PAGE_SIZE,
+        status_filter=status_filter,
+    )
+    if edit_message:
+        await message.edit_text(text, parse_mode='Markdown', reply_markup=keyboard)
+    else:
+        await message.answer(text, parse_mode='Markdown', reply_markup=keyboard)
+
+
 async def show_accounting_report(message: Message, repo: RepairRepository) -> None:
     dashboard = await repo.accounting_dashboard()
     await message.answer(format_accounting_report(dashboard), parse_mode='Markdown')
@@ -100,7 +132,7 @@ async def cmd_start(
         text += '✅ **به تیم CTTEL خوش آمدید!**\n\n'
     text += f"{theme.banner}\n\n🔧 **بات پذیرش و حسابداری CTTEL**\n\n"
     if can_reception:
-        text += '📥 **پذیرش** — ثبت، جستجو، فاکتور\n'
+        text += '📥 **پذیرش** — ثبت، لیست، جستجو، فاکتور\n'
     if can_accounting:
         text += '💼 **حسابداری** — سود، سهم تعمیرکار، بدهی‌ها\n'
     if can_manage:
@@ -118,6 +150,7 @@ async def cmd_help(message: Message, theme: Theme) -> None:
     await message.answer(
         '📥 **منوی پذیرش**\n'
         '• پذیرش جدید — ثبت مشتری، دستگاه، تعمیرکار، اجرت (اختیاری)، قطعه\n'
+        '• لیست پرونده‌ها — گوشی‌های پذیرفته‌شده با نام، مدل، ایراد و تعمیرکار\n'
         '• ✏️ ویرایش پرونده — تغییر اجرت یا افزودن قطعه (با اجازه مدیر)\n'
         '• جستجو — با شماره پرونده، نام، موبایل یا مدل دستگاه\n'
         '• فاکتور — صدور فاکتور فروش برای مشتری\n'
@@ -388,6 +421,31 @@ async def finalize_repair(
 
 # --- Reception: search & invoice ---
 
+@router.message(MenuFilter('rec_list'))
+async def reception_repair_list(message: Message, repo: RepairRepository) -> None:
+    await show_repair_list(message, repo, status_filter='open', page=0)
+
+
+@router.callback_query(F.data.startswith('list:'))
+async def repair_list_page(callback: CallbackQuery, repo: RepairRepository) -> None:
+    parts = callback.data.split(':')
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    status_filter, page_raw = parts[1], parts[2]
+    if status_filter not in ('open', 'closed', 'all') or not page_raw.isdigit():
+        await callback.answer()
+        return
+    await show_repair_list(
+        callback.message,
+        repo,
+        status_filter=status_filter,
+        page=int(page_raw),
+        edit_message=True,
+    )
+    await callback.answer()
+
+
 @router.message(MenuFilter('rec_search'))
 async def start_search(message: Message, state: FSMContext) -> None:
     await state.set_state(SearchRepair.query)
@@ -408,7 +466,7 @@ async def run_search(message: Message, state: FSMContext, repo: RepairRepository
         reply_markup=search_result_keyboard(results) if results else reception_menu(theme),
     )
     if results:
-        await message.answer('یک پرونده را انتخاب کنید یا /repair شماره', reply_markup=reception_menu(theme))
+        await message.answer('یک پرونده را از دکمه‌های زیر انتخاب کنید.', reply_markup=reception_menu(theme))
 
 
 @router.message(MenuFilter('rec_invoice'))
