@@ -38,6 +38,7 @@ from app.services.formatters import (
     format_search_results,
 )
 from app.storage.db import Database
+from app.storage.repository import RepairRepository
 from app.storage.staff_repository import StaffRepository
 from app.storage.settings_repository import SettingsRepository
 from app.staff.roles import ROLE_LABELS
