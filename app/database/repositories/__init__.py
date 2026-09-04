@@ -1,1 +1,5 @@
-"""Database repositories (Phase 2+)."""
+"""Database repositories."""
+
+from app.database.repositories.market_repository import MarketRepository
+
+__all__ = ["MarketRepository"]
