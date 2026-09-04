@@ -1,0 +1,6 @@
+{
+  "result": {
+    "ask": [{"price": 220229, "quantity": 100}],
+    "bid": [{"price": 219667, "quantity": 120}]
+  }
+}

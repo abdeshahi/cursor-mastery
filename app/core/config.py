@@ -46,6 +46,17 @@ class Settings(BaseSettings):
     market_interval: int = 300
     signal_alert_threshold: float = 0.1
 
+    # Market data providers (Phase 3)
+    alphavantage_api_key: str | None = None
+    fred_api_key: str | None = None
+    tgju_base_url: str = "https://api.tgju.org/v1/market/indicator/summary-table-data"
+    provider_connect_timeout: float = 5.0
+    provider_read_timeout: float = 15.0
+    provider_max_retries: int = 3
+    provider_retry_backoff_base: float = 0.5
+    provider_retry_backoff_max: float = 4.0
+    market_stale_after_seconds: int = 86_400
+
     @field_validator("paper_mode", mode="before")
     @classmethod
     def enforce_paper_mode(cls, value: object) -> bool:

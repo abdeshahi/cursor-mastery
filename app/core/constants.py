@@ -22,6 +22,7 @@ class MarketSymbol(StrEnum):
     GOLD_OUNCE_USD = "GOLD_OUNCE_USD"
     BRENT_USD = "BRENT_USD"
     DXY = "DXY"
+    USD_BROAD_INDEX = "USD_BROAD_INDEX"
 
 
 INITIAL_MARKET_SYMBOLS: frozenset[str] = frozenset(symbol.value for symbol in MarketSymbol)
@@ -31,6 +32,8 @@ class MarketSourceStatus(StrEnum):
     """Health status for a market data source."""
 
     HEALTHY = "healthy"
+    DEGRADED = "degraded"
     STALE = "stale"
     FAILING = "failing"
+    FAILED = "failed"
     UNKNOWN = "unknown"
