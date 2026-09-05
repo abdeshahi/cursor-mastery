@@ -48,34 +48,81 @@ rand_secret() {
   openssl rand -hex 24
 }
 
+start_docker_daemon() {
+  if docker info >/dev/null 2>&1 || { command -v sudo >/dev/null 2>&1 && sudo docker info >/dev/null 2>&1; }; then
+    return
+  fi
+
+  if [[ -d /run/systemd/system ]] && command -v systemctl >/dev/null 2>&1; then
+    log "Starting Docker via systemd"
+    sudo systemctl enable --now docker
+  else
+    log "Starting dockerd without systemd"
+    sudo mkdir -p /var/run /var/log
+    if ! pgrep -x dockerd >/dev/null 2>&1; then
+      sudo sh -c 'nohup dockerd >/var/log/dockerd.log 2>&1 &'
+    fi
+  fi
+
+  local i
+  for i in $(seq 1 30); do
+    if docker info >/dev/null 2>&1 || { command -v sudo >/dev/null 2>&1 && sudo docker info >/dev/null 2>&1; }; then
+      return
+    fi
+    sleep 1
+  done
+  die "Docker daemon did not become ready. Check journalctl -u docker or /var/log/dockerd.log"
+}
+
 ensure_docker() {
   if docker info >/dev/null 2>&1 || { command -v sudo >/dev/null 2>&1 && sudo docker info >/dev/null 2>&1; }; then
     log "Docker is already running"
     return
   fi
 
-  if command -v docker >/dev/null 2>&1; then
-    log "Starting Docker daemon"
-    sudo systemctl enable --now docker
-    return
+  if ! command -v docker >/dev/null 2>&1; then
+    need_cmd curl
+    command -v sudo >/dev/null 2>&1 || die "sudo is required to install Docker"
+    log "Installing Docker Engine"
+    curl -fsSL https://get.docker.com | sudo sh
+    if id -nG "$USER" | grep -qw docker; then
+      :
+    else
+      sudo usermod -aG docker "$USER" || true
+      log "Added $USER to the docker group. New shells will not need sudo."
+    fi
   fi
 
-  need_cmd curl
-  command -v sudo >/dev/null 2>&1 || die "sudo is required to install Docker"
-  log "Installing Docker Engine"
-  curl -fsSL https://get.docker.com | sudo sh
-  sudo systemctl enable --now docker
-  if id -nG "$USER" | grep -qw docker; then
-    :
-  else
-    sudo usermod -aG docker "$USER" || true
-    log "Added $USER to the docker group. New shells will not need sudo."
+  start_docker_daemon
+}
+
+ensure_bridge_icc() {
+  local current
+  current="$(sysctl -n net.bridge.bridge-nf-call-iptables 2>/dev/null || echo 0)"
+  [[ "$current" == "1" ]] || return 0
+
+  # Mixed iptables-legacy + nft (or nested Docker) can drop container-to-container
+  # packets while host-to-container traffic still works.
+  if sudo iptables-legacy -S FORWARD 2>/dev/null | grep -q -- '-P FORWARD DROP'; then
+    log "Fixing Docker inter-container networking"
+    sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 net.bridge.bridge-nf-call-ip6tables=0 >/dev/null
+    if [[ -d /etc/sysctl.d ]]; then
+      printf '%s\n' \
+        'net.bridge.bridge-nf-call-iptables = 0' \
+        'net.bridge.bridge-nf-call-ip6tables = 0' \
+        | sudo tee /etc/sysctl.d/99-docker-icc.conf >/dev/null
+    fi
   fi
 }
 
 ensure_env() {
   if [[ -f .env ]]; then
     log "Keeping existing n8n/.env (secrets are not overwritten)"
+    if ! grep -q '^N8N_WEBHOOK_URL=' .env; then
+      local existing_webhook
+      existing_webhook="$(grep -E '^WEBHOOK_URL=' .env | cut -d= -f2-)"
+      printf 'N8N_WEBHOOK_URL=%s\n' "$existing_webhook" >> .env
+    fi
     return
   fi
 
@@ -107,6 +154,7 @@ text = path.read_text()
 replacements = {
     "N8N_HOST=": f"N8N_HOST={host}",
     "N8N_PROTOCOL=": f"N8N_PROTOCOL={protocol}",
+    "N8N_WEBHOOK_URL=": f"N8N_WEBHOOK_URL={webhook}",
     "WEBHOOK_URL=": f"WEBHOOK_URL={webhook}",
     "N8N_ENCRYPTION_KEY=": f"N8N_ENCRYPTION_KEY={enc}",
     "POSTGRES_USER=": "POSTGRES_USER=n8n",
@@ -148,7 +196,7 @@ wait_healthy() {
   port="${port:-5678}"
   log "Waiting for n8n on port $port"
   local i
-  for i in $(seq 1 60); do
+  for i in $(seq 1 90); do
     if curl -fsS "http://127.0.0.1:${port}/healthz" >/dev/null 2>&1; then
       return 0
     fi
@@ -162,6 +210,7 @@ main() {
   need_cmd curl
   chmod +x "$ROOT/init-data.sh"
   ensure_docker
+  ensure_bridge_icc
   ensure_env
   open_firewall
 
