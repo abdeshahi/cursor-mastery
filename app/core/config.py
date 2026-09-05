@@ -39,6 +39,15 @@ class Settings(BaseSettings):
     # OpenAI (Phase 5)
     openai_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
+    llm_provider: str = "openai"
+    llm_mock_model: str = "mock-model-v1"
+    llm_timeout_seconds: float = 60.0
+    llm_max_retries: int = 3
+    llm_retry_backoff_base: float = 1.0
+    llm_max_articles_per_event: int = 8
+    llm_max_chars_per_article: int = 1500
+    llm_max_total_context_chars: int = 12000
+    news_analyzer_prompt_version: str = "NEWS_ANALYZER_PROMPT_V1"
 
     # Scheduler intervals in seconds (Phase 14)
     analysis_interval: int = 900

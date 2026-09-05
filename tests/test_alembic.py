@@ -8,7 +8,7 @@ def test_alembic_script_directory_loads() -> None:
     alembic_cfg = Config("alembic.ini")
     script = ScriptDirectory.from_config(alembic_cfg)
     heads = script.get_heads()
-    assert heads == ["0003_phase4_news"]
+    assert heads == ["0004_phase5_news_analysis"]
 
 
 def test_alembic_baseline_revision_exists() -> None:

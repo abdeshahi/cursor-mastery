@@ -132,3 +132,42 @@ class NewsEventArticle(Base):
 
     event: Mapped[NewsEvent] = relationship(back_populates="article_links")
     article: Mapped[NewsArticle] = relationship(back_populates="event_links")
+
+
+class NewsAnalysis(Base):
+    """LLM-generated structured analysis for a clustered news event."""
+
+    __tablename__ = "news_analyses"
+    __table_args__ = (
+        UniqueConstraint(
+            "event_id",
+            "prompt_version",
+            "llm_provider",
+            "llm_model",
+            name="uq_news_analyses_event_version_provider_model",
+        ),
+        Index("ix_news_analyses_event_id", "event_id"),
+        Index("ix_news_analyses_created_at", "created_at"),
+        Index("ix_news_analyses_prompt_version", "prompt_version"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("news_events.id"), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    direction_usd_irr: Mapped[float] = mapped_column(Float, nullable=False)
+    impact_score: Mapped[float] = mapped_column(Float, nullable=False)
+    content_confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    event_certainty: Mapped[float] = mapped_column(Float, nullable=False)
+    estimated_market_novelty: Mapped[float] = mapped_column(Float, nullable=False)
+    time_horizon: Mapped[str] = mapped_column(String(32), nullable=False)
+    category_scores: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    reasoning_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    llm_provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    llm_model: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    input_first_received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    input_last_received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    event: Mapped[NewsEvent] = relationship()
