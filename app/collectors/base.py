@@ -12,6 +12,7 @@ class CollectorRunResult:
 
     provider: str
     saved_count: int = 0
+    skipped_count: int = 0
     failure_count: int = 0
     errors: list[str] = field(default_factory=list)
 

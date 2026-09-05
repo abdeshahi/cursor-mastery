@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Test Feed</title>
+    <item>
+      <title>Iran central bank adjusts FX policy</title>
+      <link>https://example.com/news/fx-policy?utm_source=test</link>
+      <guid>fx-policy-001</guid>
+      <description>Policy shift on official USD rate.</description>
+      <pubDate>Sat, 05 Sep 2026 10:00:00 +0000</pubDate>
+    </item>
+    <item>
+      <title>New sanctions announced on banking sector</title>
+      <link>https://example.com/news/sanctions-001</link>
+      <guid>sanctions-001</guid>
+      <description>Western powers expand sanctions.</description>
+      <pubDate>Sat, 05 Sep 2026 11:00:00 +0000</pubDate>
+    </item>
+  </channel>
+</rss>

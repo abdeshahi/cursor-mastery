@@ -57,6 +57,16 @@ class Settings(BaseSettings):
     provider_retry_backoff_max: float = 4.0
     market_stale_after_seconds: int = 86_400
 
+    # News collection (Phase 4)
+    news_cluster_title_similarity_threshold: float = 0.85
+    news_cluster_token_similarity_threshold: float = 0.45
+    news_cluster_combined_threshold: float = 0.78
+    news_cluster_default_window_hours: int = 48
+    news_cluster_military_window_hours: int = 12
+    news_cluster_sanctions_window_hours: int = 72
+    news_cluster_negotiation_window_hours: int = 48
+    news_cluster_economic_window_hours: int = 72
+
     @field_validator("paper_mode", mode="before")
     @classmethod
     def enforce_paper_mode(cls, value: object) -> bool:

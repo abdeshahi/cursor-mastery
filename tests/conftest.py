@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings, get_settings
 from app.database.db import create_engine, dispose_engine, get_session_factory
 from app.models.market import MarketPrice, MarketSourceHealth
+from app.models.news import NewsArticle, NewsEvent, NewsEventArticle, NewsSource
+from app.models.news import NewsArticle, NewsEvent, NewsEventArticle, NewsSource
 
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/cttel_dollar_bot_test"
 
@@ -84,8 +86,16 @@ async def db_session(test_settings: Settings, prepare_test_database) -> AsyncGen
     session_factory = get_session_factory()
     async with session_factory() as session:
         yield session
+        await session.execute(delete(NewsEventArticle))
+        await session.execute(delete(NewsArticle))
+        await session.execute(delete(NewsEvent))
+        await session.execute(delete(NewsSource))
         await session.execute(delete(MarketPrice))
         await session.execute(delete(MarketSourceHealth))
+        await session.execute(delete(NewsEventArticle))
+        await session.execute(delete(NewsEvent))
+        await session.execute(delete(NewsArticle))
+        await session.execute(delete(NewsSource))
         await session.commit()
     await dispose_engine()
 

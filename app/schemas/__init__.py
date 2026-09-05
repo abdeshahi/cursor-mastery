@@ -6,6 +6,7 @@ from app.schemas.market import (
     MarketSourceHealthCreate,
     MarketSourceHealthRead,
 )
+from app.schemas.news import NewsArticleRead, NewsEventRead, NewsSourceCreate, NewsSourceRead, RawNewsArticle
 from app.schemas.provider import NormalizedQuote, ProviderFailure, ProviderFetchResult, QuoteUnit
 
 __all__ = [
@@ -13,6 +14,11 @@ __all__ = [
     "MarketPriceRead",
     "MarketSourceHealthCreate",
     "MarketSourceHealthRead",
+    "NewsArticleRead",
+    "NewsEventRead",
+    "NewsSourceCreate",
+    "NewsSourceRead",
+    "RawNewsArticle",
     "NormalizedQuote",
     "ProviderFailure",
     "ProviderFetchResult",
