@@ -134,25 +134,27 @@ Expect `{"ok":true,"db":true,"service":"vpn-sales-bot"}`.
 
 ### Telegram bot
 
+Do not `source .env`: it contains Persian text with spaces and JSON values, and the shell will mangle or execute them. Read single keys instead.
+
 ```bash
-# loads BOT_TOKEN from .env; does not print the token
-set -a && source /opt/vpn-sales-bot/.env && set +a
-curl -fsS -m 15 ${TELEGRAM_PROXY:+-x "$TELEGRAM_PROXY"} \
-  "https://api.telegram.org/bot${BOT_TOKEN}/getMe"
+cd /opt/vpn-sales-bot
+env_get() { sed -n "s/^[[:space:]]*$1=//p" .env | tail -1 | sed -e "s/^'\(.*\)'\$/\1/" -e 's/^"\(.*\)"$/\1/'; }
+
+curl -fsS -m 15 "https://api.telegram.org/bot$(env_get BOT_TOKEN)/getMe"
 ```
 
-Then send `/start` to the bot in Telegram.
+Then send `/start` to the bot in Telegram. Each admin in `ADMIN_TELEGRAM_IDS` must press Start once, otherwise Telegram replies `chat not found` and receipts never arrive.
 
 ### Marzban connectivity
 
 ```bash
-set -a && source /opt/vpn-sales-bot/.env && set +a
-curl -fsS -m 15 -X POST "${MARZBAN_BASE_URL%/}/api/admin/token" \
+cd /opt/vpn-sales-bot
+curl -fsS -m 15 -X POST "$(env_get MARZBAN_BASE_URL)/api/admin/token" \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  --data-urlencode "username=${MARZBAN_USERNAME}" \
-  --data-urlencode "password=${MARZBAN_PASSWORD}" \
+  --data-urlencode "username=$(env_get MARZBAN_USERNAME)" \
+  --data-urlencode "password=$(env_get MARZBAN_PASSWORD)" \
   --data-urlencode 'grant_type=password'
-# then GET /api/system with the access_token (see deploy/verify.sh)
+# then GET /api/system with the access_token (deploy/verify.sh does both)
 ```
 
 ### n8n connectivity (read-only)
