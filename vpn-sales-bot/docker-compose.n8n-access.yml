@@ -1,0 +1,17 @@
+# Optional overlay. Does not modify the existing n8n compose file.
+# Attaches business Postgres to the n8n Docker network so n8n can use
+# Host=vpn-sales-postgres without publishing Postgres on 0.0.0.0.
+#
+# Use only after: docker network ls | grep n8n_default
+#
+#   docker compose -f docker-compose.yml -f docker-compose.n8n-access.yml up -d
+
+services:
+  postgres:
+    networks:
+      - default
+      - n8n_default
+
+networks:
+  n8n_default:
+    external: true
