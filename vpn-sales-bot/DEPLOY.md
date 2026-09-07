@@ -85,7 +85,27 @@ Do not use n8n's own `n8n` database. Skip workflow 2 (payment notify); the bot a
 
 Telegram: long polling. One process per bot token. `TELEGRAM_PROXY` only if `getMe` fails from the VPS.
 
+Before the admin can receive receipts, each admin must press **Start** in the bot once. Telegram returns `chat not found` until then.
+
 Marzban: `POST /api/admin/token` then `GET /api/system`. Create-user uses `MARZBAN_PROXIES` (default `{"vless":{}}`) and `MARZBAN_INBOUNDS` (`{}` = all inbounds for those protocols). If create-user returns 400 "Protocol vless is disabled", set proxies/inbounds to protocols your panel actually has.
+
+### If Marzban is not installed yet
+
+```bash
+bash /opt/vpn-sales-bot/deploy/install-marzban.sh
+# or, with a domain you own and DNS already pointing at the VPS:
+MARZBAN_DOMAIN=panel.example.com bash /opt/vpn-sales-bot/deploy/install-marzban.sh
+```
+
+The script is safe to re-run and does not touch n8n or the vpn-sales stack. Two steps still need you:
+
+```bash
+marzban cli admin create --sudo     # pick username + password for the bot
+```
+
+Then open `http://<VPS_IP>:8000/dashboard` and create one VLESS inbound. Put the admin username/password into `MARZBAN_*` in `.env`.
+
+Marzban listens on `8000` by default, so it does not clash with n8n on `5678`.
 
 ---
 
