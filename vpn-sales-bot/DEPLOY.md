@@ -97,15 +97,23 @@ bash /opt/vpn-sales-bot/deploy/install-marzban.sh
 MARZBAN_DOMAIN=panel.example.com bash /opt/vpn-sales-bot/deploy/install-marzban.sh
 ```
 
-The script is safe to re-run and does not touch n8n or the vpn-sales stack. Two steps still need you:
+Nothing else is needed. The script runs end to end and prints the panel URL plus the credentials it created:
+
+1. installs Marzban if it is missing
+2. sets `XRAY_SUBSCRIPTION_URL_PREFIX` so subscription links are absolute
+3. creates a sudo API admin (`vpnsalesbot`) with a generated password
+4. adds a VLESS + Reality inbound only if the panel has no usable inbound
+5. proves the API works by creating and deleting a throwaway user
+6. writes `MARZBAN_BASE_URL` / `MARZBAN_USERNAME` / `MARZBAN_PASSWORD` / `MARZBAN_PROXIES` / `MARZBAN_INBOUNDS` into `/opt/vpn-sales-bot/.env`
+
+It is safe to re-run and does not touch n8n or the vpn-sales stack. Existing admins and inbounds are reused rather than replaced, and both `.env` and `xray_config.json` are backed up before any edit. Marzban listens on `8000` by default, so it does not clash with n8n on `5678`.
+
+Afterwards:
 
 ```bash
-marzban cli admin create --sudo     # pick username + password for the bot
+systemctl restart vpn-sales-bot
+bash /opt/vpn-sales-bot/deploy/verify.sh
 ```
-
-Then open `http://<VPS_IP>:8000/dashboard` and create one VLESS inbound. Put the admin username/password into `MARZBAN_*` in `.env`.
-
-Marzban listens on `8000` by default, so it does not clash with n8n on `5678`.
 
 ---
 
