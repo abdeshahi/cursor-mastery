@@ -54,6 +54,10 @@ const envSchema = z.object({
   MARZBAN_USERNAME: z.string().min(1),
   MARZBAN_PASSWORD: z.string().min(1),
   MARZBAN_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
+  MARZBAN_INSECURE_TLS: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   MARZBAN_PROXIES: jsonObject,
   MARZBAN_INBOUNDS: jsonObject,
   MARZBAN_SUBSCRIPTION_URL_PREFIX: z.string().url().optional(),

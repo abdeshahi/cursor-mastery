@@ -26,7 +26,19 @@ export interface MarzbanClientOptions {
   proxies: Record<string, unknown>;
   inbounds: Record<string, unknown>;
   subscriptionUrlPrefix?: string;
+  /** Allow self-signed HTTPS when the bot talks to Marzban on the same VPS. */
+  insecureTls?: boolean;
   fetchImpl?: typeof fetch;
+}
+
+function createMarzbanFetch(insecureTls: boolean): typeof fetch {
+  if (!insecureTls) {
+    return fetch;
+  }
+  const { Agent, fetch: undiciFetch } = require('undici') as typeof import('undici');
+  const dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
+  return ((input, init) =>
+    undiciFetch(input as never, { dispatcher, ...(init as object) })) as typeof fetch;
 }
 
 export class MarzbanClient {
@@ -34,7 +46,8 @@ export class MarzbanClient {
   private readonly fetchImpl: typeof fetch;
 
   constructor(private readonly options: MarzbanClientOptions) {
-    this.fetchImpl = options.fetchImpl ?? fetch;
+    this.fetchImpl =
+      options.fetchImpl ?? createMarzbanFetch(options.insecureTls ?? false);
   }
 
   async authenticate(): Promise<void> {

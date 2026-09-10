@@ -28,6 +28,7 @@ async function main(): Promise<void> {
     proxies: env.MARZBAN_PROXIES,
     inbounds: env.MARZBAN_INBOUNDS,
     subscriptionUrlPrefix: env.MARZBAN_SUBSCRIPTION_URL_PREFIX,
+    insecureTls: env.MARZBAN_INSECURE_TLS,
   });
 
   const telegramRef: { send?: Notifier } = {};
