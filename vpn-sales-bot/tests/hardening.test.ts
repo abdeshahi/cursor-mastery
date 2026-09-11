@@ -261,6 +261,72 @@ describe('provisioning idempotency', () => {
     expect(marzban.createUser).not.toHaveBeenCalled();
   });
 
+  it('provisions from the order profile instead of a hardcoded global protocol', async () => {
+    const profiledOrder = { ...paidOrder, connection_profile_id: connectionProfile.id };
+    const profiledClaim = {
+      ...claimedOrder,
+      connection_profile_id: connectionProfile.id,
+    };
+    const profiledSubscription = {
+      ...subscription,
+      connection_profile_id: connectionProfile.id,
+      connection_profile_name: connectionProfile.name,
+    };
+    const db = {
+      getOrder: vi.fn(async () => profiledOrder),
+      claimOrderForProvisioning: vi.fn(async () => profiledClaim),
+      getPlan: vi.fn(async () => ({
+        id: 2,
+        name: '30 GB',
+        traffic_gb: 30,
+        duration_days: 30,
+        price: 150_000,
+        currency: 'TOMAN',
+        marzban_profile: null,
+        node: null,
+        is_active: true,
+      })),
+      getUserById: vi.fn(async () => ({
+        id: 1,
+        telegram_id: '123',
+        telegram_username: null,
+        first_name: null,
+        phone: null,
+        status: 'active',
+      })),
+      getConnectionProfile: vi.fn(async () => connectionProfile),
+      getSubscriptionByOrder: vi.fn(async () => null),
+      insertSubscription: vi.fn(async () => profiledSubscription),
+      completeProvisioning: vi.fn(async () => ({ ...profiledClaim, status: 'completed' })),
+      updateSubscriptionUrl: vi.fn(async () => profiledSubscription),
+      updateOrderStatus: vi.fn(),
+    };
+    const marzban = {
+      getUser: vi.fn().mockResolvedValueOnce(null).mockResolvedValue(marzbanUser),
+      createUser: vi.fn(async () => marzbanUser),
+      fetchSubscriptionLinks: vi.fn(async () => []),
+    };
+    const service = new ProvisioningService(
+      env(),
+      logger,
+      db as unknown as Repositories,
+      marzban as unknown as MarzbanClient,
+      { notifyCustomer: vi.fn(async () => undefined), notifyAdmins: vi.fn(async () => undefined) },
+    );
+
+    await service.provisionOrder(10);
+
+    expect(marzban.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        proxies: connectionProfile.marzban_proxies,
+        inbounds: connectionProfile.marzban_inbounds,
+      }),
+    );
+    expect(db.insertSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ connectionProfileId: connectionProfile.id }),
+    );
+  });
+
   it('includes both direct config and subscription URL in the customer message', async () => {
     const directConfig =
       'vless://00000000-0000-0000-0000-000000000000@example.com:443?security=reality';
