@@ -264,15 +264,17 @@ export class Repositories {
     return row === undefined ? null : this.mapOrder(row);
   }
 
-  async releaseStaleProvisioningClaims(staleMinutes = 5): Promise<number> {
+  async releaseStaleProvisioningClaims(staleMinutes = 5): Promise<OrderRow[]> {
     const result = await this.query(
       `UPDATE orders
        SET status = 'failed', updated_at = now()
        WHERE status = 'provisioning'
-         AND provisioning_started_at < now() - ($1 * INTERVAL '1 minute')`,
+         AND provisioning_started_at < now() - ($1 * INTERVAL '1 minute')
+       RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at,
+                 provisioning_started_at, completed_at`,
       [staleMinutes],
     );
-    return result.rowCount ?? 0;
+    return result.rows.map((row) => this.mapOrder(row));
   }
 
   async listRecoverableOrders(): Promise<OrderRow[]> {

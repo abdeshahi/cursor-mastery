@@ -26,12 +26,20 @@ export class ProvisioningService {
 
   async recoverStuckOrders(): Promise<void> {
     const released = await this.db.releaseStaleProvisioningClaims();
-    if (released > 0) {
-      this.logger.warn('order.recover.stale_released', { count: released });
+    if (released.length > 0) {
+      this.logger.warn('order.recover.stale_released', { count: released.length });
     }
     const orders = await this.db.listRecoverableOrders();
     for (const order of orders) {
       this.logger.warn('order.recover.start', { orderId: order.id, status: order.status });
+      await this.provisionOrder(order.id);
+    }
+  }
+
+  async recoverExpiredProvisioningClaims(): Promise<void> {
+    const orders = await this.db.releaseStaleProvisioningClaims();
+    for (const order of orders) {
+      this.logger.warn('order.recover.lease_expired', { orderId: order.id });
       await this.provisionOrder(order.id);
     }
   }

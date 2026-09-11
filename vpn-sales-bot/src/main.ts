@@ -78,7 +78,7 @@ async function main(): Promise<void> {
   // Reclaim only expired provisioning leases. This is not a queue; it is a
   // safety net for a process crash between the Marzban and PostgreSQL writes.
   const recoveryTimer = setInterval(() => {
-    void provisioning.recoverStuckOrders().catch((error: unknown) => {
+    void provisioning.recoverExpiredProvisioningClaims().catch((error: unknown) => {
       logger.error('order.recover.failed', {
         error: error instanceof Error ? error.message : String(error),
       });
