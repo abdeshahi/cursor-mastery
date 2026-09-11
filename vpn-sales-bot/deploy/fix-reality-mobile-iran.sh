@@ -9,8 +9,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 XRAY_CONFIG="${XRAY_CONFIG:-/var/lib/marzban/xray_config.json}"
 BOT_ENV_FILE="${BOT_ENV_FILE:-/opt/vpn-sales-bot/.env}"
-REALITY_PORT="${REALITY_PORT:-44300}"
-REALITY_SNI="${REALITY_SNI:-www.cloudflare.com}"
+REALITY_PORT="${REALITY_PORT:-443}"
+REALITY_SNI="${REALITY_SNI:-www.microsoft.com}"
 INBOUND_TAG="${INBOUND_TAG:-VLESS TCP REALITY}"
 PUBLIC_IP="$(hostname -I | awk '{print $1}')"
 
