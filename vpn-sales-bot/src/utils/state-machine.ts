@@ -35,7 +35,7 @@ export function canStartProvisioning(orderStatus: OrderStatus): ProvisionDecisio
   if (orderStatus === 'paid') {
     return 'start';
   }
-  if (orderStatus === 'provisioning' || orderStatus === 'failed') {
+  if (orderStatus === 'failed') {
     return 'retry';
   }
   if (orderStatus === 'completed') {

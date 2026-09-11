@@ -180,20 +180,27 @@ export class SalesService {
         }
       } else {
         payment = updated;
-        const paid = await this.db.updateOrderStatus(payment.order_id, ['waiting_payment', 'pending'], 'paid', {
-          paidAt: new Date(),
-        });
-        if (paid === null) {
-          const order = await this.db.getOrder(payment.order_id);
-          if (
-            order?.status !== 'paid' &&
-            order?.status !== 'provisioning' &&
-            order?.status !== 'completed' &&
-            order?.status !== 'failed'
-          ) {
-            return { message: 'سفارش دیگر قابل تأیید نیست.', duplicate: false };
-          }
-        }
+      }
+    }
+
+    // Also run for duplicate approved callbacks. This closes the crash window
+    // where the payment audit write succeeded but the order had not yet moved
+    // to paid; a repeated callback repairs that state safely.
+    const paid = await this.db.updateOrderStatus(
+      payment.order_id,
+      ['waiting_payment', 'pending'],
+      'paid',
+      { paidAt: new Date() },
+    );
+    if (paid === null) {
+      const currentOrder = await this.db.getOrder(payment.order_id);
+      if (
+        currentOrder?.status !== 'paid' &&
+        currentOrder?.status !== 'provisioning' &&
+        currentOrder?.status !== 'completed' &&
+        currentOrder?.status !== 'failed'
+      ) {
+        return { message: 'سفارش دیگر قابل تأیید نیست.', duplicate: false };
       }
     }
 
@@ -220,7 +227,7 @@ export class SalesService {
     return { message: 'تأیید شد. در حال ساخت سرویس.', duplicate: decision === 'duplicate' };
   }
 
-  async reject(paymentId: number, actorTelegramId: number): Promise<{
+  async reject(paymentId: number, actorTelegramId: number, rejectionReason?: string): Promise<{
     message: string;
     customerTelegramId?: number;
     duplicate: boolean;
@@ -242,7 +249,7 @@ export class SalesService {
       return { message: 'این پرداخت قبلاً رد شده است.', duplicate: true };
     }
 
-    const updated = await this.db.rejectPayment(paymentId, actorTelegramId);
+    const updated = await this.db.rejectPayment(paymentId, actorTelegramId, rejectionReason);
     if (updated === null) {
       return { message: 'رد انجام نشد (احتمالاً همزمان تأیید شده).', duplicate: true };
     }

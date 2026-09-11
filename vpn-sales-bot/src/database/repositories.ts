@@ -32,6 +32,8 @@ export interface OrderRow {
   kind: 'new' | 'renewal';
   renewal_subscription_id: number | null;
   paid_at: Date | null;
+  provisioning_started_at: Date | null;
+  completed_at: Date | null;
 }
 
 export interface PaymentRow {
@@ -45,6 +47,9 @@ export interface PaymentRow {
   receipt_kind: 'photo' | 'document' | null;
   status: PaymentStatus;
   verified_by: string | null;
+  reviewed_by: string | null;
+  reviewed_at: Date | null;
+  rejection_reason: string | null;
 }
 
 export interface SubscriptionRow {
@@ -148,7 +153,8 @@ export class Repositories {
     const result = await this.query(
       `INSERT INTO orders (user_id, plan_id, amount, status, kind, renewal_subscription_id)
        VALUES ($1, $2, $3, 'waiting_payment', $4, $5)
-       RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at`,
+       RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at,
+                 provisioning_started_at, completed_at`,
       [input.userId, input.planId, input.amount, input.kind, input.renewalSubscriptionId ?? null],
     );
     return this.mapOrder(result.rows[0]);
@@ -156,7 +162,8 @@ export class Repositories {
 
   async getOrder(id: number): Promise<OrderRow | null> {
     const result = await this.query(
-      `SELECT id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at
+      `SELECT id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at,
+              provisioning_started_at, completed_at
        FROM orders WHERE id = $1`,
       [id],
     );
@@ -166,7 +173,8 @@ export class Repositories {
 
   async findOpenOrderForUser(userId: number): Promise<OrderRow | null> {
     const result = await this.query(
-      `SELECT id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at
+      `SELECT id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at,
+              provisioning_started_at, completed_at
        FROM orders
        WHERE user_id = $1 AND status = 'waiting_payment'
        ORDER BY created_at DESC
@@ -218,18 +226,61 @@ export class Repositories {
            paid_at = COALESCE($4, paid_at),
            updated_at = now()
        WHERE id = $1 AND status = ANY($2::text[])
-       RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at`,
+       RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at,
+                 provisioning_started_at, completed_at`,
       [id, from, to, extra.paidAt ?? null],
     );
     const row = result.rows[0];
     return row === undefined ? null : this.mapOrder(row);
   }
 
+  async claimOrderForProvisioning(id: number): Promise<OrderRow | null> {
+    const result = await this.query(
+      `UPDATE orders
+       SET status = 'provisioning',
+           provisioning_started_at = now(),
+           updated_at = now()
+       WHERE id = $1 AND status IN ('paid', 'failed')
+       RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at,
+                 provisioning_started_at, completed_at`,
+      [id],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : this.mapOrder(row);
+  }
+
+  async completeProvisioning(id: number): Promise<OrderRow | null> {
+    const result = await this.query(
+      `UPDATE orders
+       SET status = 'completed',
+           completed_at = now(),
+           updated_at = now()
+       WHERE id = $1 AND status = 'provisioning'
+       RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at,
+                 provisioning_started_at, completed_at`,
+      [id],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : this.mapOrder(row);
+  }
+
+  async releaseStaleProvisioningClaims(staleMinutes = 5): Promise<number> {
+    const result = await this.query(
+      `UPDATE orders
+       SET status = 'failed', updated_at = now()
+       WHERE status = 'provisioning'
+         AND provisioning_started_at < now() - ($1 * INTERVAL '1 minute')`,
+      [staleMinutes],
+    );
+    return result.rowCount ?? 0;
+  }
+
   async listRecoverableOrders(): Promise<OrderRow[]> {
     const result = await this.query(
-      `SELECT id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at
+      `SELECT id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at,
+              provisioning_started_at, completed_at
        FROM orders
-       WHERE status IN ('paid', 'provisioning', 'failed')
+       WHERE status IN ('paid', 'failed')
        ORDER BY id ASC`,
     );
     return result.rows.map((row) => this.mapOrder(row));
@@ -250,7 +301,8 @@ export class Repositories {
          receipt_file_id = EXCLUDED.receipt_file_id,
          receipt_kind = EXCLUDED.receipt_kind,
          amount = EXCLUDED.amount
-       RETURNING id, order_id, user_id, amount, method, reference, receipt_file_id, receipt_kind, status, verified_by`,
+       RETURNING id, order_id, user_id, amount, method, reference, receipt_file_id, receipt_kind,
+                 status, verified_by, reviewed_by, reviewed_at, rejection_reason`,
       [input.orderId, input.userId, input.amount, input.receiptFileId, input.receiptKind],
     );
     return this.mapPayment(result.rows[0]);
@@ -258,7 +310,8 @@ export class Repositories {
 
   async getPayment(id: number): Promise<PaymentRow | null> {
     const result = await this.query(
-      `SELECT id, order_id, user_id, amount, method, reference, receipt_file_id, receipt_kind, status, verified_by
+      `SELECT id, order_id, user_id, amount, method, reference, receipt_file_id, receipt_kind,
+              status, verified_by, reviewed_by, reviewed_at, rejection_reason
        FROM payments WHERE id = $1`,
       [id],
     );
@@ -269,27 +322,43 @@ export class Repositories {
   async approvePayment(id: number, adminTelegramId: number): Promise<PaymentRow | null> {
     const result = await this.query(
       `UPDATE payments p
-       SET status = 'approved', verified_at = now(), verified_by = $2
+       SET status = 'approved',
+           verified_at = now(),
+           verified_by = $2,
+           reviewed_at = now(),
+           reviewed_by = $2,
+           rejection_reason = NULL
        FROM orders o
        WHERE p.id = $1
          AND p.status = 'pending'
          AND o.id = p.order_id
          AND o.status IN ('pending', 'waiting_payment', 'paid', 'provisioning', 'failed')
        RETURNING p.id, p.order_id, p.user_id, p.amount, p.method, p.reference,
-                 p.receipt_file_id, p.receipt_kind, p.status, p.verified_by`,
+                 p.receipt_file_id, p.receipt_kind, p.status, p.verified_by,
+                 p.reviewed_by, p.reviewed_at, p.rejection_reason`,
       [id, adminTelegramId],
     );
     const row = result.rows[0];
     return row === undefined ? null : this.mapPayment(row);
   }
 
-  async rejectPayment(id: number, adminTelegramId: number): Promise<PaymentRow | null> {
+  async rejectPayment(
+    id: number,
+    adminTelegramId: number,
+    rejectionReason?: string,
+  ): Promise<PaymentRow | null> {
     const result = await this.query(
       `UPDATE payments
-       SET status = 'rejected', verified_at = now(), verified_by = $2
+       SET status = 'rejected',
+           verified_at = now(),
+           verified_by = $2,
+           reviewed_at = now(),
+           reviewed_by = $2,
+           rejection_reason = $3
        WHERE id = $1 AND status = 'pending'
-       RETURNING id, order_id, user_id, amount, method, reference, receipt_file_id, receipt_kind, status, verified_by`,
-      [id, adminTelegramId],
+       RETURNING id, order_id, user_id, amount, method, reference, receipt_file_id, receipt_kind,
+                 status, verified_by, reviewed_by, reviewed_at, rejection_reason`,
+      [id, adminTelegramId, rejectionReason?.trim() || null],
     );
     const row = result.rows[0];
     return row === undefined ? null : this.mapPayment(row);
@@ -402,7 +471,6 @@ export class Repositories {
 
   async updateSubscriptionRenewal(input: {
     id: number;
-    orderId: number;
     subscriptionUrl: string;
     trafficGb: number;
     expireAt: Date;
@@ -410,17 +478,16 @@ export class Repositories {
   }): Promise<SubscriptionRow> {
     const result = await this.query(
       `UPDATE subscriptions
-       SET order_id = $2,
-           subscription_url = $3,
-           traffic_gb = $4,
-           expire_at = $5,
+       SET subscription_url = $2,
+           traffic_gb = $3,
+           expire_at = $4,
            status = 'active',
-           node = $6,
+           node = $5,
            updated_at = now()
        WHERE id = $1
        RETURNING id, user_id, order_id, marzban_username, subscription_url, traffic_gb,
                  start_at, expire_at, status, node, NULL::text AS plan_name`,
-      [input.id, input.orderId, input.subscriptionUrl, input.trafficGb, input.expireAt, input.node],
+      [input.id, input.subscriptionUrl, input.trafficGb, input.expireAt, input.node],
     );
     return this.mapSubscription(result.rows[0]);
   }
@@ -480,6 +547,9 @@ export class Repositories {
       renewal_subscription_id:
         row['renewal_subscription_id'] === null ? null : num(row['renewal_subscription_id']),
       paid_at: row['paid_at'] instanceof Date ? row['paid_at'] : null,
+      provisioning_started_at:
+        row['provisioning_started_at'] instanceof Date ? row['provisioning_started_at'] : null,
+      completed_at: row['completed_at'] instanceof Date ? row['completed_at'] : null,
     };
   }
 
@@ -504,6 +574,12 @@ export class Repositories {
         row['verified_by'] === null || row['verified_by'] === undefined
           ? null
           : String(row['verified_by']),
+      reviewed_by:
+        row['reviewed_by'] === null || row['reviewed_by'] === undefined
+          ? null
+          : String(row['reviewed_by']),
+      reviewed_at: row['reviewed_at'] instanceof Date ? row['reviewed_at'] : null,
+      rejection_reason: optionalStr(row['rejection_reason']),
     };
   }
 

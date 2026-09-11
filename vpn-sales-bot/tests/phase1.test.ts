@@ -64,13 +64,13 @@ describe('provisioning helpers', () => {
     expect(marzbanUsernameForOrder(42)).toBe('ct_42');
   });
 
-  it('extends expiry from remaining time', () => {
+  it('renews an active subscription from its current expiry', () => {
     const now = new Date('2026-01-10T00:00:00Z');
     const current = new Date('2026-01-20T00:00:00Z');
     expect(nextExpiry(current, now, 30).toISOString()).toBe('2026-02-19T00:00:00.000Z');
   });
 
-  it('starts expiry from now when already expired', () => {
+  it('renews an expired subscription from the current time', () => {
     const now = new Date('2026-01-10T00:00:00Z');
     const current = new Date('2026-01-01T00:00:00Z');
     expect(nextExpiry(current, now, 30).toISOString()).toBe('2026-02-09T00:00:00.000Z');
@@ -114,9 +114,9 @@ describe('idempotent payment and provisioning states', () => {
     expect(nextPaymentRejection('approved')).toBe('invalid');
   });
 
-  it('starts provisioning once and retries failed/stuck jobs', () => {
+  it('starts provisioning once, retries failed jobs, and rejects active claims', () => {
     expect(canStartProvisioning('paid')).toBe('start');
-    expect(canStartProvisioning('provisioning')).toBe('retry');
+    expect(canStartProvisioning('provisioning')).toBe('conflict');
     expect(canStartProvisioning('failed')).toBe('retry');
     expect(canStartProvisioning('completed')).toBe('skip');
     expect(canStartProvisioning('waiting_payment')).toBe('conflict');

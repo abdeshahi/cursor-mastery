@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   const provisioning = new ProvisioningService(env, logger, db, marzban, notifier);
   const sales = new SalesService(env, logger, db, provisioning);
   const bot = createBot({ env, logger, sales });
-  const health = startHealthServer(env, pool, logger);
+  const health = startHealthServer(env, pool, marzban, logger);
 
   telegramRef.send = {
     async notifyCustomer(telegramId, html) {
@@ -75,8 +75,20 @@ async function main(): Promise<void> {
   await bot.launch({ dropPendingUpdates: false });
   logger.info('bot.started', { admins: env.ADMIN_TELEGRAM_IDS.length, defaultNode: env.DEFAULT_NODE });
 
+  // Reclaim only expired provisioning leases. This is not a queue; it is a
+  // safety net for a process crash between the Marzban and PostgreSQL writes.
+  const recoveryTimer = setInterval(() => {
+    void provisioning.recoverStuckOrders().catch((error: unknown) => {
+      logger.error('order.recover.failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+  }, 60_000);
+  recoveryTimer.unref();
+
   const shutdown = async (signal: string) => {
     logger.info('bot.stopping', { signal });
+    clearInterval(recoveryTimer);
     bot.stop(signal);
     health.close();
     await pool.end();

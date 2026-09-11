@@ -10,8 +10,6 @@ import {
   resolveSubscriptionUrl,
   unixSeconds,
 } from '../utils/provisioning.js';
-import { canStartProvisioning } from '../utils/state-machine.js';
-
 export interface Notifier {
   notifyCustomer(telegramId: number, html: string): Promise<void>;
   notifyAdmins(html: string): Promise<void>;
@@ -27,6 +25,10 @@ export class ProvisioningService {
   ) {}
 
   async recoverStuckOrders(): Promise<void> {
+    const released = await this.db.releaseStaleProvisioningClaims();
+    if (released > 0) {
+      this.logger.warn('order.recover.stale_released', { count: released });
+    }
     const orders = await this.db.listRecoverableOrders();
     for (const order of orders) {
       this.logger.warn('order.recover.start', { orderId: order.id, status: order.status });
@@ -76,24 +78,21 @@ export class ProvisioningService {
       return null;
     }
 
-    const decision = canStartProvisioning(order.status);
-    if (decision === 'skip') {
-      return this.db.getSubscriptionByOrder(orderId);
+    if (order.status === 'completed') {
+      return this.subscriptionForCompletedOrder(order);
     }
-    if (decision === 'conflict') {
+    if (order.status !== 'paid' && order.status !== 'failed') {
       this.logger.warn('order.provision.conflict', { orderId, status: order.status });
       return null;
     }
 
-    const claimed = await this.db.updateOrderStatus(
-      orderId,
-      decision === 'start' ? ['paid'] : ['paid', 'provisioning', 'failed'],
-      'provisioning',
-    );
+    // Database compare-and-swap: only one caller can move paid/failed to
+    // provisioning. A concurrent caller sees no row and must not call Marzban.
+    const claimed = await this.db.claimOrderForProvisioning(orderId);
     if (claimed === null) {
       const current = await this.db.getOrder(orderId);
       if (current?.status === 'completed') {
-        return this.db.getSubscriptionByOrder(orderId);
+        return this.subscriptionForCompletedOrder(current);
       }
       this.logger.warn('order.provision.already_claimed', { orderId });
       return null;
@@ -114,20 +113,32 @@ export class ProvisioningService {
       if (claimed.kind === 'renewal' && claimed.renewal_subscription_id !== null) {
         subscription = await this.renewExisting(claimed, plan, node, now, proxies);
       } else {
-        subscription = await this.createNew(claimed, plan, node, now, proxies);
+        const existingSubscription = await this.db.getSubscriptionByOrder(orderId);
+        subscription =
+          existingSubscription ??
+          (await this.createNew(claimed, plan, node, now, proxies));
       }
 
-      const completed = await this.db.updateOrderStatus(orderId, ['provisioning'], 'completed');
+      const completed = await this.db.completeProvisioning(orderId);
       if (completed === null) {
-        this.logger.warn('order.complete.race', { orderId });
+        throw new Error('order provisioning claim was lost before completion');
       }
 
       subscription = await this.refreshSubscriptionUrl(subscription);
-      const configLinks = await this.fetchConfigLinks(subscription.subscription_url);
-      await this.notifier.notifyCustomer(
-        Number(user.telegram_id),
-        this.deliveryMessage(plan.name, subscription, configLinks),
-      );
+      try {
+        const configLinks = await this.fetchConfigLinks(subscription.subscription_url);
+        await this.notifier.notifyCustomer(
+          Number(user.telegram_id),
+          this.deliveryMessage(plan.name, subscription, configLinks),
+        );
+      } catch (error) {
+        // Provisioning is already complete. A Telegram outage must not roll it
+        // back or cause the VPN account to be recreated on retry.
+        this.logger.error('customer.provision.notify_failed', {
+          orderId,
+          detail: error instanceof Error ? error.message : String(error),
+        });
+      }
       return subscription;
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
@@ -141,6 +152,19 @@ export class ProvisioningService {
       }
       return null;
     }
+  }
+
+  private async subscriptionForCompletedOrder(
+    order: {
+      id: number;
+      kind: 'new' | 'renewal';
+      renewal_subscription_id: number | null;
+    },
+  ): Promise<SubscriptionRow | null> {
+    if (order.kind === 'renewal' && order.renewal_subscription_id !== null) {
+      return this.db.getSubscription(order.renewal_subscription_id);
+    }
+    return this.db.getSubscriptionByOrder(order.id);
   }
 
   private async createNew(
@@ -223,7 +247,6 @@ export class ProvisioningService {
 
     return this.db.updateSubscriptionRenewal({
       id: current.id,
-      orderId: order.id,
       subscriptionUrl: url,
       trafficGb: plan.traffic_gb,
       expireAt,
