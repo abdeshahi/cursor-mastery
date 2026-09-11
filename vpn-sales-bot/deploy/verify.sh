@@ -26,6 +26,9 @@ ADMIN_TELEGRAM_IDS="$(env_get ADMIN_TELEGRAM_IDS)"
 MARZBAN_BASE_URL="$(env_get MARZBAN_BASE_URL)"
 MARZBAN_USERNAME="$(env_get MARZBAN_USERNAME)"
 MARZBAN_PASSWORD="$(env_get MARZBAN_PASSWORD)"
+MARZBAN_INSECURE_TLS="$(env_get MARZBAN_INSECURE_TLS)"; MARZBAN_INSECURE_TLS="${MARZBAN_INSECURE_TLS:-false}"
+MARZBAN_CURL=(curl -fsS -m 15)
+[[ "$MARZBAN_INSECURE_TLS" == true ]] && MARZBAN_CURL+=(-k)
 
 FAILED=0
 pass() { printf 'OK   %s\n' "$1"; }
@@ -100,7 +103,7 @@ echo '=== Marzban ==='
 if [[ -z "$MARZBAN_BASE_URL" || -z "$MARZBAN_USERNAME" || -z "$MARZBAN_PASSWORD" ]]; then
   fail 'Marzban env vars missing'
 else
-  TOKEN_JSON="$(curl -fsS -m 15 -X POST "${MARZBAN_BASE_URL%/}/api/admin/token" \
+  TOKEN_JSON="$("${MARZBAN_CURL[@]}" -X POST "${MARZBAN_BASE_URL%/}/api/admin/token" \
     -H 'Content-Type: application/x-www-form-urlencoded' \
     --data-urlencode "username=${MARZBAN_USERNAME}" \
     --data-urlencode "password=${MARZBAN_PASSWORD}" \
@@ -108,7 +111,7 @@ else
   TOKEN="$(printf '%s' "$TOKEN_JSON" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')"
   if [[ -z "$TOKEN" ]]; then
     fail 'Marzban login failed (URL, username, or password)'
-  elif curl -fsS -m 15 -H "Authorization: Bearer ${TOKEN}" "${MARZBAN_BASE_URL%/}/api/system" >/dev/null 2>&1; then
+  elif "${MARZBAN_CURL[@]}" -H "Authorization: Bearer ${TOKEN}" "${MARZBAN_BASE_URL%/}/api/system" >/dev/null 2>&1; then
     pass 'Marzban /api/system'
   else
     fail 'Marzban /api/system failed'
