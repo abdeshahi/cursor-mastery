@@ -375,6 +375,31 @@ export class Repositories {
     return this.mapSubscription(result.rows[0]);
   }
 
+  async updateSubscriptionUrl(id: number, subscriptionUrl: string): Promise<SubscriptionRow> {
+    const result = await this.query(
+      `UPDATE subscriptions
+       SET subscription_url = $2, updated_at = now()
+       WHERE id = $1
+       RETURNING id, user_id, order_id, marzban_username, subscription_url, traffic_gb,
+                 start_at, expire_at, status, node, NULL::text AS plan_name`,
+      [id, subscriptionUrl],
+    );
+    return this.mapSubscription(result.rows[0]);
+  }
+
+  async listActiveSubscriptions(): Promise<SubscriptionRow[]> {
+    const result = await this.query(
+      `SELECT s.id, s.user_id, s.order_id, s.marzban_username, s.subscription_url, s.traffic_gb,
+              s.start_at, s.expire_at, s.status, s.node, p.name AS plan_name
+       FROM subscriptions s
+       LEFT JOIN orders o ON o.id = s.order_id
+       LEFT JOIN plans p ON p.id = o.plan_id
+       WHERE s.status = 'active'
+       ORDER BY s.id ASC`,
+    );
+    return result.rows.map((row) => this.mapSubscription(row));
+  }
+
   async updateSubscriptionRenewal(input: {
     id: number;
     orderId: number;

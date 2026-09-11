@@ -69,6 +69,7 @@ async function main(): Promise<void> {
   };
 
   await db.markExpiredSubscriptions();
+  await provisioning.syncSubscriptionUrls();
   await provisioning.recoverStuckOrders();
 
   await bot.launch({ dropPendingUpdates: false });

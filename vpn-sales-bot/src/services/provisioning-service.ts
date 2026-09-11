@@ -34,6 +34,41 @@ export class ProvisioningService {
     }
   }
 
+  /** Marzban rotates /sub tokens on restart; keep DB links in sync. */
+  async syncSubscriptionUrls(): Promise<void> {
+    const rows = await this.db.listActiveSubscriptions();
+    for (const row of rows) {
+      try {
+        await this.refreshSubscriptionUrl(row);
+      } catch (error) {
+        this.logger.warn('subscription.url.sync_failed', {
+          subscriptionId: row.id,
+          username: row.marzban_username,
+          detail: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
+
+  async refreshSubscriptionUrl(subscription: SubscriptionRow): Promise<SubscriptionRow> {
+    const user = await this.marzban.getUser(subscription.marzban_username);
+    if (user === null) {
+      throw new Error(`marzban user missing: ${subscription.marzban_username}`);
+    }
+    const freshUrl = resolveSubscriptionUrl(
+      user.subscription_url,
+      this.env.MARZBAN_SUBSCRIPTION_URL_PREFIX,
+    );
+    if (freshUrl === subscription.subscription_url) {
+      return subscription;
+    }
+    this.logger.info('subscription.url.refreshed', {
+      subscriptionId: subscription.id,
+      username: subscription.marzban_username,
+    });
+    return this.db.updateSubscriptionUrl(subscription.id, freshUrl);
+  }
+
   async provisionOrder(orderId: number): Promise<SubscriptionRow | null> {
     const order = await this.db.getOrder(orderId);
     if (order === null) {
@@ -87,6 +122,7 @@ export class ProvisioningService {
         this.logger.warn('order.complete.race', { orderId });
       }
 
+      subscription = await this.refreshSubscriptionUrl(subscription);
       const configLinks = await this.fetchConfigLinks(subscription.subscription_url);
       await this.notifier.notifyCustomer(
         Number(user.telegram_id),
