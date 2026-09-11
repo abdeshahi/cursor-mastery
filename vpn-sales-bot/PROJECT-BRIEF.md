@@ -9,7 +9,7 @@
 **Goal:** Telegram-based VPN sales MVP on a single VPS (Iran, Tehran).
 
 **Stack:**
-- Telegram bot (Node.js 22 + TypeScript + Telegraf) — sales, payments, provisioning
+- Telegram bot (Node.js 24 + TypeScript + Telegraf) — sales, payments, provisioning
 - PostgreSQL 16 (Docker) — business database `vpn_sales`
 - Marzban + Xray — VPN panel, VLESS + Reality
 - n8n 2.37.10 (existing, host install) — reminders, reports, health alerts
@@ -125,7 +125,8 @@ schema_migrations
 | ۱۰۰ گیگ / ۳۰ روز | 100 GB | 30 days | 280,000 |
 | ۱۰۰ گیگ / ۹۰ روز | 100 GB | 90 days | 750,000 |
 
-Migrations: `migrations/001_init.sql`, `migrations/002_seed_plans.sql`  
+Migrations: `migrations/001_init.sql`, `migrations/002_seed_plans.sql`,
+`migrations/003_phase1_hardening.sql`
 Applied automatically on bot startup.
 
 ---

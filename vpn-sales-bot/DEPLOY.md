@@ -11,7 +11,7 @@ Do **not**:
 ## What must run on the VPS
 
 1. **Business PostgreSQL** (`vpn_sales`) — new Docker Compose project `vpn-sales`, container `vpn-sales-postgres`, bound to `127.0.0.1:5432`.
-2. **Telegram bot** — Node.js 22 process, systemd unit `vpn-sales-bot`, production command `node dist/main.js`.
+2. **Telegram bot** — Node.js 24 process, systemd unit `vpn-sales-bot`, production command `node dist/main.js`.
 3. **Existing n8n 2.37.10** on port **5678** — leave it running. Add a Postgres credential in the n8n UI only.
 4. **Existing Marzban** — no install; the bot calls its API.
 
@@ -29,13 +29,23 @@ Suggested install path: `/opt/vpn-sales-bot`.
 - [ ] Host port `5432` is free: `ss -lptn | grep 5432 || true` (n8n's internal Postgres is usually not published)
 - [ ] Host port `3010` is free for the bot health endpoint
 - [ ] Docker Engine is available (`docker compose version`)
-- [ ] Node.js 22+ is available (`node -v`)
+- [ ] Node.js 24.x is available (`node -v`)
 - [ ] `.env` is filled and **not** committed
 - [ ] `POSTGRES_PASSWORD` is a long random value; `DATABASE_URL` uses the **same** password
 - [ ] Telegram bot token is unique to this bot (not shared with another polling bot)
 - [ ] `ADMIN_TELEGRAM_IDS` is your numeric Telegram user id
 - [ ] Marzban URL is reachable from the VPS; `MARZBAN_PROXIES` / `MARZBAN_INBOUNDS` match the panel
 - [ ] After start: `bash deploy/verify.sh` is all `OK`
+
+Health endpoints are local-only:
+
+- `GET /health/live` — process liveness only; no dependency calls
+- `GET /health/ready` — PostgreSQL + Marzban readiness
+- `GET /health` — backward-compatible PostgreSQL health response
+
+See [PRODUCTION-HARDENING.md](PRODUCTION-HARDENING.md) for backups,
+safe restore testing, network exposure, secret rotation, and the future
+HTTPS subscription configuration.
 
 ---
 
