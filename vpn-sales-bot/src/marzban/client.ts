@@ -1,3 +1,5 @@
+import { Agent, fetch as undiciFetch } from 'undici';
+
 export class MarzbanError extends Error {
   constructor(
     message: string,
@@ -35,7 +37,6 @@ function createMarzbanFetch(insecureTls: boolean): typeof fetch {
   if (!insecureTls) {
     return fetch;
   }
-  const { Agent, fetch: undiciFetch } = require('undici') as typeof import('undici');
   const dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
   return ((input, init) =>
     undiciFetch(input as never, { dispatcher, ...(init as object) })) as typeof fetch;
