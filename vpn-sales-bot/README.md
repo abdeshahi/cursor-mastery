@@ -24,6 +24,12 @@ npm start
 
 Migrations run automatically on bot start.
 
+Connection profiles are stored as data rather than hardcoded as one global
+protocol. The existing VLESS Reality service remains the only enabled
+baseline; adding a row does not create a Marzban inbound. See
+[CONNECTION-PROFILES.md](CONNECTION-PROFILES.md) before preparing or enabling a
+test profile.
+
 Plan prices live in PostgreSQL:
 
 ```sql

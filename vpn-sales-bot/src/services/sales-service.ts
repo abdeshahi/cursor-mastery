@@ -1,7 +1,12 @@
 import type { Environment } from '../config/env.js';
 import { isAdmin } from '../config/env.js';
 import type { Logger } from '../config/logger.js';
-import type { PlanRow, Repositories, SubscriptionRow } from '../database/repositories.js';
+import type {
+  ConnectionProfileRow,
+  PlanRow,
+  Repositories,
+  SubscriptionRow,
+} from '../database/repositories.js';
 import { escapeHtml, formatAmount, formatDate } from '../utils/format.js';
 import { nextPaymentApproval, nextPaymentRejection } from '../utils/state-machine.js';
 import type { ProvisioningService } from './provisioning-service.js';
@@ -31,10 +36,25 @@ export class SalesService {
     return this.db.listActivePlans();
   }
 
-  async createPurchase(userId: number, planId: number): Promise<{ orderId: number; plan: PlanRow }> {
+  async profilesForPlan(planId: number): Promise<ConnectionProfileRow[]> {
+    return this.db.listProfilesForPlan(planId);
+  }
+
+  async createPurchase(
+    userId: number,
+    planId: number,
+    profileId?: number,
+  ): Promise<{ orderId: number; plan: PlanRow; profile: ConnectionProfileRow }> {
     const plan = await this.db.getPlan(planId);
     if (plan === null || !plan.is_active) {
       throw new Error('PLAN_NOT_FOUND');
+    }
+    const profile =
+      profileId === undefined
+        ? await this.db.getDefaultProfileForPlan(plan.id)
+        : await this.db.getProfileForPlan(plan.id, profileId);
+    if (profile === null) {
+      throw new Error('PROFILE_NOT_FOUND');
     }
     await this.db.cancelOpenOrders(userId);
     const order = await this.db.createOrder({
@@ -42,9 +62,10 @@ export class SalesService {
       planId: plan.id,
       amount: plan.price,
       kind: 'new',
+      connectionProfileId: profile.id,
     });
-    this.logger.info('order.created', { orderId: order.id, userId, planId });
-    return { orderId: order.id, plan };
+    this.logger.info('order.created', { orderId: order.id, userId, planId, profileId: profile.id });
+    return { orderId: order.id, plan, profile };
   }
 
   async cancelOrder(userId: number, orderId: number): Promise<boolean> {
@@ -55,7 +76,7 @@ export class SalesService {
     userId: number,
     subscriptionId: number,
     planId: number,
-  ): Promise<{ orderId: number; plan: PlanRow }> {
+  ): Promise<{ orderId: number; plan: PlanRow; profile: ConnectionProfileRow }> {
     const subscription = await this.db.getSubscription(subscriptionId);
     if (subscription === null || subscription.user_id !== userId) {
       throw new Error('SUBSCRIPTION_NOT_FOUND');
@@ -67,6 +88,13 @@ export class SalesService {
     if (plan === null || !plan.is_active) {
       throw new Error('PLAN_NOT_FOUND');
     }
+    const profile =
+      subscription.connection_profile_id === null
+        ? await this.db.getDefaultProfileForPlan(plan.id)
+        : await this.db.getProfileForPlan(plan.id, subscription.connection_profile_id);
+    if (profile === null) {
+      throw new Error('PROFILE_NOT_FOUND');
+    }
     await this.db.cancelOpenOrders(userId);
     const order = await this.db.createOrder({
       userId,
@@ -74,18 +102,25 @@ export class SalesService {
       amount: plan.price,
       kind: 'renewal',
       renewalSubscriptionId: subscription.id,
+      connectionProfileId: profile.id,
     });
-    this.logger.info('order.renewal.created', { orderId: order.id, subscriptionId, planId });
-    return { orderId: order.id, plan };
+    this.logger.info('order.renewal.created', {
+      orderId: order.id,
+      subscriptionId,
+      planId,
+      profileId: profile.id,
+    });
+    return { orderId: order.id, plan, profile };
   }
 
-  paymentInstructions(plan: PlanRow, orderId: number): string {
+  paymentInstructions(plan: PlanRow, orderId: number, profile?: ConnectionProfileRow): string {
     const bank = this.env.PAYMENT_BANK_NAME.trim();
     return [
       'سفارش ثبت شد. لطفاً مبلغ را کارت‌به‌کارت کنید.',
       '',
       `شماره سفارش: <code>${orderId}</code>`,
       `پلن: ${escapeHtml(plan.name)}`,
+      profile === undefined ? '' : `نوع اتصال: ${escapeHtml(profile.name)}`,
       `مبلغ: <b>${formatAmount(plan.price, plan.currency)}</b>`,
       '',
       bank.length > 0 ? `بانک: ${escapeHtml(bank)}` : '',
@@ -266,6 +301,27 @@ export class SalesService {
   async myServices(userId: number) {
     await this.db.markExpiredSubscriptions();
     return this.db.listUserSubscriptions(userId);
+  }
+
+  async recordProfileTest(input: {
+    userId: number;
+    subscriptionId: number;
+    isp: string;
+    networkType: string;
+    clientApp: string;
+    result: 'ok' | 'no_download' | 'failed';
+  }): Promise<boolean> {
+    const connected = input.result !== 'failed';
+    return this.db.recordProfileTestForUser({
+      userId: input.userId,
+      subscriptionId: input.subscriptionId,
+      isp: input.isp,
+      networkType: input.networkType,
+      connected,
+      downloadOk: input.result === 'failed' ? null : input.result === 'ok',
+      clientApp: input.clientApp,
+      failureStage: input.result === 'failed' ? 'connect' : input.result === 'no_download' ? 'download' : undefined,
+    });
   }
 
   async liveServiceText(row: SubscriptionRow): Promise<string> {

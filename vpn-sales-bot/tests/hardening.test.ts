@@ -6,6 +6,7 @@ import { createHealthServer } from '../src/bot/health-server.js';
 import { loadEnvironment } from '../src/config/env.js';
 import type { Logger } from '../src/config/logger.js';
 import {
+  type ConnectionProfileRow,
   Repositories,
   type OrderRow,
   type PaymentRow,
@@ -45,6 +46,7 @@ const paidOrder: OrderRow = {
   status: 'paid',
   kind: 'new',
   renewal_subscription_id: null,
+  connection_profile_id: null,
   paid_at: new Date('2026-01-01T00:00:00Z'),
   provisioning_started_at: null,
   completed_at: null,
@@ -67,7 +69,29 @@ const subscription: SubscriptionRow = {
   expire_at: new Date('2026-01-31T00:00:00Z'),
   status: 'active',
   node: 'node1',
+  connection_profile_id: null,
+  connection_profile_name: null,
   plan_name: '30 GB',
+};
+
+const connectionProfile: ConnectionProfileRow = {
+  id: 3,
+  node_id: 1,
+  node_name: 'node1',
+  name: 'VLESS Reality baseline',
+  protocol: 'vless',
+  transport: 'tcp',
+  security: 'reality',
+  port: 443,
+  sni: 'www.apple.com',
+  flow: 'xtls-rprx-vision',
+  fingerprint: 'chrome',
+  marzban_inbound_tag: 'VLESS TCP REALITY',
+  marzban_proxies: { vless: { flow: 'xtls-rprx-vision' } },
+  marzban_inbounds: { vless: ['VLESS TCP REALITY'] },
+  enabled: true,
+  priority: 10,
+  notes: null,
 };
 
 const marzbanUser: MarzbanUser = {
@@ -258,6 +282,42 @@ describe('provisioning idempotency', () => {
     expect(message).toContain('🔗 لینک اشتراک:');
     expect(message).toContain(subscription.subscription_url);
   });
+
+  it('snapshots the selected profile on a new order', async () => {
+    const db = {
+      getPlan: vi.fn(async () => ({
+        id: 2,
+        name: '30 GB',
+        traffic_gb: 30,
+        duration_days: 30,
+        price: 150_000,
+        currency: 'TOMAN',
+        marzban_profile: null,
+        node: null,
+        is_active: true,
+      })),
+      getProfileForPlan: vi.fn(async () => connectionProfile),
+      cancelOpenOrders: vi.fn(async () => undefined),
+      createOrder: vi.fn(async () => ({
+        ...paidOrder,
+        status: 'waiting_payment',
+        connection_profile_id: connectionProfile.id,
+      })),
+    };
+    const service = new SalesService(
+      env(),
+      logger,
+      db as unknown as Repositories,
+      {} as ProvisioningService,
+    );
+
+    const result = await service.createPurchase(1, 2, connectionProfile.id);
+
+    expect(result.profile).toEqual(connectionProfile);
+    expect(db.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ connectionProfileId: connectionProfile.id }),
+    );
+  });
 });
 
 describe('repository hardening SQL', () => {
@@ -316,6 +376,30 @@ describe('repository hardening SQL', () => {
     const sql = String(query.mock.calls[0]?.[0]);
     expect(sql).not.toContain('SET order_id');
     expect(query.mock.calls[0]?.[1]).toHaveLength(5);
+  });
+
+  it('records field tests without storing a customer identifier', async () => {
+    const query = vi.fn(async () => ({ rows: [{ id: 1 }], rowCount: 1 }));
+    const repository = new Repositories({ query } as unknown as Pool);
+
+    await expect(
+      repository.recordProfileTestForUser({
+        userId: 1,
+        subscriptionId: 7,
+        isp: 'mci',
+        networkType: '4g',
+        connected: false,
+        downloadOk: null,
+        clientApp: 'v2rayng',
+        failureStage: 'connect',
+      }),
+    ).resolves.toBe(true);
+
+    const sql = String(query.mock.calls[0]?.[0]);
+    const insertColumns = sql.slice(sql.indexOf('INSERT INTO'), sql.indexOf('SELECT'));
+    expect(insertColumns).not.toContain('user_id');
+    expect(insertColumns).not.toContain('subscription_id');
+    expect(sql).toContain('s.user_id = $2');
   });
 });
 

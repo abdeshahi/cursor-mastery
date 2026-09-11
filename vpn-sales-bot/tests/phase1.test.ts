@@ -45,6 +45,24 @@ describe('callbacks', () => {
     expect(parseCallback('m:hack')).toBeNull();
     expect(parseCallback('x'.repeat(65))).toBeNull();
   });
+
+  it('round-trips profile selection and privacy-minimal field test callbacks', () => {
+    expect(parseCallback(encodeCallback({ type: 'selectProfile', planId: 2, profileId: 3 }))).toEqual({
+      type: 'selectProfile',
+      planId: 2,
+      profileId: 3,
+    });
+    const report = {
+      type: 'testResult' as const,
+      subscriptionId: 7,
+      isp: 'mci' as const,
+      networkType: '4g' as const,
+      clientApp: 'v2rayng' as const,
+      result: 'failed' as const,
+    };
+    expect(parseCallback(encodeCallback(report))).toEqual(report);
+    expect(parseCallback('tr:7:unknown:4g:v2rayng:failed')).toBeNull();
+  });
 });
 
 describe('admin whitelist', () => {

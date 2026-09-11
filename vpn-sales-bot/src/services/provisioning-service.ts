@@ -114,17 +114,32 @@ export class ProvisioningService {
       }
 
       const now = new Date();
-      const node = assignNode(plan.node, this.env.DEFAULT_NODE);
-      const proxies = this.proxiesForPlan(plan.marzban_profile);
+      const profile =
+        claimed.connection_profile_id === null
+          ? null
+          : await this.db.getConnectionProfile(claimed.connection_profile_id);
+      if (claimed.connection_profile_id !== null && profile === null) {
+        throw new Error('connection profile missing for order');
+      }
+      const node = profile?.node_name ?? assignNode(plan.node, this.env.DEFAULT_NODE);
+      const settings = this.provisioningSettings(
+        plan.marzban_profile,
+        profile === null
+          ? {}
+          : {
+              proxies: profile.marzban_proxies,
+              inbounds: profile.marzban_inbounds,
+            },
+      );
 
       let subscription: SubscriptionRow;
       if (claimed.kind === 'renewal' && claimed.renewal_subscription_id !== null) {
-        subscription = await this.renewExisting(claimed, plan, node, now, proxies);
+        subscription = await this.renewExisting(claimed, plan, node, now, settings);
       } else {
         const existingSubscription = await this.db.getSubscriptionByOrder(orderId);
         subscription =
           existingSubscription ??
-          (await this.createNew(claimed, plan, node, now, proxies));
+          (await this.createNew(claimed, plan, node, now, settings));
       }
 
       const completed = await this.db.completeProvisioning(orderId);
@@ -176,7 +191,7 @@ export class ProvisioningService {
   }
 
   private async createNew(
-    order: { id: number; user_id: number },
+    order: { id: number; user_id: number; connection_profile_id: number | null },
     plan: { traffic_gb: number; duration_days: number; marzban_profile: string | null },
     node: string,
     now: Date,
@@ -198,6 +213,7 @@ export class ProvisioningService {
             expireUnix: unixSeconds(expireAt),
             dataLimitBytes: bytesFromGb(plan.traffic_gb),
             status: 'active',
+            ...extra,
           });
 
     const url = resolveSubscriptionUrl(user.subscription_url, this.env.MARZBAN_SUBSCRIPTION_URL_PREFIX);
@@ -210,6 +226,7 @@ export class ProvisioningService {
       startAt: now,
       expireAt,
       node,
+      connectionProfileId: order.connection_profile_id ?? undefined,
     });
   }
 
@@ -287,6 +304,23 @@ export class ProvisioningService {
     return {};
   }
 
+  private provisioningSettings(
+    planProfile: string | null,
+    profileSettings: {
+      proxies?: Record<string, unknown>;
+      inbounds?: Record<string, unknown>;
+    },
+  ): {
+    proxies?: Record<string, unknown>;
+    inbounds?: Record<string, unknown>;
+  } {
+    const planSettings = this.proxiesForPlan(planProfile);
+    return {
+      proxies: planSettings.proxies ?? profileSettings.proxies,
+      inbounds: planSettings.inbounds ?? profileSettings.inbounds,
+    };
+  }
+
   async formatServiceMessage(subscription: SubscriptionRow): Promise<string> {
     const refreshed = await this.refreshSubscriptionUrl(subscription);
     const configLinks = await this.fetchConfigLinks(refreshed.subscription_url);
@@ -321,6 +355,9 @@ export class ProvisioningService {
     if (planName !== undefined) {
       lines.push('✅ سرویس VPN شما فعال شد.', '');
       lines.push(`📦 پلن: ${escapePlain(planName)}`);
+    }
+    if (subscription.connection_profile_name !== null) {
+      lines.push(`🔌 پروفایل: ${escapePlain(subscription.connection_profile_name)}`);
     }
     lines.push(
       `📊 حجم: ${subscription.traffic_gb} گیگابایت`,

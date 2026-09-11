@@ -132,6 +132,8 @@ export class MarzbanClient {
       dataLimitBytes?: number;
       status?: 'active' | 'disabled';
       note?: string;
+      proxies?: Record<string, unknown>;
+      inbounds?: Record<string, unknown>;
     },
   ): Promise<MarzbanUser> {
     await this.ensureAuth();
@@ -147,6 +149,12 @@ export class MarzbanClient {
     }
     if (patch.note !== undefined) {
       body['note'] = patch.note;
+    }
+    if (patch.proxies !== undefined) {
+      body['proxies'] = patch.proxies;
+    }
+    if (patch.inbounds !== undefined) {
+      body['inbounds'] = patch.inbounds;
     }
 
     const response = await this.request(`/api/user/${encodeURIComponent(username)}`, {

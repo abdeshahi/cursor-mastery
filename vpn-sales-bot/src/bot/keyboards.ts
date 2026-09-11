@@ -1,6 +1,11 @@
 import { Markup } from 'telegraf';
 
-import { encodeCallback } from '../utils/callback.js';
+import {
+  encodeCallback,
+  type ClientAppCode,
+  type IspCode,
+  type NetworkTypeCode,
+} from '../utils/callback.js';
 
 export function mainMenu() {
   return Markup.inlineKeyboard([
@@ -31,6 +36,26 @@ export function plansKeyboard(
   return Markup.inlineKeyboard(rows);
 }
 
+export function profilesKeyboard(
+  planId: number,
+  profiles: Array<{
+    id: number;
+    name: string;
+    protocol: string;
+    transport: string;
+    security: string;
+  }>,
+) {
+  const rows = profiles.map((profile) => [
+    Markup.button.callback(
+      `${profile.name} — ${profile.protocol.toUpperCase()}/${profile.transport.toUpperCase()}/${profile.security.toUpperCase()}`,
+      encodeCallback({ type: 'selectProfile', planId, profileId: profile.id }),
+    ),
+  ]);
+  rows.push([Markup.button.callback('⬅️ بازگشت به پلن‌ها', encodeCallback({ type: 'menu', page: 'buy' }))]);
+  return Markup.inlineKeyboard(rows);
+}
+
 export function renewalPlansKeyboard(
   subscriptionId: number,
   plans: Array<{ id: number; name: string; price: number; currency: string }>,
@@ -46,14 +71,127 @@ export function renewalPlansKeyboard(
 }
 
 export function servicesKeyboard(subscriptions: Array<{ id: number; plan_name: string | null; status: string }>) {
-  const rows = subscriptions.map((item) => [
-    Markup.button.callback(
-      `♻️ تمدید ${item.plan_name ?? 'VPN'} (${item.status})`,
-      encodeCallback({ type: 'renew', subscriptionId: item.id }),
-    ),
+  const rows = subscriptions.flatMap((item) => [
+    [
+      Markup.button.callback(
+        `♻️ تمدید ${item.plan_name ?? 'VPN'} (${item.status})`,
+        encodeCallback({ type: 'renew', subscriptionId: item.id }),
+      ),
+    ],
+    [
+      Markup.button.callback(
+        '🧪 گزارش نتیجه اتصال',
+        encodeCallback({ type: 'testStart', subscriptionId: item.id }),
+      ),
+    ],
   ]);
   rows.push([Markup.button.callback('⬅️ منوی اصلی', encodeCallback({ type: 'menu', page: 'home' }))]);
   return Markup.inlineKeyboard(rows);
+}
+
+const ISPS: Array<[IspCode, string]> = [
+  ['mci', 'همراه اول'],
+  ['irancell', 'ایرانسل'],
+  ['rightel', 'رایتل'],
+  ['mobinnet', 'مبین‌نت'],
+  ['shatel', 'شاتل'],
+  ['asiatech', 'آسیاتک'],
+  ['other', 'سایر'],
+];
+
+export function testIspKeyboard(subscriptionId: number) {
+  return Markup.inlineKeyboard(
+    ISPS.map(([isp, label]) => [
+      Markup.button.callback(label, encodeCallback({ type: 'testIsp', subscriptionId, isp })),
+    ]),
+  );
+}
+
+const NETWORK_TYPES: Array<[NetworkTypeCode, string]> = [
+  ['4g', '4G'],
+  ['5g', '5G'],
+  ['td_lte', 'TD-LTE'],
+  ['adsl', 'ADSL'],
+  ['vdsl', 'VDSL'],
+  ['fiber', 'فیبر'],
+  ['fixed_wireless', 'بی‌سیم ثابت'],
+  ['other', 'سایر'],
+];
+
+export function testNetworkKeyboard(subscriptionId: number, isp: IspCode) {
+  return Markup.inlineKeyboard(
+    NETWORK_TYPES.map(([networkType, label]) => [
+      Markup.button.callback(
+        label,
+        encodeCallback({ type: 'testNetwork', subscriptionId, isp, networkType }),
+      ),
+    ]),
+  );
+}
+
+const CLIENT_APPS: Array<[ClientAppCode, string]> = [
+  ['v2rayng', 'v2rayNG'],
+  ['npv', 'NPV'],
+  ['hiddify', 'Hiddify'],
+  ['nekobox', 'NekoBox'],
+  ['other', 'سایر'],
+];
+
+export function testClientKeyboard(
+  subscriptionId: number,
+  isp: IspCode,
+  networkType: NetworkTypeCode,
+) {
+  return Markup.inlineKeyboard(
+    CLIENT_APPS.map(([clientApp, label]) => [
+      Markup.button.callback(
+        label,
+        encodeCallback({ type: 'testApp', subscriptionId, isp, networkType, clientApp }),
+      ),
+    ]),
+  );
+}
+
+export function testResultKeyboard(
+  subscriptionId: number,
+  isp: IspCode,
+  networkType: NetworkTypeCode,
+  clientApp: ClientAppCode,
+) {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.callback(
+        '✅ وصل شد و دانلود داشت',
+        encodeCallback({ type: 'testResult', subscriptionId, isp, networkType, clientApp, result: 'ok' }),
+      ),
+    ],
+    [
+      Markup.button.callback(
+        '⚠️ وصل شد ولی دانلود نداشت',
+        encodeCallback({
+          type: 'testResult',
+          subscriptionId,
+          isp,
+          networkType,
+          clientApp,
+          result: 'no_download',
+        }),
+      ),
+    ],
+    [
+      Markup.button.callback(
+        '❌ اصلاً وصل نشد',
+        encodeCallback({
+          type: 'testResult',
+          subscriptionId,
+          isp,
+          networkType,
+          clientApp,
+          result: 'failed',
+        }),
+      ),
+    ],
+  ]);
 }
 
 export function adminReviewKeyboard(paymentId: number) {

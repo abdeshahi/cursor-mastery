@@ -11,8 +11,13 @@ import {
   mainMenu,
   orderKeyboard,
   plansKeyboard,
+  profilesKeyboard,
   renewalPlansKeyboard,
   servicesKeyboard,
+  testClientKeyboard,
+  testIspKeyboard,
+  testNetworkKeyboard,
+  testResultKeyboard,
 } from './keyboards.js';
 import {
   BLOCKED,
@@ -79,9 +84,28 @@ export function createBot(deps: BotDependencies): Telegraf {
           await handleMenu(ctx, action.page, deps, user.id);
           return;
         case 'plan': {
-          const created = await deps.sales.createPurchase(user.id, action.planId);
+          const profiles = await deps.sales.profilesForPlan(action.planId);
+          if (profiles.length === 0) {
+            await ctx.answerCbQuery('برای این پلن پروفایل فعالی وجود ندارد.', { show_alert: true });
+            return;
+          }
+          if (profiles.length > 1) {
+            await ctx.answerCbQuery();
+            await ctx.reply('نوع اتصال را انتخاب کنید:', profilesKeyboard(action.planId, profiles));
+            return;
+          }
+          const created = await deps.sales.createPurchase(user.id, action.planId, profiles[0]?.id);
           await ctx.answerCbQuery('سفارش ساخته شد');
-          await ctx.reply(deps.sales.paymentInstructions(created.plan, created.orderId), {
+          await ctx.reply(deps.sales.paymentInstructions(created.plan, created.orderId, created.profile), {
+            parse_mode: 'HTML',
+            ...orderKeyboard(created.orderId),
+          });
+          return;
+        }
+        case 'selectProfile': {
+          const created = await deps.sales.createPurchase(user.id, action.planId, action.profileId);
+          await ctx.answerCbQuery('سفارش ساخته شد');
+          await ctx.reply(deps.sales.paymentInstructions(created.plan, created.orderId, created.profile), {
             parse_mode: 'HTML',
             ...orderKeyboard(created.orderId),
           });
@@ -100,10 +124,62 @@ export function createBot(deps: BotDependencies): Telegraf {
         case 'renewPlan': {
           const created = await deps.sales.createRenewal(user.id, action.subscriptionId, action.planId);
           await ctx.answerCbQuery('سفارش تمدید ساخته شد');
-          await ctx.reply(deps.sales.paymentInstructions(created.plan, created.orderId), {
+          await ctx.reply(deps.sales.paymentInstructions(created.plan, created.orderId, created.profile), {
             parse_mode: 'HTML',
             ...orderKeyboard(created.orderId),
           });
+          return;
+        }
+        case 'testStart': {
+          const subscriptions = await deps.sales.myServices(user.id);
+          const selected = subscriptions.find((item) => item.id === action.subscriptionId);
+          if (selected === undefined || selected.connection_profile_id === null) {
+            await ctx.answerCbQuery('این سرویس برای گزارش تست آماده نیست.', { show_alert: true });
+            return;
+          }
+          await ctx.answerCbQuery();
+          await ctx.reply(
+            `اپراتور اینترنت را انتخاب کنید.\nپروفایل: ${selected.connection_profile_name ?? 'پروفایل فعلی'}\nاطلاعات شخصی یا موقعیت دقیق ذخیره نمی‌شود.`,
+            testIspKeyboard(action.subscriptionId),
+          );
+          return;
+        }
+        case 'testIsp':
+          await ctx.answerCbQuery();
+          await ctx.reply('نوع شبکه را انتخاب کنید:', testNetworkKeyboard(action.subscriptionId, action.isp));
+          return;
+        case 'testNetwork':
+          await ctx.answerCbQuery();
+          await ctx.reply(
+            'با کدام برنامه تست کردید؟',
+            testClientKeyboard(action.subscriptionId, action.isp, action.networkType),
+          );
+          return;
+        case 'testApp':
+          await ctx.answerCbQuery();
+          await ctx.reply(
+            'نتیجه واقعی اتصال و بازشدن یک سایت را انتخاب کنید؛ عدد Ping به‌تنهایی کافی نیست.',
+            testResultKeyboard(
+              action.subscriptionId,
+              action.isp,
+              action.networkType,
+              action.clientApp,
+            ),
+          );
+          return;
+        case 'testResult': {
+          const saved = await deps.sales.recordProfileTest({
+            userId: user.id,
+            subscriptionId: action.subscriptionId,
+            isp: action.isp,
+            networkType: action.networkType,
+            clientApp: action.clientApp,
+            result: action.result,
+          });
+          await ctx.answerCbQuery(
+            saved ? 'گزارش ثبت شد؛ ممنون.' : 'این سرویس برای شما پیدا نشد.',
+            { show_alert: true },
+          );
           return;
         }
         case 'cancel': {
@@ -143,7 +219,11 @@ export function createBot(deps: BotDependencies): Telegraf {
     } catch (error) {
       const messageText = error instanceof Error ? error.message : String(error);
       deps.logger.error('callback.failed', { data, messageText });
-      if (messageText === 'PLAN_NOT_FOUND' || messageText === 'SUBSCRIPTION_NOT_FOUND') {
+      if (
+        messageText === 'PLAN_NOT_FOUND' ||
+        messageText === 'PROFILE_NOT_FOUND' ||
+        messageText === 'SUBSCRIPTION_NOT_FOUND'
+      ) {
         await ctx.answerCbQuery('این مورد در دسترس نیست.', { show_alert: true });
         return;
       }

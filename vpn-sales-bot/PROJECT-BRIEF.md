@@ -88,11 +88,12 @@ Bot → Customer: vless:// link + setup instructions
 |---------|-------|
 | Protocol | VLESS + Reality (NOT vmess) |
 | Port | 443 |
-| SNI | `www.microsoft.com` |
+| SNI | `www.apple.com` (current measured baseline; Xray warns against treating Apple targets as a permanent default) |
 | Flow | `xtls-rprx-vision` |
 | Fingerprint | chrome |
 | Server IP in config | `185.18.214.66` |
 | Marzban username pattern | `ct_{orderId}` (e.g. `ct_1`) |
+| Xray core | `26.3.27` |
 
 **Subscription URL format:** `http://185.18.214.66:8090/sub/{token}`  
 **Subscription content:** base64-encoded single `vless://` line
@@ -112,6 +113,10 @@ plans           — name, traffic_gb, duration_days, price (TOMAN)
 orders          — user_id, plan_id, status, kind (new/renewal)
 payments        — order_id, receipt_file_id, status (pending/approved/rejected)
 subscriptions   — marzban_username, subscription_url, expire_at, status
+nodes           — normalized operational node labels
+connection_profiles — protocol/transport/security and Marzban inbound references
+plan_connection_profiles — enabled manual choices per plan
+profile_test_results — privacy-minimal ISP/network/client observations
 reminder_logs   — for n8n renewal reminders (dedup)
 alert_states    — for n8n Marzban health alerts (dedup)
 schema_migrations
@@ -126,7 +131,7 @@ schema_migrations
 | ۱۰۰ گیگ / ۹۰ روز | 100 GB | 90 days | 750,000 |
 
 Migrations: `migrations/001_init.sql`, `migrations/002_seed_plans.sql`,
-`migrations/003_phase1_hardening.sql`
+`migrations/003_phase1_hardening.sql`, `migrations/004_connection_profiles.sql`
 Applied automatically on bot startup.
 
 ---
@@ -231,7 +236,7 @@ Import: `bash /opt/vpn-sales-bot/deploy/import-n8n-workflows.sh`
 |-------|-------|-------------------|
 | Subscription import fails in v2rayNG | v2rayNG blocks HTTP sub URLs | Send `vless://` link; Import from clipboard |
 | Subscription import fails in NPV (SSL error) | self-signed HTTPS on :8000 | HTTP proxy on :8090 (may still fail on some apps) |
-| Ping -1ms on Hamrah-e Aval (MCI) mobile | ISP blocks datacenter IP or non-standard ports | Moved to port 443; may need Cloudflare Tunnel or IP change |
+| Ping -1ms or connection failure | Ping alone is inconclusive; filtering varies by ISP, endpoint, date, and client | Record actual connect/download result through the profile field-test flow |
 | Stale subscription URLs (404) | Marzban rotates tokens on restart | Bot syncs on startup + before delivery |
 | `fetch failed` to Marzban | self-signed TLS | `MARZBAN_INSECURE_TLS=true` + undici in client.ts |
 | Wrong IP in VLESS config | Marzban `{SERVER_IP}` used NAT outbound IP | Host Settings forced to `185.18.214.66` |
@@ -295,7 +300,7 @@ bash /opt/vpn-sales-bot/deploy/install-subscription-proxy.sh
 ## 13. Suggested Next Steps (Phase 2 candidates)
 
 1. **Domain + Let's Encrypt** on nginx → fix subscription import in all clients
-2. **Cloudflare Tunnel** → bypass MCI/datacenter IP blocking on mobile
+2. **Controlled profile testing** → compare Reality, direct TLS, and WS TLS by ISP/network/date; do not use Cloudflare Tunnel as a native VLESS Reality replacement
 3. **Rotate secrets** exposed in chat (bot token, VPS password, Marzban password)
 4. **Online payment** (Zarinpal / IDPay) instead of manual card-to-card
 5. **Admin web dashboard** for orders/subscriptions
