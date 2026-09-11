@@ -205,7 +205,11 @@ async function handleMenu(
       return;
     }
     for (const item of items) {
-      await ctx.reply(deps.sales.serviceText(item), {
+      const text =
+        item.status === 'active'
+          ? await deps.sales.liveServiceText(item)
+          : deps.sales.serviceText(item);
+      await ctx.reply(text, {
         parse_mode: 'HTML',
         ...servicesKeyboard([item]),
       });

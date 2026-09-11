@@ -9,8 +9,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 XRAY_CONFIG="${XRAY_CONFIG:-/var/lib/marzban/xray_config.json}"
 BOT_ENV_FILE="${BOT_ENV_FILE:-/opt/vpn-sales-bot/.env}"
-REALITY_PORT="${REALITY_PORT:-8443}"
-REALITY_SNI="${REALITY_SNI:-www.microsoft.com}"
+REALITY_PORT="${REALITY_PORT:-44300}"
+REALITY_SNI="${REALITY_SNI:-www.cloudflare.com}"
 INBOUND_TAG="${INBOUND_TAG:-VLESS TCP REALITY}"
 PUBLIC_IP="$(hostname -I | awk '{print $1}')"
 
@@ -122,12 +122,16 @@ with urllib.request.urlopen(req, context=ctx, timeout=30) as resp:
     token = json.loads(resp.read())["access_token"]
 
 hosts = api("GET", "/api/hosts", token=token)
-for entries in hosts.values():
+for inbound_tag, entries in hosts.items():
     for entry in entries:
         entry["address"] = public_ip
-        entry["port"] = port
-        entry["sni"] = sni
-        entry["fingerprint"] = entry.get("fingerprint") or "chrome"
+        if "VLESS" in inbound_tag.upper() or inbound_tag == tag:
+            entry["port"] = port
+            entry["sni"] = sni
+            entry["fingerprint"] = entry.get("fingerprint") or "chrome"
+        elif "SHADOWSOCKS" in inbound_tag.upper():
+            entry["port"] = 1080
+            entry["sni"] = None
 api("PUT", "/api/hosts", data=hosts, token=token)
 
 users = api("GET", "/api/users?offset=0&limit=200", token=token).get("users", [])

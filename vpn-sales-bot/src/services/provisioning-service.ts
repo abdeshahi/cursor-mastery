@@ -256,6 +256,12 @@ export class ProvisioningService {
     return {};
   }
 
+  async formatServiceMessage(subscription: SubscriptionRow): Promise<string> {
+    const refreshed = await this.refreshSubscriptionUrl(subscription);
+    const configLinks = await this.fetchConfigLinks(refreshed.subscription_url);
+    return this.serviceMessage(refreshed, configLinks);
+  }
+
   private async fetchConfigLinks(subscriptionUrl: string): Promise<string[]> {
     try {
       return await this.marzban.fetchSubscriptionLinks(subscriptionUrl);
@@ -272,36 +278,41 @@ export class ProvisioningService {
     subscription: SubscriptionRow,
     configLinks: string[],
   ): string {
-    const lines = [
-      '✅ سرویس VPN شما فعال شد.',
-      '',
-      `📦 پلن: ${escapePlain(planName)}`,
+    return this.serviceMessage(subscription, configLinks, planName);
+  }
+
+  private serviceMessage(
+    subscription: SubscriptionRow,
+    configLinks: string[],
+    planName?: string,
+  ): string {
+    const lines: string[] = [];
+    if (planName !== undefined) {
+      lines.push('✅ سرویس VPN شما فعال شد.', '');
+      lines.push(`📦 پلن: ${escapePlain(planName)}`);
+    }
+    lines.push(
       `📊 حجم: ${subscription.traffic_gb} گیگابایت`,
       `⏳ اعتبار تا: ${subscription.expire_at.toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' })}`,
       '',
-    ];
+    );
 
     if (configLinks.length > 0) {
-      lines.push('⚡ کانفیگ مستقیم (پیشنهادی — v2rayNG / NPV):');
+      lines.push('⚡ کانفیگ VLESS (حتماً از این استفاده کنید):');
       for (const link of configLinks) {
         lines.push(`<code>${escapePlain(link)}</code>`);
       }
       lines.push('');
     }
 
-    lines.push('🔗 لینک اشتراک (برای بروزرسانی خودکار):');
-    lines.push(`<code>${escapePlain(subscription.subscription_url)}</code>`);
+    lines.push('📱 v2rayNG:');
+    lines.push('۱. کانفیگ قبلی را حذف کنید');
+    lines.push('۲. لینک ⚡ را کپی → + → Import config from clipboard');
+    lines.push('۳. Flow باید xtls-rprx-vision باشد (خودکار پر می‌شود)');
+    lines.push('۴. تست پینگ → اتصال');
     lines.push('');
-    lines.push('راهنمای اتصال:');
-    lines.push(`۱. برنامه را نصب کنید: ${escapePlain(this.env.CONNECTION_APPS)}`);
-    if (configLinks.length > 0) {
-      lines.push('۲. لینک ⚡ بالا را کپی کنید → Import from clipboard');
-      lines.push('۳. اتصال را روشن کنید.');
-      lines.push('   (یا لینک اشتراک را در Subscription اضافه کنید.)');
-    } else {
-      lines.push('۲. لینک اشتراک را کپی کنید → Subscription → +');
-      lines.push('۳. Update subscription → اتصال را روشن کنید.');
-    }
+    lines.push('⚠️ لینک Subscription در v2rayNG جدید معمولاً کار نمی‌کند.');
+    lines.push('   فقط Import from clipboard.');
     lines.push('');
     lines.push('اگر مشکلی بود از منوی پشتیبانی پیام بدهید.');
     return lines.join('\n');

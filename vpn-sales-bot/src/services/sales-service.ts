@@ -1,7 +1,7 @@
 import type { Environment } from '../config/env.js';
 import { isAdmin } from '../config/env.js';
 import type { Logger } from '../config/logger.js';
-import type { PlanRow, Repositories } from '../database/repositories.js';
+import type { PlanRow, Repositories, SubscriptionRow } from '../database/repositories.js';
 import { escapeHtml, formatAmount, formatDate } from '../utils/format.js';
 import { nextPaymentApproval, nextPaymentRejection } from '../utils/state-machine.js';
 import type { ProvisioningService } from './provisioning-service.js';
@@ -259,6 +259,18 @@ export class SalesService {
   async myServices(userId: number) {
     await this.db.markExpiredSubscriptions();
     return this.db.listUserSubscriptions(userId);
+  }
+
+  async liveServiceText(row: SubscriptionRow): Promise<string> {
+    try {
+      return await this.provisioning.formatServiceMessage(row);
+    } catch (error) {
+      this.logger.warn('service.live_config.failed', {
+        subscriptionId: row.id,
+        detail: error instanceof Error ? error.message : String(error),
+      });
+      return this.serviceText(row);
+    }
   }
 
   serviceText(row: {
