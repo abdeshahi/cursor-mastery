@@ -128,13 +128,18 @@ elif [[ "$SUB_PREFIX" == http://* ]]; then
     "${MARZBAN_CURL[@]}" -H "Authorization: Bearer ${TOKEN}" "${MARZBAN_BASE_URL%/}/api/user/ct_1" 2>/dev/null \
       | sed -n 's/.*"subscription_url":"\([^"]*\)".*/\1/p'
   )"
-  SUB_PATH="${SUB_SAMPLE#*://*/}"
-  SUB_PATH="/${SUB_PATH#*/}"
-  if [[ -n "$SUB_PATH" && "$SUB_PATH" != "$SUB_SAMPLE" ]] \
-    && curl -fsS -m 10 "${SUB_PREFIX%/}${SUB_PATH}" 2>/dev/null | grep -q .; then
+  if [[ "$SUB_SAMPLE" == http://* ]] && curl -fsS -m 10 "$SUB_SAMPLE" 2>/dev/null | grep -q .; then
     pass "HTTP subscription proxy ${SUB_PREFIX}"
+  elif [[ -n "$SUB_SAMPLE" ]]; then
+    SUB_PATH="${SUB_SAMPLE#${SUB_PREFIX}}"
+    [[ "$SUB_PATH" == "$SUB_SAMPLE" ]] && SUB_PATH="${SUB_SAMPLE#*://*/sub/}" && SUB_PATH="/sub/${SUB_PATH}"
+    if curl -fsS -m 10 "${SUB_PREFIX%/}${SUB_PATH}" 2>/dev/null | grep -q .; then
+      pass "HTTP subscription proxy ${SUB_PREFIX}"
+    else
+      fail "HTTP subscription proxy failed for ${SUB_PREFIX} (run deploy/install-subscription-proxy.sh)"
+    fi
   else
-    fail "HTTP subscription proxy failed for ${SUB_PREFIX} (run deploy/install-subscription-proxy.sh)"
+    fail "HTTP subscription proxy failed (no sample subscription_url from Marzban)"
   fi
 else
   pass 'subscription prefix is HTTPS (ensure clients trust the certificate)'
