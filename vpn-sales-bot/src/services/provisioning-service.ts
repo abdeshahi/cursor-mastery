@@ -87,9 +87,10 @@ export class ProvisioningService {
         this.logger.warn('order.complete.race', { orderId });
       }
 
+      const configLinks = await this.fetchConfigLinks(subscription.subscription_url);
       await this.notifier.notifyCustomer(
         Number(user.telegram_id),
-        this.deliveryMessage(plan.name, subscription),
+        this.deliveryMessage(plan.name, subscription, configLinks),
       );
       return subscription;
     } catch (error) {
@@ -219,25 +220,55 @@ export class ProvisioningService {
     return {};
   }
 
-  private deliveryMessage(planName: string, subscription: SubscriptionRow): string {
-    return [
+  private async fetchConfigLinks(subscriptionUrl: string): Promise<string[]> {
+    try {
+      return await this.marzban.fetchSubscriptionLinks(subscriptionUrl);
+    } catch (error) {
+      this.logger.warn('subscription.links.fetch_failed', {
+        detail: error instanceof Error ? error.message : String(error),
+      });
+      return [];
+    }
+  }
+
+  private deliveryMessage(
+    planName: string,
+    subscription: SubscriptionRow,
+    configLinks: string[],
+  ): string {
+    const lines = [
       '✅ سرویس VPN شما فعال شد.',
       '',
       `📦 پلن: ${escapePlain(planName)}`,
       `📊 حجم: ${subscription.traffic_gb} گیگابایت`,
       `⏳ اعتبار تا: ${subscription.expire_at.toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' })}`,
       '',
-      '🔗 لینک اشتراک:',
-      `<code>${escapePlain(subscription.subscription_url)}</code>`,
-      '',
-      'راهنمای اتصال:',
-      `۱. یکی از برنامه‌ها را نصب کنید: ${escapePlain(this.env.CONNECTION_APPS)}`,
-      '۲. لینک بالا را کپی کنید.',
-      '۳. در برنامه، اشتراک (Subscription) را از کلیپ‌بورد اضافه کنید.',
-      '۴. اتصال را روشن کنید.',
-      '',
-      'اگر مشکلی بود از منوی پشتیبانی پیام بدهید.',
-    ].join('\n');
+    ];
+
+    if (configLinks.length > 0) {
+      lines.push('⚡ کانفیگ مستقیم (پیشنهادی — v2rayNG / NPV):');
+      for (const link of configLinks) {
+        lines.push(`<code>${escapePlain(link)}</code>`);
+      }
+      lines.push('');
+    }
+
+    lines.push('🔗 لینک اشتراک (برای بروزرسانی خودکار):');
+    lines.push(`<code>${escapePlain(subscription.subscription_url)}</code>`);
+    lines.push('');
+    lines.push('راهنمای اتصال:');
+    lines.push(`۱. برنامه را نصب کنید: ${escapePlain(this.env.CONNECTION_APPS)}`);
+    if (configLinks.length > 0) {
+      lines.push('۲. لینک ⚡ بالا را کپی کنید → Import from clipboard');
+      lines.push('۳. اتصال را روشن کنید.');
+      lines.push('   (یا لینک اشتراک را در Subscription اضافه کنید.)');
+    } else {
+      lines.push('۲. لینک اشتراک را کپی کنید → Subscription → +');
+      lines.push('۳. Update subscription → اتصال را روشن کنید.');
+    }
+    lines.push('');
+    lines.push('اگر مشکلی بود از منوی پشتیبانی پیام بدهید.');
+    return lines.join('\n');
   }
 }
 

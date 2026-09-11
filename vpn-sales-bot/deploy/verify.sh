@@ -118,6 +118,28 @@ else
   fi
 fi
 
+echo '=== Subscription proxy (HTTP) ==='
+SUB_PREFIX="$(env_get MARZBAN_SUBSCRIPTION_URL_PREFIX)"
+if [[ -z "$SUB_PREFIX" ]]; then
+  warn_line='optional MARZBAN_SUBSCRIPTION_URL_PREFIX not set'
+  pass "$warn_line"
+elif [[ "$SUB_PREFIX" == http://* ]]; then
+  SUB_SAMPLE="$(
+    "${MARZBAN_CURL[@]}" -H "Authorization: Bearer ${TOKEN}" "${MARZBAN_BASE_URL%/}/api/user/ct_1" 2>/dev/null \
+      | sed -n 's/.*"subscription_url":"\([^"]*\)".*/\1/p'
+  )"
+  SUB_PATH="${SUB_SAMPLE#*://*/}"
+  SUB_PATH="/${SUB_PATH#*/}"
+  if [[ -n "$SUB_PATH" && "$SUB_PATH" != "$SUB_SAMPLE" ]] \
+    && curl -fsS -m 10 "${SUB_PREFIX%/}${SUB_PATH}" 2>/dev/null | grep -q .; then
+    pass "HTTP subscription proxy ${SUB_PREFIX}"
+  else
+    fail "HTTP subscription proxy failed for ${SUB_PREFIX} (run deploy/install-subscription-proxy.sh)"
+  fi
+else
+  pass 'subscription prefix is HTTPS (ensure clients trust the certificate)'
+fi
+
 echo '=== n8n (existing, read-only check) ==='
 if curl -fsS -m 10 http://127.0.0.1:5678/healthz >/dev/null 2>&1; then
   pass 'n8n http://127.0.0.1:5678/healthz'

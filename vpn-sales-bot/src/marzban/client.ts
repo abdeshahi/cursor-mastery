@@ -178,6 +178,43 @@ export class MarzbanClient {
     }
   }
 
+  /** Fetch decoded proxy links (vless://, vmess://, …) from a subscription URL. */
+  async fetchSubscriptionLinks(subscriptionUrl: string): Promise<string[]> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.options.timeoutMs);
+    try {
+      const response = await this.fetchImpl(subscriptionUrl, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        throw new MarzbanError(`subscription fetch HTTP ${response.status}`, response.status);
+      }
+      const raw = (await response.text()).trim();
+      if (raw.length === 0) {
+        return [];
+      }
+      let decoded = raw;
+      try {
+        decoded = Buffer.from(raw, 'base64').toString('utf8');
+      } catch {
+        // Some panels return plain text already.
+      }
+      return decoded
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => /^[a-z0-9+.-]+:\/\//i.test(line));
+    } catch (error) {
+      if (error instanceof MarzbanError) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      throw new MarzbanError(`subscription fetch failed: ${message}`);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   private async ensureAuth(): Promise<void> {
     if (this.token === null) {
       await this.authenticate();

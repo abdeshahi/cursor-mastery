@@ -57,6 +57,26 @@ describe('Marzban client', () => {
     await expect(client.authenticate()).rejects.toBeInstanceOf(MarzbanError);
   });
 
+  it('decodes base64 subscription payloads into proxy links', async () => {
+    const payload = Buffer.from('vless://uuid@1.2.3.4:443?security=reality\n', 'utf8').toString(
+      'base64',
+    );
+    const fetchImpl = vi.fn(async () => new Response(payload, { status: 200 }));
+    const client = new MarzbanClient({
+      baseUrl: 'https://panel.example.com',
+      username: 'admin',
+      password: 'secret',
+      timeoutMs: 5000,
+      proxies: {},
+      inbounds: {},
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    await expect(
+      client.fetchSubscriptionLinks('http://panel.example.com:8090/sub/token'),
+    ).resolves.toEqual(['vless://uuid@1.2.3.4:443?security=reality']);
+  });
+
   it('returns null when user is missing', async () => {
     const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
