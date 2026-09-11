@@ -229,7 +229,7 @@ export class Repositories {
     const result = await this.query(
       `SELECT id, user_id, plan_id, amount, status, kind, renewal_subscription_id, paid_at
        FROM orders
-       WHERE status IN ('paid', 'provisioning')
+       WHERE status IN ('paid', 'provisioning', 'failed')
        ORDER BY id ASC`,
     );
     return result.rows.map((row) => this.mapOrder(row));
