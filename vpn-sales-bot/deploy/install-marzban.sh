@@ -369,7 +369,12 @@ PY
   chmod 600 "$BOT_ENV_FILE"
   ENV_NOTE="Already written to ${BOT_ENV_FILE} (a timestamped backup was kept)."
 else
-  ENV_NOTE="${BOT_ENV_FILE} does not exist yet. Copy the block below into it."
+  CREDS_FILE=/root/marzban-api-admin.credentials
+  umask 077
+  printf 'MARZBAN_BASE_URL=%s\nMARZBAN_USERNAME=%s\nMARZBAN_PASSWORD=%s\n' \
+    "$BASE_URL" "$ADMIN_USER" "$ADMIN_PASS" >"$CREDS_FILE"
+  chmod 600 "$CREDS_FILE"
+  ENV_NOTE="${BOT_ENV_FILE} does not exist. Credentials were written to ${CREDS_FILE} (mode 600)."
 fi
 
 cat <<EOF
@@ -379,14 +384,13 @@ Marzban is configured and verified.
 
   Panel dashboard : ${BASE_URL}/dashboard
   API admin       : ${ADMIN_USER}
-  API password    : ${ADMIN_PASS}
   Active protocol : ${PROTOCOL}
 
 ${ENV_NOTE}
 
 MARZBAN_BASE_URL=${BASE_URL}
 MARZBAN_USERNAME=${ADMIN_USER}
-MARZBAN_PASSWORD=${ADMIN_PASS}
+MARZBAN_PASSWORD=<stored securely; not printed>
 MARZBAN_PROXIES='${MARZBAN_PROXIES}'
 MARZBAN_INBOUNDS='{}'
 

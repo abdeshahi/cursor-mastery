@@ -5,6 +5,7 @@
 # Usage (on VPS as root):
 #   bash /opt/vpn-sales-bot/deploy/import-n8n-workflows.sh
 set -euo pipefail
+umask 077
 
 N8N_APP=/opt/n8n-app
 N8N_USER=n8n
@@ -16,7 +17,9 @@ N8N=(sudo -u "$N8N_USER" bash -c "cd $N8N_APP && ./node_modules/.bin/n8n")
 [[ -f "$BOT_ENV" ]] || { echo "ERROR: $BOT_ENV not found" >&2; exit 1; }
 command -v python3 >/dev/null || { echo "ERROR: python3 required" >&2; exit 1; }
 
-mkdir -p "$IMPORT_DIR"
+rm -rf "$IMPORT_DIR"
+mkdir -m 700 -p "$IMPORT_DIR"
+trap 'rm -rf "$IMPORT_DIR"' EXIT
 python3 /opt/vpn-sales-bot/deploy/generate-n8n-import.py "$BOT_ENV" "$IMPORT_DIR"
 
 echo "==> Stop n8n briefly (CLI needs port 5678 free)"

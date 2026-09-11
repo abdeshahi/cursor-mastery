@@ -72,6 +72,17 @@ if curl -fsS -m 5 "http://${HEALTH_HOST}:${HEALTH_PORT}/health" 2>/dev/null | gr
 else
   fail 'health endpoint failed'
 fi
+if curl -fsS -m 5 "http://${HEALTH_HOST}:${HEALTH_PORT}/health/live" 2>/dev/null | grep -q '"status":"ok"'; then
+  pass 'liveness endpoint /health/live'
+else
+  fail 'liveness endpoint /health/live failed'
+fi
+if curl -fsS -m 20 "http://${HEALTH_HOST}:${HEALTH_PORT}/health/ready" 2>/dev/null \
+  | grep -q '"status":"ok"'; then
+  pass 'readiness endpoint /health/ready'
+else
+  fail 'readiness endpoint /health/ready failed'
+fi
 
 echo '=== Telegram ==='
 if [[ -z "$BOT_TOKEN" ]]; then
