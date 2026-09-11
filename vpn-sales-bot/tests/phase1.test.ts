@@ -113,6 +113,15 @@ describe('provisioning helpers', () => {
     ).toBe('https://185.18.214.66:8000/sub/token');
   });
 
+  it('moves absolute Marzban subscription paths to the configured HTTPS origin', () => {
+    expect(
+      resolveSubscriptionUrl(
+        'http://185.18.214.66:8090/sub/token?client=v2rayng',
+        'https://185.18.214.66:8443',
+      ),
+    ).toBe('https://185.18.214.66:8443/sub/token?client=v2rayng');
+  });
+
   it('uses plan node then default node', () => {
     expect(assignNode('node2', 'node1')).toBe('node2');
     expect(assignNode(null, 'node1')).toBe('node1');
