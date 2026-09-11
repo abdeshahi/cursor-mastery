@@ -60,7 +60,10 @@ command -v marzban >/dev/null 2>&1 || die 'the marzban CLI is missing; the insta
 
 wait_for_api() {
   for _ in $(seq 1 90); do
-    if curl -fsS -m 5 "http://127.0.0.1:${PANEL_PORT}/docs" >/dev/null 2>&1; then
+    if curl -fsS -m 5 "http://127.0.0.1:${PANEL_PORT}/openapi.json" >/dev/null 2>&1; then
+      return 0
+    fi
+    if curl -fsSk -m 5 "https://127.0.0.1:${PANEL_PORT}/openapi.json" >/dev/null 2>&1; then
       return 0
     fi
     sleep 2
@@ -73,20 +76,44 @@ wait_for_api || die "Marzban API never came up on port ${PANEL_PORT}. Check: mar
 
 # ---------------------------------------------------------------- base url ----
 
-PUBLIC_IP="$(curl -4 -fsS -m 5 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')"
+# Prefer the interface address. NAT/outbound IPs from ipify often differ from the
+# IP clients must connect to for Reality/VLESS.
+PUBLIC_IP="$(hostname -I | awk '{print $1}')"
+[[ -n "$PUBLIC_IP" ]] || PUBLIC_IP="$(curl -4 -fsS -m 5 https://api.ipify.org 2>/dev/null || true)"
 [[ -n "$PUBLIC_IP" ]] || die 'could not determine the public IP of this VPS'
+
+MARZBAN_USES_SSL=false
+if [[ -f "${MARZBAN_DIR}/.env" ]] && grep -q '^ *UVICORN_SSL_CERTFILE' "${MARZBAN_DIR}/.env"; then
+  MARZBAN_USES_SSL=true
+fi
 
 if [[ -n "${MARZBAN_DOMAIN:-}" ]]; then
   BASE_URL="https://${MARZBAN_DOMAIN}"
+elif [[ "$MARZBAN_USES_SSL" == true ]]; then
+  BASE_URL="https://${PUBLIC_IP}:${PANEL_PORT}"
 else
   BASE_URL="http://${PUBLIC_IP}:${PANEL_PORT}"
 fi
+SUBSCRIPTION_PREFIX="$BASE_URL"
+MARZBAN_CURL=(curl -fsS -m 15)
+[[ "$MARZBAN_USES_SSL" == true ]] && MARZBAN_CURL+=(-k)
 
 # Without this Marzban hands out relative subscription paths, which are
 # useless inside a Telegram message.
-if [[ -f "${MARZBAN_DIR}/.env" ]] && ! grep -q '^ *XRAY_SUBSCRIPTION_URL_PREFIX' "${MARZBAN_DIR}/.env"; then
-  log "Setting XRAY_SUBSCRIPTION_URL_PREFIX=${BASE_URL}"
-  printf '\nXRAY_SUBSCRIPTION_URL_PREFIX = "%s"\n' "$BASE_URL" >>"${MARZBAN_DIR}/.env"
+if [[ -f "${MARZBAN_DIR}/.env" ]]; then
+  log "Setting XRAY_SUBSCRIPTION_URL_PREFIX=${SUBSCRIPTION_PREFIX}"
+  python3 - "$MARZBAN_DIR/.env" "$SUBSCRIPTION_PREFIX" <<'PY'
+import re
+import sys
+
+path, prefix = sys.argv[1], sys.argv[2]
+with open(path, encoding="utf-8") as handle:
+    text = handle.read()
+text = re.sub(r"^[ \t]*XRAY_SUBSCRIPTION_URL_PREFIX[ \t]*=.*\n", "", text, flags=re.M)
+text = text.rstrip() + f'\nXRAY_SUBSCRIPTION_URL_PREFIX = "{prefix}"\n'
+with open(path, "w", encoding="utf-8") as handle:
+    handle.write(text)
+PY
   marzban restart -n >/dev/null 2>&1 || true
   wait_for_api || die 'Marzban did not come back after restart. Check: marzban logs'
 fi
@@ -94,7 +121,7 @@ fi
 # ------------------------------------------------------------------ admin ----
 
 api_token() {
-  curl -fsS -m 10 -X POST "http://127.0.0.1:${PANEL_PORT}/api/admin/token" \
+  "${MARZBAN_CURL[@]}" -X POST "${BASE_URL}/api/admin/token" \
     -H 'Content-Type: application/x-www-form-urlencoded' \
     --data-urlencode "username=${1}" \
     --data-urlencode "password=${2}" \
@@ -145,10 +172,26 @@ fi
 
 log 'API admin authenticated'
 
+log "Setting host address to ${PUBLIC_IP} (clients must connect here, not a NAT/outbound IP)"
+if ! api_get /api/hosts | PUBLIC_IP="$PUBLIC_IP" python3 -c '
+import json, os, sys
+hosts = json.load(sys.stdin)
+public_ip = os.environ["PUBLIC_IP"]
+for entries in hosts.values():
+    for entry in entries:
+        entry["address"] = public_ip
+print(json.dumps(hosts))
+' | "${MARZBAN_CURL[@]}" -X PUT "${BASE_URL}/api/hosts" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H 'Content-Type: application/json' \
+    -d @- >/dev/null 2>&1; then
+  warn 'could not update Marzban host settings. Set Address manually in the dashboard.'
+fi
+
 # --------------------------------------------------------------- inbounds ----
 
 api_get() {
-  curl -fsS -m 10 -H "Authorization: Bearer ${TOKEN}" "http://127.0.0.1:${PANEL_PORT}${1}"
+  "${MARZBAN_CURL[@]}" -H "Authorization: Bearer ${TOKEN}" "${BASE_URL}${1}"
 }
 
 # Marzban returns {"vless": [{"tag": ...}], "vmess": [...]}. Any protocol with
@@ -260,7 +303,7 @@ log 'Smoke test: creating a throwaway API user'
 PROBE_USER="probe$(date +%s)"
 
 PROBE_RESULT="$(
-  curl -fsS -m 15 -X POST "http://127.0.0.1:${PANEL_PORT}/api/user" \
+  "${MARZBAN_CURL[@]}" -X POST "${BASE_URL}/api/user" \
     -H "Authorization: Bearer ${TOKEN}" \
     -H 'Content-Type: application/json' \
     -d "{\"username\":\"${PROBE_USER}\",\"expire\":$(($(date +%s) + 3600)),\"data_limit\":1073741824,\"data_limit_reset_strategy\":\"no_reset\",\"status\":\"active\",\"note\":\"install-marzban.sh smoke test\",\"proxies\":{\"${PROTOCOL}\":{}},\"inbounds\":{}}" 2>&1
@@ -268,13 +311,16 @@ PROBE_RESULT="$(
 
 SUB_URL="$(printf '%s' "$PROBE_RESULT" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("subscription_url",""))' 2>/dev/null)"
 
-curl -fsS -m 10 -X DELETE "http://127.0.0.1:${PANEL_PORT}/api/user/${PROBE_USER}" \
+"${MARZBAN_CURL[@]}" -X DELETE "${BASE_URL}/api/user/${PROBE_USER}" \
   -H "Authorization: Bearer ${TOKEN}" >/dev/null 2>&1 ||
   warn "could not delete the probe user '${PROBE_USER}'. Remove it from the dashboard."
 
 [[ -n "$SUB_URL" ]] || die 'the API returned no subscription_url'
 if [[ "$SUB_URL" != http* ]]; then
   warn "subscription_url is relative ('${SUB_URL}'). The bot will prefix it with MARZBAN_SUBSCRIPTION_URL_PREFIX."
+fi
+if [[ "$SUB_URL" == http://* && "$SUBSCRIPTION_PREFIX" == https://* ]]; then
+  die "subscription_url is HTTP but the panel uses HTTPS. Fix XRAY_SUBSCRIPTION_URL_PREFIX in ${MARZBAN_DIR}/.env"
 fi
 log "Smoke test passed. Subscription URL looks like: ${SUB_URL}"
 
@@ -286,12 +332,17 @@ if [[ -f "$BOT_ENV_FILE" ]]; then
   log "Writing MARZBAN_* into ${BOT_ENV_FILE}"
   cp -a "$BOT_ENV_FILE" "${BOT_ENV_FILE}.bak.$(date +%Y%m%d%H%M%S)"
 
+  MARZBAN_INSECURE_TLS=false
+  [[ "$MARZBAN_USES_SSL" == true ]] && MARZBAN_INSECURE_TLS=true
+
   python3 - "$BOT_ENV_FILE" \
     "MARZBAN_BASE_URL=${BASE_URL}" \
     "MARZBAN_USERNAME=${ADMIN_USER}" \
     "MARZBAN_PASSWORD=${ADMIN_PASS}" \
     "MARZBAN_PROXIES='${MARZBAN_PROXIES}'" \
-    "MARZBAN_INBOUNDS='{}'" <<'PY'
+    "MARZBAN_INBOUNDS='{}'" \
+    "MARZBAN_SUBSCRIPTION_URL_PREFIX=${SUBSCRIPTION_PREFIX}" \
+    "MARZBAN_INSECURE_TLS=${MARZBAN_INSECURE_TLS}" <<'PY'
 import re
 import sys
 

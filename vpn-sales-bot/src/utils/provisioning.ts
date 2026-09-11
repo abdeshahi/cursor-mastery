@@ -34,6 +34,17 @@ export function resolveSubscriptionUrl(raw: string, prefix?: string): string {
     throw new Error('empty subscription url');
   }
   if (/^https?:\/\//i.test(value)) {
+    if (prefix !== undefined && prefix.startsWith('https://') && value.startsWith('http://')) {
+      try {
+        const target = new URL(prefix);
+        const current = new URL(value);
+        if (current.host === target.host) {
+          return `https://${current.host}${current.pathname}${current.search}`;
+        }
+      } catch {
+        // Keep the original URL when parsing fails.
+      }
+    }
     return value;
   }
   if (prefix === undefined) {

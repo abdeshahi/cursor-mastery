@@ -86,6 +86,15 @@ describe('provisioning helpers', () => {
     );
   });
 
+  it('upgrades http subscription urls when prefix is https on the same host', () => {
+    expect(
+      resolveSubscriptionUrl(
+        'http://185.18.214.66:8000/sub/token',
+        'https://185.18.214.66:8000',
+      ),
+    ).toBe('https://185.18.214.66:8000/sub/token');
+  });
+
   it('uses plan node then default node', () => {
     expect(assignNode('node2', 'node1')).toBe('node2');
     expect(assignNode(null, 'node1')).toBe('node1');
