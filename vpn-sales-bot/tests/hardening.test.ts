@@ -236,6 +236,28 @@ describe('provisioning idempotency', () => {
     await expect(service.provisionOrder(10)).resolves.toEqual(subscription);
     expect(marzban.createUser).not.toHaveBeenCalled();
   });
+
+  it('includes both direct config and subscription URL in the customer message', async () => {
+    const directConfig =
+      'vless://00000000-0000-0000-0000-000000000000@example.com:443?security=reality';
+    const marzban = {
+      getUser: vi.fn(async () => marzbanUser),
+      fetchSubscriptionLinks: vi.fn(async () => [directConfig]),
+    };
+    const service = new ProvisioningService(
+      env(),
+      logger,
+      {} as Repositories,
+      marzban as unknown as MarzbanClient,
+      { notifyCustomer: vi.fn(async () => undefined), notifyAdmins: vi.fn(async () => undefined) },
+    );
+
+    const message = await service.formatServiceMessage(subscription);
+
+    expect(message).toContain(directConfig);
+    expect(message).toContain('🔗 لینک اشتراک:');
+    expect(message).toContain(subscription.subscription_url);
+  });
 });
 
 describe('repository hardening SQL', () => {

@@ -336,14 +336,15 @@ export class ProvisioningService {
       lines.push('');
     }
 
+    lines.push('🔗 لینک اشتراک:');
+    lines.push(`<code>${escapePlain(subscription.subscription_url)}</code>`);
+    lines.push('');
     lines.push('📱 v2rayNG:');
     lines.push('۱. کانفیگ قبلی را حذف کنید');
     lines.push('۲. لینک ⚡ را کپی → + → Import config from clipboard');
+    lines.push('   یا لینک اشتراک را از بخش Subscription group settings وارد کنید');
     lines.push('۳. Flow باید xtls-rprx-vision باشد (خودکار پر می‌شود)');
     lines.push('۴. تست پینگ → اتصال');
-    lines.push('');
-    lines.push('⚠️ لینک Subscription در v2rayNG جدید معمولاً کار نمی‌کند.');
-    lines.push('   فقط Import from clipboard.');
     lines.push('');
     lines.push('اگر مشکلی بود از منوی پشتیبانی پیام بدهید.');
     return lines.join('\n');
