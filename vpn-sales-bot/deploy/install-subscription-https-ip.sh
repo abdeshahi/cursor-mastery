@@ -133,7 +133,7 @@ install -d -m 0755 /etc/letsencrypt/renewal-hooks/deploy
 cat >/etc/letsencrypt/renewal-hooks/deploy/reload-vpn-sales-nginx <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-nginx -t
+nginx -t >/dev/null 2>&1
 systemctl reload nginx
 EOF
 chmod 0755 /etc/letsencrypt/renewal-hooks/deploy/reload-vpn-sales-nginx

@@ -7,7 +7,9 @@
 - Marzban uses host networking and `UVICORN_HOST="0.0.0.0"`, so its
   self-signed HTTPS panel/API on port 8000 is publicly reachable.
 - Xray Reality must remain public on TCP 443.
-- The transitional subscription proxy is public HTTP on port 8090.
+- Trusted subscription HTTPS is public on port 8443 using a Let's Encrypt
+  short-lived IP certificate.
+- The transitional HTTP endpoint remains public on port 8090 for compatibility.
 
 No production bind was changed automatically.
 
@@ -79,9 +81,23 @@ automatically. A root cron entry can run it once daily:
 
 ## Subscription transport
 
-`http://SERVER_IP:8090/sub/{token}` is transitional. The bearer-like
-subscription token and configuration travel without TLS and can be observed
-or modified on-path. Do not remove it until client compatibility is verified.
+The bot sends `https://SERVER_IP:8443/sub/{token}`. The certificate is publicly
+trusted and valid for the server IP, so modern v2rayNG/NPV clients do not need
+cleartext HTTP or a private CA.
+
+Let's Encrypt IP certificates are valid for 160 hours. Certbot's
+`snap.certbot.renew.timer` must remain enabled, and
+`/etc/letsencrypt/renewal-hooks/deploy/reload-vpn-sales-nginx` reloads nginx
+after successful renewal. Verify with:
+
+```bash
+systemctl is-active snap.certbot.renew.timer
+certbot renew --dry-run --cert-name vpn-sales-sub-ip --run-deploy-hooks
+```
+
+`http://SERVER_IP:8090/sub/{token}` remains transitional. Its bearer-like token
+and configuration can be observed or modified on-path. Do not send this URL to
+new customers, but do not remove it until old-client usage is checked.
 
 For a future real domain:
 
@@ -89,10 +105,8 @@ For a future real domain:
 2. Obtain a Let's Encrypt certificate for that exact name.
 3. Copy and edit `deploy/nginx-subscription-https.example.conf`.
 4. Validate with `nginx -t`, then reload nginx.
-5. Set both `XRAY_SUBSCRIPTION_URL_PREFIX` and
-   `MARZBAN_SUBSCRIPTION_URL_PREFIX` to `https://<real-domain>`.
-6. Restart Marzban, then the bot, and verify client imports before removing
-   port 8090.
+5. Set `MARZBAN_SUBSCRIPTION_URL_PREFIX` to `https://<real-domain>`.
+6. Restart the bot, verify client imports, then evaluate removal of port 8090.
 
 Do not use a standard Cloudflare Tunnel as a transparent replacement for raw
 VLESS Reality. It can front HTTP subscription traffic, but native Reality/TCP

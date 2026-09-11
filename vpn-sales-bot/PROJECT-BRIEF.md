@@ -13,7 +13,7 @@
 - PostgreSQL 16 (Docker) — business database `vpn_sales`
 - Marzban + Xray — VPN panel, VLESS + Reality
 - n8n 2.37.10 (existing, host install) — reminders, reports, health alerts
-- nginx — HTTP subscription proxy on port 8090
+- nginx — trusted HTTPS subscription proxy on port 8443; transitional HTTP remains on 8090
 
 **Repo:** `abdeshahi/cursor-mastery`  
 **Branch:** `cursor/openwrt-mobinnet-optimize-1230`  
@@ -53,7 +53,8 @@ TELEGRAM_PROXY=http://127.0.0.1:8118
 | PostgreSQL | 5432 | 127.0.0.1 | Docker `vpn-sales-postgres` |
 | Marzban panel (HTTPS, self-signed) | 8000 | 0.0.0.0 | Docker `marzban-marzban-1` |
 | Xray VLESS Reality | 443 | 0.0.0.0 | inside Marzban |
-| nginx subscription proxy | 8090 | 0.0.0.0 | `/sub/*` → Marzban HTTPS |
+| nginx subscription HTTPS | 8443 | 0.0.0.0 | trusted Let's Encrypt IP certificate; `/sub/*` → Marzban |
+| nginx subscription HTTP | 8090 | 0.0.0.0 | transitional compatibility endpoint |
 | n8n | 5678 | existing | untouched |
 | privoxy (Telegram proxy) | 8118 | 127.0.0.1 | existing |
 
@@ -95,12 +96,14 @@ Bot → Customer: vless:// link + setup instructions
 | Marzban username pattern | `ct_{orderId}` (e.g. `ct_1`) |
 | Xray core | `26.3.27` |
 
-**Subscription URL format:** `http://185.18.214.66:8090/sub/{token}`  
+**Subscription URL format:** `https://185.18.214.66:8443/sub/{token}`
 **Subscription content:** base64-encoded single `vless://` line
 
 **Important for clients:**
-- v2rayNG (new versions) **blocks HTTP subscription URLs** → customers must use **Import config from clipboard** with `vless://` link, NOT subscription import
-- NPV fails on HTTPS self-signed subscription → HTTP proxy on 8090 was added
+- the HTTPS endpoint uses a publicly trusted short-lived Let's Encrypt IP certificate
+- v2rayNG and NPV can import the HTTPS subscription without trusting a private CA
+- HTTP port 8090 remains temporarily for old clients but must not be sent by the bot
+- Certbot renews the six-day IP certificate automatically and reloads nginx
 - Marzban rotates `/sub/` tokens on restart → bot syncs URLs on startup (`syncSubscriptionUrls`)
 
 ---
@@ -171,6 +174,7 @@ vpn-sales-bot/
 │   ├── verify.sh                  — post-deploy health checks
 │   ├── install-marzban.sh         — Marzban install + Reality inbound + bot .env
 │   ├── install-subscription-proxy.sh — nginx :8090 for HTTP /sub/
+│   ├── install-subscription-https-ip.sh — trusted IP HTTPS on :8443 + renewal
 │   ├── fix-reality-mobile-iran.sh — tune port/SNI/flow for Iranian mobile ISPs
 │   ├── import-n8n-workflows.sh
 │   └── generate-n8n-import.py
@@ -207,7 +211,7 @@ MARZBAN_USERNAME=vpnsalesbot
 MARZBAN_PASSWORD=***
 MARZBAN_PROXIES='{"vless":{"flow":"xtls-rprx-vision"}}'
 MARZBAN_INBOUNDS='{}'
-MARZBAN_SUBSCRIPTION_URL_PREFIX=http://185.18.214.66:8090
+MARZBAN_SUBSCRIPTION_URL_PREFIX=https://185.18.214.66:8443
 ```
 
 ---
@@ -234,8 +238,7 @@ Import: `bash /opt/vpn-sales-bot/deploy/import-n8n-workflows.sh`
 
 | Issue | Cause | Current workaround |
 |-------|-------|-------------------|
-| Subscription import fails in v2rayNG | v2rayNG blocks HTTP sub URLs | Send `vless://` link; Import from clipboard |
-| Subscription import fails in NPV (SSL error) | self-signed HTTPS on :8000 | HTTP proxy on :8090 (may still fail on some apps) |
+| Subscription import fails in modern clients | cleartext HTTP or a self-signed certificate is rejected | bot now sends trusted `https://IP:8443/sub/...`; direct VLESS remains available |
 | Ping -1ms or connection failure | Ping alone is inconclusive; filtering varies by ISP, endpoint, date, and client | Record actual connect/download result through the profile field-test flow |
 | Stale subscription URLs (404) | Marzban rotates tokens on restart | Bot syncs on startup + before delivery |
 | `fetch failed` to Marzban | self-signed TLS | `MARZBAN_INSECURE_TLS=true` + undici in client.ts |
@@ -270,6 +273,9 @@ bash /opt/vpn-sales-bot/deploy/fix-reality-mobile-iran.sh
 
 # Install/repair HTTP subscription proxy
 bash /opt/vpn-sales-bot/deploy/install-subscription-proxy.sh
+
+# Install/repair trusted HTTPS IP subscription endpoint and renewal
+bash /opt/vpn-sales-bot/deploy/install-subscription-https-ip.sh
 ```
 
 ---
@@ -282,7 +288,7 @@ bash /opt/vpn-sales-bot/deploy/install-subscription-proxy.sh
 - Marzban VLESS Reality inbound
 - PostgreSQL + migrations
 - n8n automation (4 workflows)
-- HTTP subscription proxy
+- trusted HTTPS subscription proxy with automatic certificate renewal
 - Health endpoint + verify script
 - Unit tests (18 passing)
 
@@ -339,7 +345,8 @@ bash /opt/vpn-sales-bot/deploy/install-subscription-proxy.sh
 │   :5678     │     └──────────────────┘
 └─────────────┘
 
-nginx :8090 ──proxy──▶ Marzban :8000/sub/*  (HTTP subscription for clients)
+nginx :8443 ──proxy──▶ Marzban :8000/sub/*  (trusted HTTPS subscription)
+nginx :8090 ──proxy──▶ Marzban :8000/sub/*  (transitional HTTP compatibility)
 privoxy :8118 ──proxy──▶ api.telegram.org   (Telegram API for bot + n8n)
 ```
 
