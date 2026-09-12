@@ -1,0 +1,36 @@
+# Business PostgreSQL only.
+# Do not add n8n, Redis, or the Telegram bot to this file.
+# Existing n8n 2.37.10 on port 5678 must stay untouched.
+#
+# n8n's own Postgres (if any) is internal to the n8n compose project and is
+# not published on the host. This service uses a separate volume and database.
+
+name: vpn-sales
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vpn-sales-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-vpn_sales}
+      POSTGRES_USER: ${POSTGRES_USER:-vpn}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      # Host bot + host tools. Not reachable from the public internet.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - vpn_sales_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vpn} -d ${POSTGRES_DB:-vpn_sales}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  vpn_sales_pgdata:
