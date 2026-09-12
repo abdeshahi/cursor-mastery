@@ -121,6 +121,19 @@ export function createBot(deps: BotDependencies): Telegraf {
           await ctx.reply('پلن تمدید را انتخاب کنید:', renewalPlansKeyboard(action.subscriptionId, plans));
           return;
         }
+        case 'serviceQr': {
+          const deliveries = await deps.sales.serviceQrDeliveries(user.id, action.subscriptionId);
+          await ctx.answerCbQuery(
+            deliveries.length > 1 ? 'QR لینک ساب و کانفیگ ارسال شد.' : 'QR لینک ساب ارسال شد.',
+          );
+          for (const qr of deliveries) {
+            await ctx.replyWithPhoto(
+              { source: qr.image, filename: qr.filename },
+              { caption: qr.caption, parse_mode: 'HTML' },
+            );
+          }
+          return;
+        }
         case 'renewPlan': {
           const created = await deps.sales.createRenewal(user.id, action.subscriptionId, action.planId);
           await ctx.answerCbQuery('سفارش تمدید ساخته شد');

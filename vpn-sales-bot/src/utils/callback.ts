@@ -11,6 +11,7 @@ export type CallbackAction =
   | { type: 'approve'; paymentId: number }
   | { type: 'reject'; paymentId: number }
   | { type: 'renew'; subscriptionId: number }
+  | { type: 'serviceQr'; subscriptionId: number }
   | { type: 'renewPlan'; subscriptionId: number; planId: number }
   | { type: 'cancel'; orderId: number }
   | { type: 'testStart'; subscriptionId: number }
@@ -122,6 +123,14 @@ export function parseCallback(data: string): CallbackAction | null {
     return { type: 'renew', subscriptionId };
   }
 
+  if (kind === 'q') {
+    const subscriptionId = positiveInt(parts[1]);
+    if (parts.length !== 2 || subscriptionId === null) {
+      return null;
+    }
+    return { type: 'serviceQr', subscriptionId };
+  }
+
   if (kind === 'rp') {
     const subscriptionId = positiveInt(parts[1]);
     const planId = positiveInt(parts[2]);
@@ -216,6 +225,8 @@ export function encodeCallback(action: CallbackAction): string {
       return `x:${action.paymentId}`;
     case 'renew':
       return `n:${action.subscriptionId}`;
+    case 'serviceQr':
+      return `q:${action.subscriptionId}`;
     case 'renewPlan':
       return `rp:${action.subscriptionId}:${action.planId}`;
     case 'cancel':

@@ -52,6 +52,7 @@ export interface OrderRow {
   kind: 'new' | 'renewal';
   renewal_subscription_id: number | null;
   connection_profile_id: number | null;
+  account_name: string | null;
   paid_at: Date | null;
   provisioning_started_at: Date | null;
   completed_at: Date | null;
@@ -78,6 +79,7 @@ export interface SubscriptionRow {
   user_id: number;
   order_id: number;
   marzban_username: string;
+  account_name: string;
   subscription_url: string;
   traffic_gb: number;
   start_at: Date;
@@ -256,7 +258,7 @@ export class Repositories {
        )
        VALUES ($1, $2, $3, 'waiting_payment', $4, $5, $6)
        RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id,
-                 connection_profile_id, paid_at, provisioning_started_at, completed_at`,
+                 connection_profile_id, account_name, paid_at, provisioning_started_at, completed_at`,
       [
         input.userId,
         input.planId,
@@ -272,7 +274,7 @@ export class Repositories {
   async getOrder(id: number): Promise<OrderRow | null> {
     const result = await this.query(
       `SELECT id, user_id, plan_id, amount, status, kind, renewal_subscription_id,
-              connection_profile_id, paid_at, provisioning_started_at, completed_at
+              connection_profile_id, account_name, paid_at, provisioning_started_at, completed_at
        FROM orders WHERE id = $1`,
       [id],
     );
@@ -283,7 +285,7 @@ export class Repositories {
   async findOpenOrderForUser(userId: number): Promise<OrderRow | null> {
     const result = await this.query(
       `SELECT id, user_id, plan_id, amount, status, kind, renewal_subscription_id,
-              connection_profile_id, paid_at, provisioning_started_at, completed_at
+              connection_profile_id, account_name, paid_at, provisioning_started_at, completed_at
        FROM orders
        WHERE user_id = $1 AND status = 'waiting_payment'
        ORDER BY created_at DESC
@@ -336,7 +338,7 @@ export class Repositories {
            updated_at = now()
        WHERE id = $1 AND status = ANY($2::text[])
        RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id,
-                 connection_profile_id, paid_at, provisioning_started_at, completed_at`,
+                 connection_profile_id, account_name, paid_at, provisioning_started_at, completed_at`,
       [id, from, to, extra.paidAt ?? null],
     );
     const row = result.rows[0];
@@ -351,7 +353,7 @@ export class Repositories {
            updated_at = now()
        WHERE id = $1 AND status IN ('paid', 'failed')
        RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id,
-                 connection_profile_id, paid_at, provisioning_started_at, completed_at`,
+                 connection_profile_id, account_name, paid_at, provisioning_started_at, completed_at`,
       [id],
     );
     const row = result.rows[0];
@@ -366,7 +368,7 @@ export class Repositories {
            updated_at = now()
        WHERE id = $1 AND status = 'provisioning'
        RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id,
-                 connection_profile_id, paid_at, provisioning_started_at, completed_at`,
+                 connection_profile_id, account_name, paid_at, provisioning_started_at, completed_at`,
       [id],
     );
     const row = result.rows[0];
@@ -380,7 +382,7 @@ export class Repositories {
        WHERE status = 'provisioning'
          AND provisioning_started_at < now() - ($1 * INTERVAL '1 minute')
        RETURNING id, user_id, plan_id, amount, status, kind, renewal_subscription_id,
-                 connection_profile_id, paid_at, provisioning_started_at, completed_at`,
+                 connection_profile_id, account_name, paid_at, provisioning_started_at, completed_at`,
       [staleMinutes],
     );
     return result.rows.map((row) => this.mapOrder(row));
@@ -389,7 +391,7 @@ export class Repositories {
   async listRecoverableOrders(): Promise<OrderRow[]> {
     const result = await this.query(
       `SELECT id, user_id, plan_id, amount, status, kind, renewal_subscription_id,
-              connection_profile_id, paid_at, provisioning_started_at, completed_at
+              connection_profile_id, account_name, paid_at, provisioning_started_at, completed_at
        FROM orders
        WHERE status IN ('paid', 'failed')
        ORDER BY id ASC`,
@@ -477,7 +479,8 @@ export class Repositories {
 
   async getSubscriptionByOrder(orderId: number): Promise<SubscriptionRow | null> {
     const result = await this.query(
-      `SELECT s.id, s.user_id, s.order_id, s.marzban_username, s.subscription_url, s.traffic_gb,
+      `SELECT s.id, s.user_id, s.order_id, s.marzban_username, s.account_name,
+              s.subscription_url, s.traffic_gb,
               s.start_at, s.expire_at, s.status, s.node, s.connection_profile_id,
               cp.name AS connection_profile_name, p.name AS plan_name
        FROM subscriptions s
@@ -493,7 +496,8 @@ export class Repositories {
 
   async getSubscription(id: number): Promise<SubscriptionRow | null> {
     const result = await this.query(
-      `SELECT s.id, s.user_id, s.order_id, s.marzban_username, s.subscription_url, s.traffic_gb,
+      `SELECT s.id, s.user_id, s.order_id, s.marzban_username, s.account_name,
+              s.subscription_url, s.traffic_gb,
               s.start_at, s.expire_at, s.status, s.node, s.connection_profile_id,
               cp.name AS connection_profile_name, p.name AS plan_name
        FROM subscriptions s
@@ -509,7 +513,8 @@ export class Repositories {
 
   async listUserSubscriptions(userId: number): Promise<SubscriptionRow[]> {
     const result = await this.query(
-      `SELECT s.id, s.user_id, s.order_id, s.marzban_username, s.subscription_url, s.traffic_gb,
+      `SELECT s.id, s.user_id, s.order_id, s.marzban_username, s.account_name,
+              s.subscription_url, s.traffic_gb,
               s.start_at, s.expire_at, s.status, s.node, s.connection_profile_id,
               cp.name AS connection_profile_name, p.name AS plan_name
        FROM subscriptions s
@@ -527,6 +532,7 @@ export class Repositories {
     userId: number;
     orderId: number;
     marzbanUsername: string;
+    accountName: string;
     subscriptionUrl: string;
     trafficGb: number;
     startAt: Date;
@@ -536,10 +542,11 @@ export class Repositories {
   }): Promise<SubscriptionRow> {
     const result = await this.query(
       `INSERT INTO subscriptions (
-         user_id, order_id, marzban_username, subscription_url, traffic_gb,
+         user_id, order_id, marzban_username, account_name, subscription_url, traffic_gb,
          start_at, expire_at, status, node, connection_profile_id
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', $8, $9)
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9, $10)
        ON CONFLICT (order_id) DO UPDATE SET
+         account_name = EXCLUDED.account_name,
          subscription_url = EXCLUDED.subscription_url,
          traffic_gb = EXCLUDED.traffic_gb,
          expire_at = EXCLUDED.expire_at,
@@ -547,13 +554,14 @@ export class Repositories {
          node = EXCLUDED.node,
          connection_profile_id = EXCLUDED.connection_profile_id,
          updated_at = now()
-       RETURNING id, user_id, order_id, marzban_username, subscription_url, traffic_gb,
+       RETURNING id, user_id, order_id, marzban_username, account_name, subscription_url, traffic_gb,
                  start_at, expire_at, status, node, connection_profile_id,
                  NULL::text AS connection_profile_name, NULL::text AS plan_name`,
       [
         input.userId,
         input.orderId,
         input.marzbanUsername,
+        input.accountName,
         input.subscriptionUrl,
         input.trafficGb,
         input.startAt,
@@ -570,7 +578,7 @@ export class Repositories {
       `UPDATE subscriptions
        SET subscription_url = $2, updated_at = now()
        WHERE id = $1
-       RETURNING id, user_id, order_id, marzban_username, subscription_url, traffic_gb,
+       RETURNING id, user_id, order_id, marzban_username, account_name, subscription_url, traffic_gb,
                  start_at, expire_at, status, node, connection_profile_id,
                  NULL::text AS connection_profile_name, NULL::text AS plan_name`,
       [id, subscriptionUrl],
@@ -580,7 +588,8 @@ export class Repositories {
 
   async listActiveSubscriptions(): Promise<SubscriptionRow[]> {
     const result = await this.query(
-      `SELECT s.id, s.user_id, s.order_id, s.marzban_username, s.subscription_url, s.traffic_gb,
+      `SELECT s.id, s.user_id, s.order_id, s.marzban_username, s.account_name,
+              s.subscription_url, s.traffic_gb,
               s.start_at, s.expire_at, s.status, s.node, s.connection_profile_id,
               cp.name AS connection_profile_name, p.name AS plan_name
        FROM subscriptions s
@@ -609,12 +618,41 @@ export class Repositories {
            node = $5,
            updated_at = now()
        WHERE id = $1
-       RETURNING id, user_id, order_id, marzban_username, subscription_url, traffic_gb,
+       RETURNING id, user_id, order_id, marzban_username, account_name, subscription_url, traffic_gb,
                  start_at, expire_at, status, node, connection_profile_id,
                  NULL::text AS connection_profile_name, NULL::text AS plan_name`,
       [input.id, input.subscriptionUrl, input.trafficGb, input.expireAt, input.node],
     );
     return this.mapSubscription(result.rows[0]);
+  }
+
+  async reserveOrderAccountName(orderId: number): Promise<string> {
+    const reserved = await this.query(
+      `UPDATE orders
+       SET account_name = 'FOX' || nextval('vpn_account_number_seq')::text,
+           updated_at = now()
+       WHERE id = $1
+         AND kind = 'new'
+         AND account_name IS NULL
+       RETURNING account_name`,
+      [orderId],
+    );
+    const newName = reserved.rows[0]?.['account_name'];
+    if (typeof newName === 'string') {
+      return newName;
+    }
+
+    const existing = await this.query(
+      `SELECT account_name
+       FROM orders
+       WHERE id = $1 AND kind = 'new'`,
+      [orderId],
+    );
+    const existingName = existing.rows[0]?.['account_name'];
+    if (typeof existingName !== 'string') {
+      throw new Error('new order account name could not be reserved');
+    }
+    return existingName;
   }
 
   async recordProfileTestForUser(input: {
@@ -731,6 +769,7 @@ export class Repositories {
       renewal_subscription_id:
         row['renewal_subscription_id'] === null ? null : num(row['renewal_subscription_id']),
       connection_profile_id: optionalNum(row['connection_profile_id']),
+      account_name: optionalStr(row['account_name']),
       paid_at: row['paid_at'] instanceof Date ? row['paid_at'] : null,
       provisioning_started_at:
         row['provisioning_started_at'] instanceof Date ? row['provisioning_started_at'] : null,
@@ -782,6 +821,7 @@ export class Repositories {
       user_id: num(row['user_id']),
       order_id: num(row['order_id']),
       marzban_username: str(row['marzban_username']),
+      account_name: str(row['account_name']),
       subscription_url: str(row['subscription_url']),
       traffic_gb: num(row['traffic_gb']),
       start_at: startAt,

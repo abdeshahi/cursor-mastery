@@ -39,6 +39,12 @@ async function main(): Promise<void> {
       }
       await telegramRef.send.notifyCustomer(telegramId, html);
     },
+    async notifyCustomerPhoto(telegramId, image, caption, filename) {
+      if (telegramRef.send === undefined) {
+        throw new Error('telegram notifier not ready');
+      }
+      await telegramRef.send.notifyCustomerPhoto(telegramId, image, caption, filename);
+    },
     async notifyAdmins(html) {
       if (telegramRef.send === undefined) {
         throw new Error('telegram notifier not ready');
@@ -55,6 +61,13 @@ async function main(): Promise<void> {
   telegramRef.send = {
     async notifyCustomer(telegramId, html) {
       await bot.telegram.sendMessage(telegramId, html, { parse_mode: 'HTML' });
+    },
+    async notifyCustomerPhoto(telegramId, image, caption, filename) {
+      await bot.telegram.sendPhoto(
+        telegramId,
+        { source: image, filename },
+        { caption, parse_mode: 'HTML' },
+      );
     },
     async notifyAdmins(html) {
       for (const adminId of env.ADMIN_TELEGRAM_IDS) {

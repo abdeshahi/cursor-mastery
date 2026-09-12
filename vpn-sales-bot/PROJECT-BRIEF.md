@@ -73,8 +73,9 @@ Customer → Bot: Photo/document receipt
 Bot → Admin: Receipt + Approve/Reject inline buttons
 Admin → Bot: Approve
 Bot: order status paid → provisioning → completed
-Bot → Marzban API: create user ct_{orderId}
-Bot → Customer: vless:// link + setup instructions
+Bot → PostgreSQL: reserve the next account name (FOX1001, FOX1002, ...)
+Bot → Marzban API: create the reserved FOX user
+Bot → Customer: subscription URL + direct config + separate QR images
 ```
 
 **Order state machine:** `pending` → `waiting_payment` → `paid` → `provisioning` → `completed` | `failed` | `cancelled`
@@ -93,11 +94,17 @@ Bot → Customer: vless:// link + setup instructions
 | Flow | `xtls-rprx-vision` |
 | Fingerprint | chrome |
 | Server IP in config | `185.18.214.66` |
-| Marzban username pattern | `ct_{orderId}` (e.g. `ct_1`) |
+| New Marzban username pattern | atomic `FOX<number>` sequence, starting at `FOX1001` |
 | Xray core | `26.3.27` |
 
 **Subscription URL format:** `https://185.18.214.66:8443/sub/{token}`
 **Subscription content:** base64-encoded single `vless://` line
+
+The bot generates QR images locally (no external QR service) for both the
+subscription URL and each direct config. The account name is included beneath
+each QR. Customers can request the QR images again from «سرویس‌های من» and
+renew the same account. Existing `ct_*` users are not renamed and remain
+renewable under their current account name.
 
 **Important for clients:**
 - the HTTPS endpoint uses a publicly trusted short-lived Let's Encrypt IP certificate
@@ -113,9 +120,9 @@ Bot → Customer: vless:// link + setup instructions
 ```
 users           — telegram_id, username, status (active/blocked)
 plans           — name, traffic_gb, duration_days, price (TOMAN)
-orders          — user_id, plan_id, status, kind (new/renewal)
+orders          — user_id, plan_id, status, kind (new/renewal), reserved account_name
 payments        — order_id, receipt_file_id, status (pending/approved/rejected)
-subscriptions   — marzban_username, subscription_url, expire_at, status
+subscriptions   — unique account_name/marzban_username, subscription_url, expire_at, status
 nodes           — normalized operational node labels
 connection_profiles — protocol/transport/security and Marzban inbound references
 plan_connection_profiles — enabled manual choices per plan
@@ -134,7 +141,8 @@ schema_migrations
 | ۱۰۰ گیگ / ۹۰ روز | 100 GB | 90 days | 750,000 |
 
 Migrations: `migrations/001_init.sql`, `migrations/002_seed_plans.sql`,
-`migrations/003_phase1_hardening.sql`, `migrations/004_connection_profiles.sql`
+`migrations/003_phase1_hardening.sql`, `migrations/004_connection_profiles.sql`,
+`migrations/005_fox_account_names.sql`
 Applied automatically on bot startup.
 
 ---

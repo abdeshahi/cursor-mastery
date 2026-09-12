@@ -35,6 +35,10 @@ describe('callbacks', () => {
       type: 'approve',
       paymentId: 99,
     });
+    expect(parseCallback(encodeCallback({ type: 'serviceQr', subscriptionId: 7 }))).toEqual({
+      type: 'serviceQr',
+      subscriptionId: 7,
+    });
   });
 
   it('rejects invalid callbacks', () => {

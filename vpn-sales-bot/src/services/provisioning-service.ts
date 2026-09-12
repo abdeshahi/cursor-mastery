@@ -5,13 +5,19 @@ import { MarzbanClient, MarzbanError } from '../marzban/client.js';
 import {
   assignNode,
   bytesFromGb,
-  marzbanUsernameForOrder,
   nextExpiry,
   resolveSubscriptionUrl,
   unixSeconds,
 } from '../utils/provisioning.js';
+import { createQrDelivery, type QrDelivery } from '../utils/qr.js';
 export interface Notifier {
   notifyCustomer(telegramId: number, html: string): Promise<void>;
+  notifyCustomerPhoto(
+    telegramId: number,
+    image: Buffer,
+    caption: string,
+    filename: string,
+  ): Promise<void>;
   notifyAdmins(html: string): Promise<void>;
 }
 
@@ -154,6 +160,15 @@ export class ProvisioningService {
           Number(user.telegram_id),
           this.deliveryMessage(plan.name, subscription, configLinks),
         );
+        const qrDeliveries = await this.qrDeliveries(subscription, configLinks);
+        for (const qr of qrDeliveries) {
+          await this.notifier.notifyCustomerPhoto(
+            Number(user.telegram_id),
+            qr.image,
+            qr.caption,
+            qr.filename,
+          );
+        }
       } catch (error) {
         // Provisioning is already complete. A Telegram outage must not roll it
         // back or cause the VPN account to be recreated on retry.
@@ -191,13 +206,18 @@ export class ProvisioningService {
   }
 
   private async createNew(
-    order: { id: number; user_id: number; connection_profile_id: number | null },
+    order: {
+      id: number;
+      user_id: number;
+      connection_profile_id: number | null;
+      account_name: string | null;
+    },
     plan: { traffic_gb: number; duration_days: number; marzban_profile: string | null },
     node: string,
     now: Date,
     extra: { proxies?: Record<string, unknown>; inbounds?: Record<string, unknown> },
   ): Promise<SubscriptionRow> {
-    const username = marzbanUsernameForOrder(order.id);
+    const username = order.account_name ?? (await this.db.reserveOrderAccountName(order.id));
     const expireAt = nextExpiry(null, now, plan.duration_days);
     const existing = await this.marzban.getUser(username);
     const user =
@@ -221,6 +241,7 @@ export class ProvisioningService {
       userId: order.user_id,
       orderId: order.id,
       marzbanUsername: username,
+      accountName: username,
       subscriptionUrl: url,
       trafficGb: plan.traffic_gb,
       startAt: now,
@@ -261,6 +282,7 @@ export class ProvisioningService {
         expireUnix: unixSeconds(expireAt),
         dataLimitBytes: bytesFromGb(plan.traffic_gb),
         status: 'active',
+        ...extra,
       });
     }
 
@@ -327,6 +349,12 @@ export class ProvisioningService {
     return this.serviceMessage(refreshed, configLinks);
   }
 
+  async formatServiceQrDeliveries(subscription: SubscriptionRow): Promise<QrDelivery[]> {
+    const refreshed = await this.refreshSubscriptionUrl(subscription);
+    const configLinks = await this.fetchConfigLinks(refreshed.subscription_url);
+    return this.qrDeliveries(refreshed, configLinks);
+  }
+
   private async fetchConfigLinks(subscriptionUrl: string): Promise<string[]> {
     try {
       return await this.marzban.fetchSubscriptionLinks(subscriptionUrl);
@@ -346,6 +374,38 @@ export class ProvisioningService {
     return this.serviceMessage(subscription, configLinks, planName);
   }
 
+  private async qrDeliveries(
+    subscription: SubscriptionRow,
+    configLinks: string[],
+  ): Promise<QrDelivery[]> {
+    const safeFilename = subscription.account_name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const deliveries: QrDelivery[] = [
+      await createQrDelivery({
+        value: subscription.subscription_url,
+        caption: qrCaption(
+          subscription.account_name,
+          '🔗 QR لینک اشتراک',
+          subscription.subscription_url,
+        ),
+        filename: `${safeFilename}-subscription.png`,
+      }),
+    ];
+    for (const [index, link] of configLinks.entries()) {
+      deliveries.push(
+        await createQrDelivery({
+          value: link,
+          caption: qrCaption(
+            subscription.account_name,
+            `⚡ QR کانفیگ${configLinks.length > 1 ? ` ${index + 1}` : ''}`,
+            link,
+          ),
+          filename: `${safeFilename}-config-${index + 1}.png`,
+        }),
+      );
+    }
+    return deliveries;
+  }
+
   private serviceMessage(
     subscription: SubscriptionRow,
     configLinks: string[],
@@ -360,6 +420,7 @@ export class ProvisioningService {
       lines.push(`🔌 پروفایل: ${escapePlain(subscription.connection_profile_name)}`);
     }
     lines.push(
+      `👤 نام اکانت: <code>${escapePlain(subscription.account_name)}</code>`,
       `📊 حجم: ${subscription.traffic_gb} گیگابایت`,
       `⏳ اعتبار تا: ${subscription.expire_at.toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' })}`,
       '',
@@ -397,4 +458,10 @@ function asObject(value: unknown): Record<string, unknown> | undefined {
 
 function escapePlain(value: string): string {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
+function qrCaption(accountName: string, title: string, value: string): string {
+  const heading = `${title}\n👤 نام اکانت: <code>${escapePlain(accountName)}</code>`;
+  const payload = `\n\n<code>${escapePlain(value)}</code>`;
+  return heading.length + payload.length <= 1_024 ? `${heading}${payload}` : heading;
 }

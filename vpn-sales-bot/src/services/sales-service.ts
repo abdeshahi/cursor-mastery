@@ -336,7 +336,16 @@ export class SalesService {
     }
   }
 
+  async serviceQrDeliveries(userId: number, subscriptionId: number) {
+    const subscription = await this.db.getSubscription(subscriptionId);
+    if (subscription === null || subscription.user_id !== userId) {
+      throw new Error('SUBSCRIPTION_NOT_FOUND');
+    }
+    return this.provisioning.formatServiceQrDeliveries(subscription);
+  }
+
   serviceText(row: {
+    account_name: string;
     plan_name: string | null;
     status: string;
     traffic_gb: number;
@@ -345,6 +354,7 @@ export class SalesService {
   }): string {
     return [
       `📦 ${escapeHtml(row.plan_name ?? 'VPN')}`,
+      `👤 نام اکانت: <code>${escapeHtml(row.account_name)}</code>`,
       `وضعیت: ${escapeHtml(row.status)}`,
       `حجم: ${row.traffic_gb} گیگابایت`,
       `انقضا: ${formatDate(row.expire_at)}`,

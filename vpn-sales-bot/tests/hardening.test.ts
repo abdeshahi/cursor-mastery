@@ -47,6 +47,7 @@ const paidOrder: OrderRow = {
   kind: 'new',
   renewal_subscription_id: null,
   connection_profile_id: null,
+  account_name: 'ct_10',
   paid_at: new Date('2026-01-01T00:00:00Z'),
   provisioning_started_at: null,
   completed_at: null,
@@ -63,6 +64,7 @@ const subscription: SubscriptionRow = {
   user_id: 1,
   order_id: 10,
   marzban_username: 'ct_10',
+  account_name: 'ct_10',
   subscription_url: 'https://panel.example/sub/token',
   traffic_gb: 30,
   start_at: new Date('2026-01-01T00:00:00Z'),
@@ -205,7 +207,11 @@ describe('provisioning idempotency', () => {
       logger,
       db as unknown as Repositories,
       marzban as unknown as MarzbanClient,
-      { notifyCustomer: vi.fn(async () => undefined), notifyAdmins: vi.fn(async () => undefined) },
+      {
+        notifyCustomer: vi.fn(async () => undefined),
+        notifyCustomerPhoto: vi.fn(async () => undefined),
+        notifyAdmins: vi.fn(async () => undefined),
+      },
     );
 
     const results = await Promise.all([service.provisionOrder(10), service.provisionOrder(10)]);
@@ -254,7 +260,11 @@ describe('provisioning idempotency', () => {
       logger,
       db as unknown as Repositories,
       marzban as unknown as MarzbanClient,
-      { notifyCustomer: vi.fn(async () => undefined), notifyAdmins: vi.fn(async () => undefined) },
+      {
+        notifyCustomer: vi.fn(async () => undefined),
+        notifyCustomerPhoto: vi.fn(async () => undefined),
+        notifyAdmins: vi.fn(async () => undefined),
+      },
     );
 
     await expect(service.provisionOrder(10)).resolves.toEqual(subscription);
@@ -262,13 +272,20 @@ describe('provisioning idempotency', () => {
   });
 
   it('provisions from the order profile instead of a hardcoded global protocol', async () => {
-    const profiledOrder = { ...paidOrder, connection_profile_id: connectionProfile.id };
+    const profiledOrder = {
+      ...paidOrder,
+      account_name: 'FOX1001',
+      connection_profile_id: connectionProfile.id,
+    };
     const profiledClaim = {
       ...claimedOrder,
+      account_name: 'FOX1001',
       connection_profile_id: connectionProfile.id,
     };
     const profiledSubscription = {
       ...subscription,
+      marzban_username: 'FOX1001',
+      account_name: 'FOX1001',
       connection_profile_id: connectionProfile.id,
       connection_profile_name: connectionProfile.name,
     };
@@ -311,19 +328,28 @@ describe('provisioning idempotency', () => {
       logger,
       db as unknown as Repositories,
       marzban as unknown as MarzbanClient,
-      { notifyCustomer: vi.fn(async () => undefined), notifyAdmins: vi.fn(async () => undefined) },
+      {
+        notifyCustomer: vi.fn(async () => undefined),
+        notifyCustomerPhoto: vi.fn(async () => undefined),
+        notifyAdmins: vi.fn(async () => undefined),
+      },
     );
 
     await service.provisionOrder(10);
 
     expect(marzban.createUser).toHaveBeenCalledWith(
       expect.objectContaining({
+        username: 'FOX1001',
         proxies: connectionProfile.marzban_proxies,
         inbounds: connectionProfile.marzban_inbounds,
       }),
     );
     expect(db.insertSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({ connectionProfileId: connectionProfile.id }),
+      expect.objectContaining({
+        accountName: 'FOX1001',
+        marzbanUsername: 'FOX1001',
+        connectionProfileId: connectionProfile.id,
+      }),
     );
   });
 
@@ -339,7 +365,11 @@ describe('provisioning idempotency', () => {
       logger,
       {} as Repositories,
       marzban as unknown as MarzbanClient,
-      { notifyCustomer: vi.fn(async () => undefined), notifyAdmins: vi.fn(async () => undefined) },
+      {
+        notifyCustomer: vi.fn(async () => undefined),
+        notifyCustomerPhoto: vi.fn(async () => undefined),
+        notifyAdmins: vi.fn(async () => undefined),
+      },
     );
 
     const message = await service.formatServiceMessage(subscription);
@@ -347,6 +377,37 @@ describe('provisioning idempotency', () => {
     expect(message).toContain(directConfig);
     expect(message).toContain('🔗 لینک اشتراک:');
     expect(message).toContain(subscription.subscription_url);
+    expect(message).toContain(subscription.account_name);
+  });
+
+  it('creates local PNG QR images for both subscription and direct config', async () => {
+    const directConfig =
+      'vless://00000000-0000-0000-0000-000000000000@example.com:443?security=reality';
+    const marzban = {
+      getUser: vi.fn(async () => marzbanUser),
+      fetchSubscriptionLinks: vi.fn(async () => [directConfig]),
+    };
+    const service = new ProvisioningService(
+      env(),
+      logger,
+      {} as Repositories,
+      marzban as unknown as MarzbanClient,
+      {
+        notifyCustomer: vi.fn(async () => undefined),
+        notifyCustomerPhoto: vi.fn(async () => undefined),
+        notifyAdmins: vi.fn(async () => undefined),
+      },
+    );
+
+    const deliveries = await service.formatServiceQrDeliveries(subscription);
+
+    expect(deliveries).toHaveLength(2);
+    expect(deliveries[0]?.image.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
+    expect(deliveries[0]?.caption).toContain(subscription.account_name);
+    expect(deliveries[0]?.caption).toContain(subscription.subscription_url);
+    expect(deliveries[1]?.caption).toContain(directConfig);
   });
 
   it('snapshots the selected profile on a new order', async () => {
@@ -387,6 +448,23 @@ describe('provisioning idempotency', () => {
 });
 
 describe('repository hardening SQL', () => {
+  it('atomically reserves and then reuses the FOX account name on the order', async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ account_name: 'FOX1001' }], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockResolvedValueOnce({ rows: [{ account_name: 'FOX1001' }], rowCount: 1 });
+    const repository = new Repositories({ query } as unknown as Pool);
+
+    await expect(repository.reserveOrderAccountName(10)).resolves.toBe('FOX1001');
+    await expect(repository.reserveOrderAccountName(10)).resolves.toBe('FOX1001');
+
+    const reserveSql = String(query.mock.calls[0]?.[0]);
+    expect(reserveSql).toContain("nextval('vpn_account_number_seq')");
+    expect(reserveSql).toContain('account_name IS NULL');
+    expect(reserveSql).toContain("kind = 'new'");
+  });
+
   it('claims paid -> provisioning atomically', async () => {
     const query = vi.fn(async () => ({ rows: [claimedOrder], rowCount: 1 }));
     const repository = new Repositories({ query } as unknown as Pool);

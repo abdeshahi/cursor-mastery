@@ -70,12 +70,25 @@ export function renewalPlansKeyboard(
   return Markup.inlineKeyboard(rows);
 }
 
-export function servicesKeyboard(subscriptions: Array<{ id: number; plan_name: string | null; status: string }>) {
+export function servicesKeyboard(
+  subscriptions: Array<{
+    id: number;
+    account_name: string;
+    plan_name: string | null;
+    status: string;
+  }>,
+) {
   const rows = subscriptions.flatMap((item) => [
     [
       Markup.button.callback(
-        `♻️ تمدید ${item.plan_name ?? 'VPN'} (${item.status})`,
+        `♻️ شارژ/تمدید ${item.account_name}`,
         encodeCallback({ type: 'renew', subscriptionId: item.id }),
+      ),
+    ],
+    [
+      Markup.button.callback(
+        `📱 دریافت QR ${item.account_name}`,
+        encodeCallback({ type: 'serviceQr', subscriptionId: item.id }),
       ),
     ],
     [
