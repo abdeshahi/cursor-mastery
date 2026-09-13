@@ -1,282 +1,277 @@
-# گزارش کلی — سرور وردپرس + ووکامرس
+# گزارش کلی — فروشگاه CTTEL (WordPress + WooCommerce)
 
-**تاریخ:** ۱۳ سپتامبر ۲۰۲۶  
-**پروژه:** پشته سبک WordPress + WooCommerce با Docker Compose  
-**مخزن:** [cursor-mastery](https://github.com/abdeshahi/cursor-mastery)  
-**PR:** [#13 — WordPress + WooCommerce Docker stack](https://github.com/abdeshahi/cursor-mastery/pull/13)
-
----
-
-## ۱. خلاصه اجرایی
-
-یک سرور فروشگاهی سبک بر پایه **Docker Compose** طراحی و پیاده‌سازی شد که شامل موارد زیر است:
-
-| جزء | تکنولوژی |
-|-----|-----------|
-| وب‌سرور | Nginx 1.27 (Alpine) |
-| پایگاه داده | MariaDB 10.11 |
-| CMS | WordPress 6.7 (PHP 8.2 FPM) — **نسخه فارسی (fa_IR)** |
-| فروشگاه | WooCommerce 9.6.2 |
-| SSL | Certbot / Let's Encrypt |
-| فایروال | UFW (با fallback به iptables) |
-| بکاپ | Cron روزانه — DB + فایل‌ها |
-
-**هدف:** راه‌اندازی سریع، امن و قابل نگهداری یک فروشگاه آنلاین فارسی روی VPS.
+**تاریخ به‌روزرسانی:** ۱۳ سپتامبر ۲۰۲۶  
+**پروژه:** فروشگاه اینترنتی CTTEL  
+**دامنه هدف:** [cttel.ir](https://cttel.ir)  
+**مخزن:** [cursor-mastery](https://github.com/abdeshahi/cursor-mastery) — PR [#13](https://github.com/abdeshahi/cursor-mastery/pull/13)
 
 ---
 
-## ۲. معماری سیستم
+## ۱. خلاصه وضعیت
+
+| مورد | وضعیت |
+|------|--------|
+| نصب روی VPS | ✅ انجام شد |
+| WordPress فارسی (fa_IR) | ✅ فعال |
+| WooCommerce 9.6.2 | ✅ فعال |
+| HTTP روی VPS | ✅ پاسخ 200 (با Host: cttel.ir) |
+| SSL (HTTPS) | ⏳ در انتظار تغییر DNS |
+| DNS cttel.ir | ⚠️ هنوز به IP قدیمی اشاره می‌کند |
+| سرویس‌های قبلی (n8n, Marzban, VPN) | ✅ سالم — بدون تغییر |
+| بکاپ روزانه (cron) | ✅ نصب شده |
+
+---
+
+## ۲. اطلاعات سرور
+
+| مورد | مقدار |
+|------|--------|
+| **IP VPS** | `185.18.214.66` |
+| **Hostname** | `server3.panel01.com` |
+| **ارائه‌دهنده** | صفر و یک پرداز (0-1.ir) — سرویس #654351 |
+| **سیستم‌عامل** | Ubuntu (kernel 6.8) |
+| **CPU** | 1 vCore |
+| **RAM** | 2 GB |
+| **Disk** | 40 GB SATA |
+| **مسیر نصب** | `/opt/cttel-wordpress/app` |
+
+### مصرف منابع (لحظه گزارش)
+
+| منبع | مقدار |
+|------|--------|
+| RAM | ~1.3 GB / 1.9 GB (~69%) |
+| Disk | 17 GB / 40 GB (44%) |
+| Swap | 3 GB (فعال) |
+
+---
+
+## ۳. معماری عملیاتی
+
+به‌دلیل اشغال بودن پورت 80 توسط nginx سیستم (Marzban/VPN)، WordPress با معماری **دو‌لایه nginx** اجرا می‌شود:
 
 ```mermaid
-flowchart TB
-    subgraph Internet
-        User[کاربر / مرورگر]
-        LE[Let's Encrypt]
-    end
+flowchart LR
+    User[کاربر] -->|HTTP :80| SysNginx[nginx سیستم]
+    SysNginx -->|cttel.ir| Proxy[proxy → 127.0.0.1:8081]
+    Proxy --> WPNginx[wp_nginx :8081]
+    WPNginx --> FPM[wp_app PHP-FPM :9000]
+    FPM --> DB[(wp_mariadb :3306)]
 
-    subgraph VPS["VPS (Host Network)"]
-        FW[فایروال UFW / iptables<br/>22, 80, 443]
-        NG[Nginx :80 / :443]
-        FPM[WordPress PHP-FPM :9000]
-        DB[(MariaDB :3306)]
-        CB[Certbot]
-        CRON[Cron بکاپ / تمدید SSL]
+    subgraph Other["سرویس‌های دیگر (دست‌نخورده)"]
+        N8N[n8n :5678]
+        VPN[vpn-sales :8000]
+        MZ[Marzban :443]
     end
-
-    User -->|HTTP/HTTPS| FW --> NG
-    NG -->|FastCGI| FPM
-    FPM -->|127.0.0.1:3306| DB
-    LE <-->|ACME Challenge| NG
-    CB --> LE
-    CRON --> DB
-    CRON --> FPM
 ```
 
-### چرا `network_mode: host`؟
+### چرا پورت 8081؟
 
-در برخی VPS/Cloud VMها (از جمله محیط Cloud Agent)، ارتباط بین کانتینرها روی شبکه bridge داکر مسدود است. با **host network** همه سرویس‌ها از طریق `127.0.0.1` با هم صحبت می‌کنند و Nginx تنها پورت‌های 80 و 443 را به بیرون expose می‌کند.
-
----
-
-## ۳. سرویس‌ها و نسخه‌ها
-
-| سرویس | Image | Container | Restart |
-|--------|-------|-----------|---------|
-| MariaDB | `mariadb:10.11` | `wp_mariadb` | unless-stopped |
-| WordPress | `wordpress:6.7-php8.2-fpm` | `wp_app` | unless-stopped |
-| Nginx | `nginx:1.27-alpine` | `wp_nginx` | unless-stopped |
-| Certbot | `certbot/certbot:latest` | `wp_certbot` | on-demand (profile) |
-| WP-CLI Init | `wordpress:cli-2.11-php8.2` | `wp_init` | one-shot |
+- nginx سیستم روی `:80` برای ACME و Marzban/VPN فعال است.
+- کانتینر `wp_nginx` روی `127.0.0.1:8081` listen می‌کند.
+- vhost جدید `/etc/nginx/sites-available/cttel-wordpress` درخواست‌های `cttel.ir` را proxy می‌کند.
+- **هیچ سرویس قبلی stop یا حذف نشده.**
 
 ---
 
-## ۴. پورت‌ها و دسترسی
+## ۴. سرویس‌های Docker
 
-| پورت | پروتکل | سرویس | دسترسی از بیرون | توضیح |
-|------|--------|--------|-----------------|-------|
-| **22** | TCP | SSH | ✅ باز | مدیریت سرور |
-| **80** | TCP | Nginx HTTP | ✅ باز | سایت + ACME challenge |
-| **443** | TCP | Nginx HTTPS | ✅ باز | بعد از فعال‌سازی SSL |
-| **3306** | TCP | MariaDB | ❌ بسته | bind روی `127.0.0.1` |
-| **9000** | TCP | PHP-FPM | ❌ بسته | bind روی `127.0.0.1` |
+| Container | Image | وضعیت | نقش |
+|-----------|-------|--------|-----|
+| `wp_mariadb` | mariadb:10.11 | Up (healthy) | پایگاه داده |
+| `wp_app` | wordpress:6.7-php8.2-fpm | Up | WordPress + PHP-FPM |
+| `wp_nginx` | nginx:1.27-alpine | Up | وب‌سرور داخلی (8081) |
+
+### سرویس‌های دیگر VPS (بدون تغییر)
+
+| سرویس | وضعیت |
+|--------|--------|
+| n8n | active (پورت 5678) |
+| Marzban | Up 45+ hours |
+| vpn-sales-postgres | Up (healthy) |
+| vpn-sales API | پورت 8000 |
+| nginx سیستم | active |
 
 ---
 
-## ۵. امنیت
+## ۵. پورت‌ها
 
-### ۵.۱ فایروال
+| پورت | سرویس | دسترسی | توضیح |
+|------|--------|--------|-------|
+| 22 | SSH | عمومی | مدیریت VPS |
+| 80 | nginx سیستم | عمومی | cttel.ir + ACME |
+| 443 | xray/Marzban | عمومی | VPN (موجود قبلی) |
+| 8081 | wp_nginx | localhost | WordPress داخلی |
+| 3306 | MariaDB | localhost | DB WordPress |
+| 9000 | PHP-FPM | localhost | WordPress |
+| 5678 | n8n | عمومی | اتوماسیون (موجود قبلی) |
+| 8000 | vpn-sales | عمومی | API VPN (موجود قبلی) |
+| 8090/8443 | nginx proxy | عمومی | subscription VPN |
 
-اسکریپت `scripts/setup-firewall.sh`:
+---
 
-1. ابتدا **UFW** را با قوانین زیر فعال می‌کند:
-   - ورودی پیش‌فرض: **deny**
-   - خروجی پیش‌فرض: **allow**
-   - مجاز: 22, 80, 443
-2. اگر UFW در محیط کار نکرد (محدودیت kernel/module)، **iptables** جایگزین می‌شود.
+## ۶. WordPress و WooCommerce
 
-### ۵.۲ SSL (Let's Encrypt)
+| مورد | مقدار |
+|------|--------|
+| نسخه WordPress | 6.7.2 |
+| Locale | `fa_IR` (RTL) |
+| عنوان سایت | CTTEL |
+| WooCommerce | 9.6.2 — فعال |
+| Timezone | Asia/Tehran |
+| Permalink | `/%postname%/` |
+| URL تنظیم‌شده | `http://cttel.ir` |
 
-- روش: **webroot** (`/.well-known/acme-challenge/`)
-- دریافت اولیه: `./scripts/init-ssl.sh`
-- تمدید خودکار: cron ساعت **03:00** (همراه با reload Nginx)
+### دسترسی پنل
 
-### ۵.۳ رمزها
+| مورد | آدرس |
+|------|------|
+| سایت | `http://cttel.ir` (بعد از DNS) |
+| پنل مدیریت | `http://cttel.ir/wp-admin` |
+| Admin user | `admin` |
+| رمز admin | در فایل CREDENTIALS.md روی VPS |
+
+---
+
+## ۷. DNS و SSL
+
+### DNS (نیازمند اقدام)
+
+| رکورد | مقدار فعلی | مقدار صحیح |
+|--------|-----------|-----------|
+| `cttel.ir` A | `212.33.194.35` ❌ | `185.18.214.66` ✅ |
+| `www.cttel.ir` A | `212.33.194.35` ❌ | `185.18.214.66` ✅ |
+
+تا DNS تغییر نکند، سایت از اینترنت روی `cttel.ir` در دسترس **نیست** (فقط با IP مستقیم + Host header کار می‌کند).
+
+### SSL
+
+| مورد | وضعیت |
+|------|--------|
+| گواهی Let's Encrypt | ❌ هنوز صادر نشده |
+| ایمیل ACME | `admin@cttel.ir` |
+| دستور فعال‌سازی | `./scripts/init-ssl.sh` (بعد از DNS) |
+
+---
+
+## ۸. امنیت و رمزها
+
+### محل ذخیره رمزها
+
+```bash
+ssh root@185.18.214.66
+cat /opt/cttel-wordpress/app/CREDENTIALS.md
+```
 
 | متغیر | کاربرد |
 |--------|--------|
 | `MYSQL_ROOT_PASSWORD` | root دیتابیس |
-| `MYSQL_PASSWORD` | کاربر `wordpress` |
-| `WORDPRESS_ADMIN_PASSWORD` | ورود به `/wp-admin` |
+| `MYSQL_PASSWORD` | کاربر wordpress |
+| `WORDPRESS_ADMIN_PASSWORD` | ورود wp-admin |
 
-- رمزها با `openssl rand` در `.env` تولید می‌شوند.
-- فایل `.env` و `CREDENTIALS.md` در gitignore هستند.
-- پس از deploy، `./scripts/write-credentials.sh` فایل **`CREDENTIALS.md`** را با تمام پورت‌ها و رمزها می‌سازد.
+> **توجه:** فایل `.env` و `CREDENTIALS.md` در git commit نمی‌شوند.
+
+### فایروال
+
+فایروال VPS از قبل توسط ارائه‌دهنده/تنظیمات قبلی مدیریت می‌شود. اسکریپت `setup-firewall.sh` در repo موجود است.
 
 ---
 
-## ۶. بکاپ
+## ۹. بکاپ
 
 | مورد | مقدار |
-|------|-------|
-| زمان‌بندی | روزانه ساعت **02:00** (cron) |
-| محل ذخیره | `wordpress/backups/YYYYmmdd_HHMMSS/` |
+|------|--------|
+| زمان‌بندی | روزانه ساعت **02:00** |
+| محل | `/opt/cttel-wordpress/app/backups/` |
 | محتوا | `database.sql.gz` + `wordpress-files.tar.gz` |
-| نگهداری | ۷ روز (قابل تغییر با `BACKUP_RETENTION_DAYS`) |
+| نگهداری | 7 روز |
 | بکاپ دستی | `./scripts/backup.sh` |
-
----
-
-## ۷. راه‌اندازی (Deploy)
-
-```bash
-cd wordpress
-chmod +x scripts/*.sh
-./scripts/deploy.sh
-```
-
-### مراحل خودکار `deploy.sh`
-
-1. تولید `.env` با رمزهای تصادفی (`generate-env.sh`)
-2. تنظیم `DOMAIN` روی IP سرور (اگر هنوز `example.com` باشد)
-3. بالا آوردن MariaDB + WordPress + Nginx
-4. نصب WordPress فارسی + WooCommerce (`wp-init`)
-5. ساخت `CREDENTIALS.md`
-
-### مراحل دستی پس از Deploy
-
-```bash
-# 1. DNS: رکورد A دامنه → IP سرور
-# 2. ویرایش .env
-DOMAIN=yourdomain.com
-LETSENCRYPT_EMAIL=admin@yourdomain.com
-
-# 3. SSL
-./scripts/init-ssl.sh
-
-# 4. فایروال
-sudo ./scripts/setup-firewall.sh
-
-# 5. Cron بکاپ + تمدید SSL
-./scripts/install-cron-backup.sh
-```
-
----
-
-## ۸. راه‌اندازی اولیه WordPress (wp-init)
-
-اسکریپت `scripts/wp-init.sh` به‌صورت idempotent اجرا می‌شود:
-
-- نصب WordPress با locale **fa_IR**
-- فعال‌سازی RTL
-- permalink: `/%postname%/`
-- نصب و فعال‌سازی **WooCommerce 9.6.2** (سازگار با WP 6.7)
-- timezone: `Asia/Tehran`
-
----
-
-## ۹. اسکریپت‌ها
-
-| اسکریپت | کاربرد |
-|---------|--------|
-| `deploy.sh` | راه‌اندازی کامل یک‌جا |
-| `generate-env.sh` | تولید `.env` با رمز تصادفی |
-| `wp-init.sh` | نصب WP فارسی + WooCommerce |
-| `init-ssl.sh` | دریافت گواهی Let's Encrypt |
-| `enable-ssl.sh` | فعال‌سازی HTTPS در Nginx |
-| `setup-firewall.sh` | UFW یا iptables |
-| `backup.sh` | بکاپ DB + فایل‌ها |
-| `install-cron-backup.sh` | نصب cron بکاپ و تمدید SSL |
-| `write-credentials.sh` | تولید `CREDENTIALS.md` |
+| تمدید SSL (cron) | ساعت **03:00** |
 
 ---
 
 ## ۱۰. ساختار فایل‌ها
 
 ```
-wordpress/
-├── docker-compose.yml       # تعریف سرویس‌ها
-├── .env.example             # نمونه متغیرهای محیطی
-├── .env                     # رمزها (gitignore — تولید خودکار)
-├── CREDENTIALS.md           # مستند رمزها (gitignore — بعد از deploy)
-├── nginx/
-│   ├── nginx.conf
-│   └── conf.d/
-│       ├── 00-http.conf
-│       └── 01-ssl.conf.template
-├── mariadb/conf.d/
-│   └── bind-local.cnf       # bind 127.0.0.1
-├── wordpress/
-│   └── zzz-listen-local.conf # FPM روی 127.0.0.1:9000
-├── certbot/
-│   ├── conf/                # گواهی‌های SSL
-│   └── www/                 # webroot ACME
-├── backups/                 # بکاپ‌های روزانه
-├── scripts/                 # اسکریپت‌های عملیاتی
-└── docs/
-    ├── DEPLOYMENT.fa.md     # راهنمای deploy
-    └── REPORT.fa.md         # ← این گزارش
+/opt/cttel-wordpress/
+├── repo/                  # clone از GitHub
+└── app/                   # پشته عملیاتی
+    ├── docker-compose.yml
+    ├── .env               # رمزها (محلی)
+    ├── CREDENTIALS.md     # مستند رمزها
+    ├── nginx/conf.d/      # wp_nginx (8081)
+    ├── certbot/           # SSL (خالی تا DNS)
+    ├── backups/           # بکاپ‌ها
+    ├── scripts/           # deploy, backup, ssl, ...
+    └── docs/
+        └── REPORT.fa.md   # ← این گزارش
 ```
 
 ---
 
-## ۱۱. Volumes داکر
-
-| Volume | محتوا |
-|--------|--------|
-| `wordpress_db_data` | داده‌های MariaDB |
-| `wordpress_wordpress_data` | فایل‌های WordPress (`/var/www/html`) |
-
----
-
-## ۱۲. چک‌لیست پس از راه‌اندازی
-
-- [ ] سایت روی HTTP باز می‌شود (`curl -I http://IP/`)
-- [ ] پنل `/wp-admin` در دسترس است
-- [ ] زبان سایت فارسی و RTL است
-- [ ] WooCommerce در افزونه‌ها فعال است
-- [ ] DNS دامنه به IP سرور اشاره دارد
-- [ ] SSL با `./scripts/init-ssl.sh` فعال شده
-- [ ] فایروال با `setup-firewall.sh` تنظیم شده
-- [ ] Cron بکاپ نصب شده (`crontab -l`)
-- [ ] `CREDENTIALS.md` بررسی و در جای امن ذخیره شده
-
----
-
-## ۱۳. دستورات مفید
+## ۱۱. دستورات مفید
 
 ```bash
-cd wordpress
+# ورود به VPS
+ssh root@185.18.214.66
 
-# وضعیت سرویس‌ها
+# وضعیت WordPress
+cd /opt/cttel-wordpress/app
 docker compose ps
+docker compose logs -f wp_app
 
-# لاگ‌ها
-docker compose logs -f nginx
-docker compose logs -f wordpress
-docker compose logs -f db
-
-# ری‌استارت
-docker compose restart nginx wordpress
-
-# توقف (داده‌ها حفظ می‌شود)
-docker compose down
+# تست HTTP
+curl -I -H "Host: cttel.ir" http://127.0.0.1/
 
 # بکاپ دستی
 ./scripts/backup.sh
+
+# SSL (بعد از DNS)
+./scripts/init-ssl.sh
+
+# ری‌استارت WordPress
+docker compose restart wordpress nginx
 ```
+
+---
+
+## ۱۲. چک‌لیست
+
+- [x] نصب Docker و پull imageها
+- [x] MariaDB healthy
+- [x] WordPress نصب با fa_IR
+- [x] WooCommerce فعال
+- [x] nginx proxy برای cttel.ir
+- [x] cron بکاپ
+- [x] سرویس‌های n8n/Marzban/VPN سالم
+- [ ] DNS cttel.ir → 185.18.214.66
+- [ ] SSL با Let's Encrypt
+- [ ] تست HTTPS از اینترنت
+- [ ] تنظیمات WooCommerce (درگاه پرداخت، حمل‌ونقل، ...)
+- [ ] تم و طراحی فروشگاه CTTEL
+
+---
+
+## ۱۳. قدم‌های بعدی (اولویت‌بندی)
+
+1. **DNS** — تغییر A record `cttel.ir` و `www.cttel.ir` به `185.18.214.66`
+2. **SSL** — `./scripts/init-ssl.sh` (پس از propagate DNS)
+3. **WooCommerce** — تنظیم فروشگاه: واحد پول (ریال)، درگاه پرداخت، صفحات shop/cart/checkout
+4. **تم** — نصب تم فروشگاهی فارسی (مثلاً Astra + Elementor یا Storefront)
+5. **ایمیل** — تنظیم SMTP برای اعلان‌های سفارش
+6. **بکاپ خارجی** — کپی بکاپ‌ها به storage خارج VPS
 
 ---
 
 ## ۱۴. محدودیت‌ها و نکات
 
-1. **SSL روی IP:** Let's Encrypt برای IP صادر نمی‌کند — حتماً دامنه واقعی لازم است.
-2. **WooCommerce نسخه:** نسخه 9.6.2 pin شده؛ نسخه 11+ به WordPress 7 نیاز دارد.
-3. **UFW در Cloud VM:** ممکن است fail شود؛ iptables fallback خودکار اعمال می‌شود.
-4. **رمزها:** هر deploy جدید رمزهای تازه تولید می‌کند — `CREDENTIALS.md` را بعد از هر deploy بخوانید.
-5. **PR:** تغییرات در شاخه `cursor/wordpress-woocommerce-stack-72ff` — [PR #13](https://github.com/abdeshahi/cursor-mastery/pull/13).
+1. **RAM 2GB:** WordPress + WooCommerce + n8n + Marzban همزمان فشار زیادی دارند (~69% RAM). در صورت کندی، swap فعال است (3GB).
+2. **DNS:** تا تغییر نکند، مشتریان cttel.ir سایت جدید را نمی‌بینند.
+3. **SSL روی IP:** Let's Encrypt فقط با دامنه کار می‌کند.
+4. **IP مستقیم:** `http://185.18.214.66/` بدون Host header → 404 (by design).
+5. **به‌روزرسانی:** برای update پشته: `git pull` در repo + `docker compose pull && docker compose up -d`.
 
 ---
 
 ## ۱۵. نتیجه‌گیری
 
-پشته آماده production برای یک فروشگاه وردپرس فارسی با ووکامرس روی VPS فراهم شده است. با یک دستور `./scripts/deploy.sh` سرویس‌ها بالا می‌آیند؛ SSL، فایروال و بکاپ روزانه با اسکریپت‌های جداگانه تکمیل می‌شوند. تمام پورت‌ها و رمزها پس از deploy در `CREDENTIALS.md` مستند می‌شوند.
+فروشگاه CTTEL با WordPress فارسی و WooCommerce روی VPS `185.18.214.66` **نصب و عملیاتی** است. سرویس‌های قبلی VPS (n8n، Marzban، VPN bot) بدون اختلال باقی مانده‌اند. **تنها مانع دسترسی عمومی، DNS نادرست cttel.ir** است — پس از تغییر DNS و فعال‌سازی SSL، فروشگاه آماده بهره‌برداری production خواهد بود.
