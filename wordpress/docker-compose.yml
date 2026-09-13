@@ -1,0 +1,95 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: wp_mariadb
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mariadb/conf.d/bind-local.cnf:/etc/mysql/mariadb.conf.d/99-bind-local.cnf:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  wordpress:
+    image: wordpress:6.7-php8.2-fpm
+    container_name: wp_app
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: 127.0.0.1:3306
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WPLANG', 'fa_IR');
+        define('FS_METHOD', 'direct');
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./wordpress/zzz-listen-local.conf:/usr/local/etc/php-fpm.d/zzz-listen-local.conf:ro
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: wp_nginx
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - wordpress
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - wordpress_data:/var/www/html:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: wp_certbot
+    network_mode: host
+    profiles:
+      - certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+
+  wp-init:
+    image: wordpress:cli-2.11-php8.2
+    container_name: wp_init
+    user: "33:33"
+    network_mode: host
+    depends_on:
+      db:
+        condition: service_healthy
+      wordpress:
+        condition: service_started
+    environment:
+      WORDPRESS_DB_HOST: 127.0.0.1:3306
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      DOMAIN: ${DOMAIN}
+      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER}
+      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD}
+      WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL}
+      WORDPRESS_SITE_TITLE: ${WORDPRESS_SITE_TITLE}
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./scripts/wp-init.sh:/wp-init.sh:ro
+    entrypoint: ["/bin/sh", "/wp-init.sh"]
+    restart: "no"
+
+volumes:
+  db_data:
+  wordpress_data:
