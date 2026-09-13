@@ -6,10 +6,13 @@ cd "${ROOT_DIR}"
 
 "${ROOT_DIR}/scripts/generate-env.sh"
 
-PUBLIC_IP="$(curl -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')"
+PUBLIC_IP="$(curl -4 -fsS --max-time 5 https://ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')"
 if grep -q '^DOMAIN=example.com' "${ROOT_DIR}/.env"; then
   sed -i "s/^DOMAIN=.*/DOMAIN=${PUBLIC_IP}/" "${ROOT_DIR}/.env"
   echo "DOMAIN set to server IP: ${PUBLIC_IP} (update .env when you have a real domain)"
+fi
+if grep -q '^DOMAIN=cttel\.ir' "${ROOT_DIR}/.env"; then
+  echo "DOMAIN is cttel.ir — ensure DNS A record points to ${PUBLIC_IP} before SSL."
 fi
 
 echo "Starting WordPress stack..."
