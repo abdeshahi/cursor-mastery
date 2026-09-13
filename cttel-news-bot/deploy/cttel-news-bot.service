@@ -1,0 +1,14 @@
+[Unit]
+Description=CTTEL News Bot
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/cttel-news-bot
+EnvironmentFile=/opt/cttel-news-bot/.env
+ExecStart=/usr/bin/node /opt/cttel-news-bot/dist/main.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
