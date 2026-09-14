@@ -1,145 +1,199 @@
-# راهنمای مدیریت ظاهر فروشگاه CTTEL
+# راهنمای مدیریت فروشگاه CTTEL از wp-admin
 
-این فروشگاه طوری پیکربندی شده که **تمام تغییرات روزمره از پنل WordPress** انجام می‌شود — بدون نیاز به ویرایش کد.
+تمام تغییرات **روزمره ظاهر و محتوا** از پنل WordPress انجام می‌شود — بدون نیاز به Cursor یا ویرایش کد.
 
 ---
 
-## Proposed Theme
+## فهرست سریع
 
-**نام:** Blocksy (رایگان)
-
-**دلیل انتخاب:**
-- سبک (~۳۰KB)، سازگار با WooCommerce و RTL فارسی
-- **Header Builder** و **Footer Builder** داخل Customizer
-- کنترل جداگانه فونت/رنگ برای body، headings، buttons، menu
-- سبد خرید، حساب کاربری و جستجو در header به‌صورت پیش‌فرض
-- بدون Elementor یا page builder سنگین
-
-**قابلیت‌های پنل:**
-| بخش | مسیر پنل |
-|-----|----------|
-| فونت و رنگ | `ظاهر → سفارشی‌سازی` |
-| Header | `ظاهر → سفارشی‌سازی → Header` |
-| Footer | `ظاهر → سفارشی‌سازی → Footer` |
-| صفحه اصلی | `برگه‌ها → صفحه اصلی → ویرایش` |
+| می‌خواهید… | مسیر دقیق wp-admin |
+|------------|-------------------|
+| لوگو | `ظاهر → سفارشی‌سازی → هویت سایت → Logo` |
+| فونت متن/تیتر/دکمه | `ظاهر → سفارشی‌سازی → General → Typography` |
+| فونت منو | `ظاهر → سفارشی‌سازی → Header → Menu → Font` |
+| رنگ برند | `ظاهر → سفارشی‌سازی → General → Colors → Global Color Palette` |
 | منو | `ظاهر → فهرست‌ها` |
-| محصولات | `محصولات` |
-
----
-
-## Required Plugins
-
-| افزونه | کاربرد | ضروری؟ |
-|--------|--------|--------|
-| **WooCommerce** | فروشگاه، سبد، تسویه | بله (نصب شده) |
-| **Blocksy Companion** | گسترش header/footer و بلوک‌های Blocksy | بله (رسمی و سبک) |
-
-**نصب نشده (عمداً):** Elementor، WPBakery، Kirki جداگانه، افزونه‌های SEO/کش اضافی — تا سایت سبک بماند.
-
----
-
-## Admin Editable Settings
-
-### فونت
-`ظاهر → سفارشی‌سازی → General → Typography`
-- **Base Font** — متن عمومی (پیشنهاد: Vazirmatn)
-- **Headings Font** — تیترها
-- **Buttons Font** — دکمه‌ها
-- **Menus Font** — منو
-- وزن (Weight) و اندازه (Size) هر کدام جداگانه
-
-### رنگ
-`ظاهر → سفارشی‌سازی → General → Colors`
-- Primary / Secondary / Accent
-- Background / Surface (کارت‌ها)
-- Text / Muted / Links
-- Header / Footer / Button / Button Hover
-
-### منو
-`ظاهر → فهرست‌ها`
-- **منوی اصلی** → موقعیت `Primary` (header)
-- **منوی فوتر** → موقعیت `Secondary` (footer)
-- افزودن/حذف/جابجایی آیتم، لینک سفارشی
-- منوی موبایل همان منوی اصلی است (Responsive خودکار Blocksy)
-
-### Header
-`ظاهر → سفارشی‌سازی → Header Builder`
-- لوگو: `Site Identity → Logo`
-- منو، جستجو، سبد خرید، حساب کاربری — drag & drop
-- نوار اطلاع‌رسانی (Top Bar): افزودن element متن/HTML
-
-### Footer
-`ظاهر → سفارشی‌سازی → Footer Builder`
-- لوگو، منوی فوتر، widget area برای آدرس/تلفن
-- Social Icons element
-- Copyright text
-- ستون‌ها با Footer Widget Areas
-
-### Homepage
-`برگه‌ها → صفحه اصلی → ویرایش با Block Editor`
-
-سکشن‌های قابل ویرایش (بلوک Gutenberg):
-| سکشن | نوع بلوک |
-|------|----------|
-| Hero | Cover + Heading + Buttons |
-| دسته‌بندی | WooCommerce Product Categories |
-| محصولات ویژه | WooCommerce New Products |
-| اقساط | Columns (متن آزاد) |
-| مزایا | Columns + Cards |
-| بنر تبلیغاتی | Cover + Button |
-
-### WooCommerce
-| مورد | مسیر |
-|------|------|
+| Header | `ظاهر → سفارشی‌سازی → Header Builder` |
+| Footer | `ظاهر → سفارشی‌سازی → Footer Builder` |
+| Hero / صفحه اصلی | `برگه‌ها → صفحه اصلی → ویرایش` |
 | دسته‌بندی | `محصولات → دسته‌ها` |
-| محصول | `محصولات → افزودن` |
-| تصویر/قیمت/موجودی | ویرایش هر محصول |
-| ویژه / تخفیف | تب «Product data» |
-| کوپن | `Marketing → Coupons` |
-| ارسال | `WooCommerce → Settings → Shipping` |
-| پرداخت | `WooCommerce → Settings → Payments` |
+| محصول / قیمت / موجودی | `محصولات → افزودن` یا ویرایش محصول |
+| محصولات ویژه | ویرایش محصول → تیک «ویژه» |
+| صفحه اقساط | `برگه‌ها → صفحه اصلی → ویرایش` → بخش «خرید اقساطی» |
+| شبکه اجتماعی | `ظاهر → سفارشی‌سازی → General → Social Network Accounts` |
+| اطلاعات تماس فوتر | `ظاهر → ابزارک‌ها → Footer Widget Area 1` |
+| Copyright | `ظاهر → سفارشی‌سازی → Footer → Copyright` |
 
 ---
 
-## Coding
+## 1. Typography (فونت)
 
-### بدون کد (از پنل)
-- فونت، رنگ، radius، container width، spacing
-- لوگو، منو، header/footer
-- تمام سکشن‌های صفحه اصلی
-- محصولات، دسته‌ها، قیمت، کوپن
-- CSS اضافی (در صورت نیاز): `ظاهر → سفارشی‌سازی → Additional CSS`
+**مسیر:** `ظاهر → سفارشی‌سازی → General → Typography`
 
-### نیازمند کد (فقط توسعه‌دهنده)
-- تغییرات زیرساخت (Docker/Nginx/CDN)
-- افزودن درگاه پرداخت سفارشی ایران
-- قالب‌بندی پیچیده خارج از Blocksy/WooCommerce blocks
+| عنصر | تنظیم Customizer |
+|------|----------------|
+| متن عمومی | **Base Font** — فونت، اندازه، وزن |
+| Headingها | **H1** تا **H6** — هر کدام جداگانه |
+| دکمه‌ها | **Buttons** → Font / Size / Weight |
+| منو | **Header Builder** → کلیک روی element **Menu** → Typography |
+
+**پیش‌فرض فعلی:** Vazirmatn (قابل تغییر از پنل)
+
+---
+
+## 2. Colors (رنگ)
+
+**مسیر:** `ظاهر → سفارشی‌سازی → General → Colors`
+
+| رنگ | محل تنظیم |
+|-----|-----------|
+| Primary / Secondary / Accent | **Global Color Palette** — رنگ‌های ۱ تا ۳ |
+| Background / Surface | پالت — رنگ‌های ۵ تا ۷ |
+| Text اصلی | **Base Text** |
+| Text ثانویه | **Muted Text** |
+| Link | **Links** |
+| Button | **Buttons** → Background / Text |
+| Button hover | **Buttons** → Hover state |
+| Header | **Header Builder** → row settings → Background |
+| Footer | **Footer Builder** → row settings → Background |
+| Product cards | **Customizer → WooCommerce → Product Archive** + **Single Product** |
+
+---
+
+## 3. Header
+
+**مسیر:** `ظاهر → سفارشی‌سازی → Header Builder`
+
+| عنصر | نحوه تغییر |
+|------|-----------|
+| Logo | `Site Identity → Logo` یا element **Logo** در Header Builder |
+| Main menu | element **Menu** — منوی «منوی اصلی» |
+| Search | element **Search** |
+| Account | element **Account** |
+| Cart | element **Cart** |
+| Mobile menu | **Trigger** (آیکن hamburger) → offcanvas شامل **Mobile Menu** |
+| Announcement bar | **Top Row** → افزودن element **Text** یا **HTML** |
+
+---
+
+## 4. Footer
+
+**مسیر:** `ظاهر → سفارشی‌سازی → Footer Builder`
+
+| عنصر | نحوه تغییر |
+|------|-----------|
+| ستون تماس | **Widget Area 1** ← محتوا در `ظاهر → ابزارک‌ها → Footer Widget Area 1` |
+| منو | element **Menu** ← «منوی فوتر» |
+| شبکه اجتماعی | element **Socials** + URLها در `General → Social Network Accounts` |
+| Copyright | element **Copyright** |
+| لوگو | افزودن **Widget** تصویر در Widget Area یا element Logo |
+
+---
+
+## 5. Homepage (صفحه اصلی)
+
+**مسیر:** `برگه‌ها → صفحه اصلی → ویرایش`
+
+| سکشن | بلوک Gutenberg | تغییر |
+|------|----------------|-------|
+| Hero | **Cover** | تصویر/رنگ پس‌زمینه، متن Heading، دکمه‌ها |
+| Hero image | Cover → Background | آپلود از Media Library |
+| Hero text | Heading + Paragraph | کلیک و تایپ |
+| CTA buttons | Buttons | لینک و متن دکمه |
+| Categories | **Product Categories** | تعداد ستون، نمایش/عدم نمایش |
+| New products | **New Products** | تعداد محصول |
+| Installment | **Columns** (بخش «خرید اقساطی») | متن هر ستون |
+| Benefits | **Columns** (بخش «چرا CTTEL؟») | آیکن/متن کارت‌ها |
+| Banner | **Cover** (بخش «پیشنهاد ویژه») | رنگ، متن، دکمه |
+
+---
+
+## 6. WooCommerce
+
+| صفحه | URL | مدیریت |
+|------|-----|--------|
+| Shop | `/shop/` | `محصولات` + `دسته‌ها` |
+| Product | `/product/...` | ویرایش هر محصول |
+| Category | `/product-category/...` | `محصولات → دسته‌ها` |
+| Cart | `/cart/` | خودکار — محتوا از سبد |
+| Checkout | `/checkout/` | `WooCommerce → Settings → Checkout` |
+| My Account | `/my-account/` | `WooCommerce → Settings → Accounts` |
+
+**قیمت:** در تب **General** هر محصول — واحد **تومان**  
+**موجودی:** تب **Inventory**  
+**تخفیف:** تب **General → Sale price** یا **Marketing → Coupons**  
+**ارسال:** `WooCommerce → Settings → Shipping`  
+**پرداخت:** `WooCommerce → Settings → Payments`
+
+---
+
+## 7. واحد پول (تومان)
+
+- **واحد نمایش:** تومان (`IRT`)
+- **نحوه کار:** قیمت را به **تومان** وارد کنید (مثلاً `1500000`)
+- **محاسبات WooCommerce** بدون تبدیل انجام می‌شود
+- **درگاه پرداخت آینده:** معمولاً مبلغ × ۱۰ (ریال) در تنظیمات درگاه — بدون تغییر قیمت‌های فروشگاه
+
+---
+
+## 8. Mobile
+
+- Header responsive: Header Builder → آیکن **موبایل/تبلت** برای preview
+- منو موبایل: Trigger → Off-canvas Menu
+- Product grid: `Customizer → WooCommerce → Product Archive → Columns` (responsive)
+
+---
+
+## 9. افزونه‌های فعال
+
+| افزونه | وضعیت | ضرورت |
+|--------|--------|--------|
+| WooCommerce | فعال | **ضروری** |
+| Blocksy Companion | فعال | **ضروری** (header/footer/account) |
+| cttel-store (mu-plugin) | must-use | **ضروری** (نمایش تومان) |
+| Akismet | غیرفعال | **قابل حذف** (اگر نظرات ندارید) |
+
+---
+
+## 10. Performance
+
+- Elementor نصب **نیست**
+- فقط JS/CSS مربوط به Blocksy + WooCommerce
+- Lazy-load تصاویر: WordPress native (فعال)
+- CSS سفارشی: خالی — همه از Customizer
 
 ---
 
 ## Design Tokens (Global)
 
-Blocksy مقادیر زیر را به **CSS Variables** تبدیل می‌کند — همه از Customizer:
-
-```
---theme-palette-color-1 … primary
---theme-font-family … body
---theme-border-radius … buttons/cards
---theme-container-width … max width
-```
-
----
-
-## Mobile
-
-تمام تنظیمات Customizer و Block Editor به‌صورت Responsive اعمال می‌شوند. Header Builder تنظیمات جداگانه Mobile/Tablet دارد.
+| Token | مسیر Customizer |
+|-------|----------------|
+| `--theme-palette-color-*` | General → Colors → Palette |
+| `--theme-font-*` | General → Typography |
+| Container width | General → Layout → Maximum Site Width |
+| Button radius | General → Buttons → Border Radius |
+| Card radius | WooCommerce → Product Archive |
 
 ---
 
-## نصب مجدد / بازیابی
+## اسکریپت‌های نگهداری (فقط سرور)
 
-روی VPS:
 ```bash
-cd /opt/cttel-wordpress/app
+# راه‌اندازی اولیه فروشگاه
 ./scripts/setup-cttel-storefront.sh
+
+# Audit و اصلاح header/footer/تومان
+./scripts/audit-fix-storefront.sh
 ```
+
+---
+
+## چک‌لیست مالک فروشگاه (بدون کد)
+
+- [ ] لوگو در Site Identity
+- [ ] فونت Vazirmatn یا دلخواه در Typography
+- [ ] رنگ برند در Color Palette
+- [ ] لینک شبکه اجتماعی در Social Network Accounts
+- [ ] تلفن/آدرس در Footer Widget Area 1
+- [ ] تصویر Hero در صفحه اصلی
+- [ ] حداقل یک دسته و محصول
