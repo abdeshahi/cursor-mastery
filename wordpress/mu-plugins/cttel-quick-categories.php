@@ -19,11 +19,14 @@ function cttel_installment_default_url(): string {
 
 /** Top-level product categories sorted by WooCommerce term order meta. */
 function cttel_get_quick_category_terms(): array {
+	$exclude = array_filter( array( (int) get_option( 'default_product_cat', 0 ) ) );
+
 	$terms = get_terms(
 		array(
 			'taxonomy'   => 'product_cat',
 			'hide_empty' => false,
 			'parent'     => 0,
+			'exclude'    => $exclude,
 		)
 	);
 
@@ -184,15 +187,16 @@ function cttel_installment_card_markup( array $settings ): string {
 
 /** Minimal layout CSS (grid: 3 desktop / 2 mobile). */
 function cttel_quick_categories_inline_css(): string {
-	return '.cttel-quick-cats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;}'
-		. '.cttel-quick-cat-card{padding:1rem .75rem;min-width:0;}'
+	return '.cttel-quick-cats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;width:100%;}'
+		. '.cttel-quick-cat-item{min-width:0;}'
+		. '.cttel-quick-cat-card{padding:1rem .75rem;min-width:0;height:100%;box-sizing:border-box;}'
 		. '.cttel-quick-cat-visual{display:flex;align-items:center;justify-content:center;min-height:3rem;margin-bottom:.25rem;}'
 		. '.cttel-quick-cat-visual--empty{width:3rem;height:3rem;margin:0 auto;border-radius:8px;background:#f1f5f9;}'
 		. '.cttel-quick-cat-thumb{width:3rem;height:3rem;object-fit:contain;border-radius:8px;display:block;margin:0 auto;}'
 		. '.cttel-quick-cat-icon{font-size:1.75rem;margin:0;line-height:1;}'
 		. '.cttel-quick-cat-title{font-size:1rem;margin:.25rem 0 0;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}'
 		. '.cttel-quick-cat-sub{font-size:.75rem;line-height:1.4;margin:.35rem 0 0;opacity:.75;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}'
-		. '@media (max-width:781px){.cttel-quick-cats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;}}';
+		. '@media (max-width:781px){.cttel-quick-cats-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:.65rem;}}';
 }
 
 /**
