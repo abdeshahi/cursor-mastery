@@ -91,6 +91,11 @@ WP menu item add-custom "${MAIN_MENU}" 'لوازم جانبی' 'https://cttel.ir
 echo "==> Footer widget..."
 WP widget update text-1 --title='CTTEL' --text='<p><strong>فروشگاه CTTEL</strong></p><p>موبایل، گجت و لوازم جانبی — نقدی و اقساطی</p><p>تلفن: 021-00000000</p><p>آدرس: تهران — از ابزارک‌ها ویرایش کنید</p>' 2>/dev/null || true
 
+echo "==> Quick categories mu-plugin..."
+docker exec wp_app mkdir -p /var/www/html/wp-content/mu-plugins
+docker cp "${ROOT}/mu-plugins/cttel-quick-categories.php" \
+  wp_app:/var/www/html/wp-content/mu-plugins/cttel-quick-categories.php
+
 echo "==> Homepage content..."
 CONTENT="$(cat "${ROOT}/content/homepage-blocks.html")"
 WP post update 24 --post_content="${CONTENT}" --post_status=publish
