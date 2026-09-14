@@ -32,7 +32,7 @@ done
 if ! wp core is-installed --allow-root 2>/dev/null; then
   echo "Installing WordPress (fa_IR)..."
   wp core install \
-    --url="http://${DOMAIN}" \
+    --url="https://${DOMAIN}" \
     --title="${WORDPRESS_SITE_TITLE}" \
     --admin_user="${WORDPRESS_ADMIN_USER}" \
     --admin_password="${WORDPRESS_ADMIN_PASSWORD}" \
