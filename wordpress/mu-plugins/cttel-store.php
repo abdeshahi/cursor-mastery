@@ -1,33 +1,25 @@
 <?php
 /**
- * CTTEL store helpers — currency display only (no layout/CSS hard-coding).
+ * CTTEL store helpers — registers Toman (IRT) for WooCommerce admin.
  *
- * Prices are entered in Toman in wp-admin. WooCommerce math stays unchanged.
- * Iranian payment gateways can multiply by 10 to Rial at checkout when integrated.
+ * Does NOT force currency or appearance. Shop manager chooses currency in:
+ * WooCommerce → Settings → General → Currency options.
  *
  * @package CTTEL
  */
 
 defined( 'ABSPATH' ) || exit;
 
-/**
- * Use custom Toman currency code (IRT) with Persian symbol.
- */
+/** Add Toman to the currency dropdown in WooCommerce settings. */
 add_filter(
 	'woocommerce_currencies',
 	static function ( $currencies ) {
-		$currencies['IRT'] = 'تومان (ایران)';
+		$currencies['IRT'] = __( 'تومان (ایران)', 'cttel-store' );
 		return $currencies;
 	}
 );
 
-add_filter(
-	'woocommerce_currency',
-	static function () {
-		return 'IRT';
-	}
-);
-
+/** Display symbol when IRT is selected in WooCommerce settings. */
 add_filter(
 	'woocommerce_currency_symbol',
 	static function ( $symbol, $currency ) {
@@ -38,11 +30,4 @@ add_filter(
 	},
 	10,
 	2
-);
-
-add_filter(
-	'woocommerce_price_format',
-	static function () {
-		return '%2$s %1$s';
-	}
 );
