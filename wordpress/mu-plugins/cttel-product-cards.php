@@ -112,7 +112,7 @@ function cttel_block_product_card_html( string $html, $data, WC_Product $product
 				<h3 class="wc-block-grid__product-title cttel-pcard__title">%4$s</h3>
 			</a>
 			<div class="cttel-pcard__meta">
-				<div class="wc-block-grid__product-price cttel-pcard__price price">%5$s</div>
+				<div class="cttel-pcard__price">%5$s</div>
 				<p class="cttel-pcard__stock %6$s">%7$s</p>
 			</div>
 			<div class="cttel-pcard__actions">%8$s</div>
