@@ -9,6 +9,18 @@ WP() {
   docker compose run --rm --entrypoint wp wp-init "$@" --allow-root
 }
 
+echo "==> Blocksy theme (customer storefront)..."
+WP theme activate blocksy 2>/dev/null || WP theme install blocksy --activate
+WP plugin activate blocksy-companion 2>/dev/null || true
+
+echo "==> WooCommerce shop live..."
+WP option update woocommerce_coming_soon 'no' 2>/dev/null || true
+WP option update woocommerce_store_pages_only 'no' 2>/dev/null || true
+WP option update woocommerce_currency 'IRT' 2>/dev/null || true
+
+echo "==> Remove demo Sample Page from nav..."
+WP post update 2 --post_status=draft 2>/dev/null || true
+
 echo "==> Deploy mu-plugins..."
 docker exec wp_app mkdir -p /var/www/html/wp-content/mu-plugins
 for f in cttel-store.php cttel-customizer.php cttel-quick-categories.php cttel-product-cards.php; do

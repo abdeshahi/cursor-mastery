@@ -135,6 +135,11 @@ function cttel_quick_category_card_from_term( WP_Term $term ): string {
 	$description = trim( wp_strip_all_tags( $term->description ) );
 	$subtitle    = '';
 
+	// Hide admin setup helper text from customer-facing cards.
+	if ( preg_match( '/تصویر را از/u', $description ) ) {
+		$description = '';
+	}
+
 	if ( '' !== $description ) {
 		$subtitle = sprintf(
 			'<p class="has-text-align-center cttel-quick-cat-sub">%s</p>',
