@@ -9,10 +9,11 @@ WP() {
   docker compose run --rm --entrypoint wp wp-init "$@" --allow-root
 }
 
-echo "==> Deploy mu-plugin..."
+echo "==> Deploy mu-plugins..."
 docker exec wp_app mkdir -p /var/www/html/wp-content/mu-plugins
-docker cp "${ROOT}/mu-plugins/cttel-quick-categories.php" \
-  wp_app:/var/www/html/wp-content/mu-plugins/cttel-quick-categories.php
+for f in cttel-quick-categories.php cttel-product-cards.php; do
+  docker cp "${ROOT}/mu-plugins/${f}" "wp_app:/var/www/html/wp-content/mu-plugins/${f}"
+done
 
 echo "==> Sync homepage quick categories section..."
 CONTENT="$(cat "${ROOT}/content/homepage-blocks.html")"
