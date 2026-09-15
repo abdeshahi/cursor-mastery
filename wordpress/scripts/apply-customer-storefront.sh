@@ -77,5 +77,10 @@ echo "==> Homepage content..."
 CONTENT="$(cat "${ROOT}/content/homepage-blocks.html")"
 WP post update 24 --post_content="${CONTENT}" --post_status=publish
 
+echo "==> Brand placeholders (hero / categories / products)..."
+if [ -x "${ROOT}/scripts/seed-brand-images.sh" ]; then
+  "${ROOT}/scripts/seed-brand-images.sh"
+fi
+
 WP cache flush 2>/dev/null || true
 echo "Customer storefront applied."

@@ -191,6 +191,30 @@ add_action(
 	}
 );
 
+/** Use CTTEL brand placeholder for products without a featured image. */
+add_filter(
+	'woocommerce_placeholder_img',
+	static function ( $html, $size, $dimensions ) {
+		$attach_id = absint( get_option( 'cttel_product_placeholder_id', 0 ) );
+		if ( $attach_id <= 0 ) {
+			return $html;
+		}
+		$img = wp_get_attachment_image(
+			$attach_id,
+			$size,
+			false,
+			array(
+				'class'   => 'cttel-pcard__img woocommerce-placeholder wp-post-image',
+				'loading' => 'lazy',
+				'alt'     => '',
+			)
+		);
+		return $img ?: $html;
+	},
+	10,
+	3
+);
+
 /** Minimal storefront CSS (no external assets). */
 function cttel_storefront_inline_css(): string {
 	return 'html,body{overflow-x:hidden;}'
@@ -199,13 +223,15 @@ function cttel_storefront_inline_css(): string {
 		. '.cttel-hero__columns{align-items:center!important;}'
 		. '.cttel-hero__content{text-align:right;}'
 		. '.cttel-hero__media{display:flex;justify-content:center;align-items:center;}'
-		. '.cttel-hero__image img{width:100%;max-width:420px;height:auto;border-radius:12px;object-fit:contain;}'
+		. '.cttel-hero__image img{width:100%;max-width:480px;max-height:360px;border-radius:16px;object-fit:cover;box-shadow:0 8px 24px rgba(15,23,42,.08);}'
 		. '.cttel-hero__image img:not([src]),.cttel-hero__image img[src=""]{display:none;}'
-		. '.cttel-hero__image:not(:has(img[src])){display:none;}'
-		. '@media (max-width:781px){.cttel-hero__media:not(:has(img[src])){display:none;}}'
+		. '@media (max-width:781px){.cttel-hero__image img{max-height:260px;object-fit:cover;}.cttel-hero__media{margin-top:.5rem;}}'
 		. '.cttel-hero .wp-block-button__link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:.75rem 1.25rem;}'
 		. '@media (max-width:781px){.cttel-hero__columns{flex-direction:column!important;}.cttel-hero__content{order:1;text-align:center;}.cttel-hero__media{order:2;}.cttel-hero .wp-block-buttons{justify-content:center;}}'
-		. '.cttel-installment-band{border-radius:16px;margin:0 auto;}'
+		. '.cttel-installment-band{border-radius:16px;margin:0 auto;box-shadow:0 6px 20px rgba(30,64,175,.18);}'
+		. '.cttel-categories{margin-top:.25rem;}'
+		. '.cttel-products{margin-top:.5rem;}'
+		. '.cttel-section-intro{margin-bottom:1rem!important;}'
 		. '.cttel-installment-band .wp-block-button__link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:.75rem 1.25rem;}'
 		. '.cttel-quick-cat-card,.cttel-quick-cat-item .cttel-quick-cat-card{transition:transform .15s ease,box-shadow .15s ease;}'
 		. '.cttel-quick-cat-card:hover,.cttel-quick-cat-item .cttel-quick-cat-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(15,23,42,.08);}'
@@ -216,8 +242,9 @@ function cttel_storefront_inline_css(): string {
 		. '.cttel-products .wc-block-grid__product,.cttel-products ul.products li.product{margin:0!important;width:100%!important;float:none!important;}'
 		. '.cttel-pcard{display:flex;flex-direction:column;height:100%;min-width:0;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.75rem;box-sizing:border-box;box-shadow:0 1px 2px rgba(15,23,42,.04);}'
 		. '.cttel-pcard__link{text-decoration:none;color:inherit;display:block;}'
-		. '.cttel-pcard__media{position:relative;aspect-ratio:1/1;background:#f8fafc;border-radius:8px;overflow:hidden;margin-bottom:.65rem;display:flex;align-items:center;justify-content:center;}'
+		. '.cttel-pcard__media{position:relative;aspect-ratio:1/1;background:linear-gradient(180deg,#fff 0%,#f8fafc 100%);border-radius:10px;overflow:hidden;margin-bottom:.65rem;display:flex;align-items:center;justify-content:center;padding:.5rem;box-sizing:border-box;}'
 		. '.cttel-pcard__img,.cttel-pcard__media img{width:100%;height:100%;object-fit:contain;display:block;}'
+		. '.cttel-quick-cat-thumb{width:3.5rem;height:3.5rem;object-fit:contain;}'
 		. '.cttel-pcard-badges{position:absolute;top:.5rem;right:.5rem;left:.5rem;display:flex;flex-wrap:wrap;gap:.35rem;z-index:2;}'
 		. '.cttel-pcard-badge{font-size:.7rem;line-height:1.2;padding:.2rem .45rem;border-radius:999px;font-weight:600;}'
 		. '.cttel-pcard-badge--sale{background:#fef2f2;color:#b91c1c;}'

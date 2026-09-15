@@ -59,14 +59,36 @@ function cttel_get_installment_card_settings(): array {
 		'description' => get_theme_mod( 'cttel_installment_card_description', '' ),
 		'url'         => get_theme_mod( 'cttel_installment_card_url', cttel_installment_default_url() ),
 		'image_id'    => absint( get_theme_mod( 'cttel_installment_card_image', 0 ) ),
-		'icon'        => get_theme_mod( 'cttel_installment_card_icon', '💳' ),
+		'icon'        => get_theme_mod( 'cttel_installment_card_icon', '' ),
 		'bg'          => get_theme_mod( 'cttel_installment_card_bg', '#eff6ff' ),
 	);
 }
 
-/** Fallback icon when a category has no WooCommerce thumbnail. */
-function cttel_quick_category_fallback_icon(): string {
-	return (string) get_theme_mod( 'cttel_quick_cat_fallback_icon', '📦' );
+/** Attachment ID for category image fallback (CTTEL brand placeholder). */
+function cttel_category_fallback_attachment_id(): int {
+	return absint( get_option( 'cttel_product_placeholder_id', 0 ) );
+}
+
+/** Render image fallback when category has no WooCommerce thumbnail. */
+function cttel_quick_category_fallback_visual( WP_Term $term ): string {
+	$attach_id = cttel_category_fallback_attachment_id();
+	if ( $attach_id > 0 ) {
+		$img = wp_get_attachment_image(
+			$attach_id,
+			'woocommerce_thumbnail',
+			false,
+			array(
+				'class'   => 'cttel-quick-cat-thumb',
+				'loading' => 'lazy',
+				'alt'     => esc_attr( $term->name ),
+			)
+		);
+		if ( $img ) {
+			return '<div class="cttel-quick-cat-visual has-text-align-center">' . $img . '</div>';
+		}
+	}
+
+	return '<div class="cttel-quick-cat-visual cttel-quick-cat-visual--empty" aria-hidden="true"></div>';
 }
 
 /**
@@ -91,12 +113,7 @@ function cttel_quick_category_visual( WP_Term $term ): string {
 		}
 	}
 
-	$icon = cttel_quick_category_fallback_icon();
-	if ( '' === $icon ) {
-		return '<div class="cttel-quick-cat-visual cttel-quick-cat-visual--empty" aria-hidden="true"></div>';
-	}
-
-	return '<p class="cttel-quick-cat-icon has-text-align-center">' . esc_html( $icon ) . '</p>';
+	return cttel_quick_category_fallback_visual( $term );
 }
 
 /** Render visual for installment card (image or icon from Customizer). */
@@ -254,24 +271,6 @@ add_action(
 		);
 
 		$wp_customize->add_setting(
-			'cttel_quick_cat_fallback_icon',
-			array(
-				'default'           => '📦',
-				'sanitize_callback' => 'sanitize_text_field',
-				'transport'         => 'refresh',
-			)
-		);
-		$wp_customize->add_control(
-			'cttel_quick_cat_fallback_icon',
-			array(
-				'label'       => 'آیکن پیش‌فرض (بدون تصویر دسته)',
-				'description' => 'وقتی برای دسته تصویر WooCommerce تنظیم نشده باشد.',
-				'section'     => 'cttel_quick_categories',
-				'type'        => 'text',
-			)
-		);
-
-		$wp_customize->add_setting(
 			'cttel_installment_card_enabled',
 			array(
 				'default'           => true,
@@ -366,7 +365,7 @@ add_action(
 		$wp_customize->add_setting(
 			'cttel_installment_card_icon',
 			array(
-				'default'           => '💳',
+				'default'           => '',
 				'sanitize_callback' => 'sanitize_text_field',
 				'transport'         => 'refresh',
 			)
