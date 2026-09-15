@@ -191,15 +191,24 @@ add_action(
 	}
 );
 
-/** Minimal card + hero layout CSS (no external assets). */
+/** Minimal storefront CSS (no external assets). */
 function cttel_storefront_inline_css(): string {
-	return '.cttel-hero{overflow:hidden;}'
+	return 'html,body{overflow-x:hidden;}'
+		. '.cttel-section-intro{color:#64748b;font-size:.95rem;line-height:1.6;margin:0 0 1.25rem;}'
+		. '.cttel-hero{overflow:hidden;}'
 		. '.cttel-hero__columns{align-items:center!important;}'
 		. '.cttel-hero__content{text-align:right;}'
 		. '.cttel-hero__media{display:flex;justify-content:center;align-items:center;}'
 		. '.cttel-hero__image img{width:100%;max-width:420px;height:auto;border-radius:12px;object-fit:contain;}'
 		. '.cttel-hero .wp-block-button__link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:.75rem 1.25rem;}'
 		. '@media (max-width:781px){.cttel-hero__columns{flex-direction:column!important;}.cttel-hero__content{order:1;text-align:center;}.cttel-hero__media{order:2;}.cttel-hero .wp-block-buttons{justify-content:center;}}'
+		. '.cttel-installment-band{border-radius:16px;margin:0 auto;}'
+		. '.cttel-installment-band .wp-block-button__link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:.75rem 1.25rem;}'
+		. '.cttel-quick-cat-card,.cttel-quick-cat-item .cttel-quick-cat-card{transition:transform .15s ease,box-shadow .15s ease;}'
+		. '.cttel-quick-cat-card:hover,.cttel-quick-cat-item .cttel-quick-cat-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(15,23,42,.08);}'
+		. '.cttel-trust .wp-block-group.has-background{height:100%;border:1px solid #e2e8f0;}'
+		. '.cttel-promo-banner .wp-block-button__link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}'
+		. '@media (max-width:781px){.cttel-trust .wp-block-columns{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;}.cttel-trust .wp-block-column{width:100%!important;}}'
 		. '.cttel-products .wc-block-grid__products,.cttel-products ul.products{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;list-style:none;margin:0;padding:0;}'
 		. '.cttel-products .wc-block-grid__product,.cttel-products ul.products li.product{margin:0!important;width:100%!important;float:none!important;}'
 		. '.cttel-pcard{display:flex;flex-direction:column;height:100%;min-width:0;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.75rem;box-sizing:border-box;box-shadow:0 1px 2px rgba(15,23,42,.04);}'
@@ -232,7 +241,7 @@ function cttel_storefront_inline_css(): string {
 add_action(
 	'wp_enqueue_scripts',
 	static function (): void {
-		if ( ! is_front_page() && ! is_shop() && ! is_product_taxonomy() ) {
+		if ( ! is_front_page() && ! is_shop() && ! is_product_taxonomy() && ! is_cart() && ! is_checkout() ) {
 			return;
 		}
 		wp_register_style( 'cttel-storefront', false, array(), '1.0.0' );
