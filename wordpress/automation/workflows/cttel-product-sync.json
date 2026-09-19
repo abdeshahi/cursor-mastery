@@ -1,0 +1,169 @@
+{
+  "name": "CTTEL Product Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cttel-product-sync",
+        "responseMode": "responseNode",
+        "options": {
+          "responseNode": "Respond to Webhook"
+        }
+      },
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "cttel-product-sync"
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dry_run",
+              "name": "dry_run",
+              "value": "={{ $json.body?.dry_run ?? $json.dry_run ?? true }}",
+              "type": "boolean"
+            },
+            {
+              "id": "products",
+              "name": "products",
+              "value": "={{ $json.body?.products ?? $json.products ?? [] }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Normalize Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const PRICE_THRESHOLD = 0.15;\n\nfunction parsePrice(value) {\n  if (value === null || value === undefined || value === '') return null;\n  const n = Number(String(value).replace(/,/g, '').trim());\n  return Number.isFinite(n) ? n : null;\n}\n\nfunction validatePrice(price, allowZero = false) {\n  if (price === null) return { ok: false, reason: 'missing_price' };\n  if (price < 0) return { ok: false, reason: 'negative_price' };\n  if (price === 0 && !allowZero) return { ok: false, reason: 'zero_price_not_allowed' };\n  return { ok: true };\n}\n\nfunction shouldImportImage(imageUrl, existingImages) {\n  if (!imageUrl || !/^https?:\\/\\//i.test(imageUrl)) return false;\n  if (!existingImages?.length) return true;\n  const norm = imageUrl.split('?')[0];\n  return !existingImages.some((img) => img.src && img.src.split('?')[0] === norm);\n}\n\nconst creds = await this.getCredentials('wooCommerceApi');\nconst baseUrl = (creds.url || 'https://cttel.ir').replace(/\\/$/, '');\nconst auth = { username: creds.consumerKey, password: creds.consumerSecret };\n\nconst dryRun = $input.first().json.dry_run === true || $input.first().json.dry_run === 'true';\nconst products = $input.first().json.products || [];\n\nconst summary = {\n  dry_run: dryRun,\n  created: [],\n  updated: [],\n  skipped: [],\n  errors: [],\n  price_changes: [],\n  stock_changes: [],\n  price_approvals: [],\n  unknown_categories: [],\n};\n\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.logs) staticData.logs = [];\nconst ts = new Date().toISOString();\n\nconst categoryCache = {};\n\nasync function wcRequest(method, path, qs = {}, body = undefined) {\n  return await this.helpers.httpRequest({\n    method,\n    url: `${baseUrl}/wp-json/wc/v3${path}`,\n    qs,\n    body,\n    json: true,\n    auth,\n  });\n}\n\nasync function findBySku(sku) {\n  const list = await wcRequest.call(this, 'GET', '/products', { sku, per_page: 1 });\n  return Array.isArray(list) && list.length ? list[0] : null;\n}\n\nasync function findCategory(slug) {\n  if (!slug) return null;\n  if (categoryCache[slug] !== undefined) return categoryCache[slug];\n  const list = await wcRequest.call(this, 'GET', '/products/categories', { slug, per_page: 1 });\n  const cat = Array.isArray(list) && list.length ? list[0] : null;\n  categoryCache[slug] = cat;\n  return cat;\n}\n\nfunction logEntry(entry) {\n  staticData.logs.push(entry);\n  if (staticData.logs.length > 500) staticData.logs = staticData.logs.slice(-500);\n}\n\nfor (const input of products) {\n  const sku = String(input.sku || '').trim();\n  if (!sku) {\n    summary.errors.push({ sku: '', error: 'missing_sku' });\n    continue;\n  }\n\n  let existing = null;\n  try {\n    existing = await findBySku.call(this, sku);\n  } catch (e) {\n    summary.errors.push({ sku, error: 'wc_lookup_failed', detail: String(e.message || e) });\n    logEntry({ timestamp: ts, sku, action: 'error', status: 'error', error: 'wc_lookup_failed' });\n    continue;\n  }\n\n  const isUpdate = Boolean(existing?.id);\n  const oldRegular = parsePrice(existing?.regular_price);\n  const oldSale = parsePrice(existing?.sale_price);\n  const effectiveOld = oldSale ?? oldRegular;\n  const oldStock = existing?.stock_quantity != null ? Number(existing.stock_quantity) : null;\n\n  const payload = {\n    sku,\n    name: input.name || existing?.name || sku,\n    status: input.status || existing?.status || 'publish',\n    manage_stock: input.manage_stock !== false,\n    meta_data: [{ key: '_cttel_installment_available', value: input.installment_available ? 'yes' : 'no' }],\n  };\n\n  if (input.short_description) payload.short_description = input.short_description;\n  if (input.description) payload.description = input.description;\n\n  if (input.regular_price !== undefined && input.regular_price !== null && String(input.regular_price).trim() !== '') {\n    const np = parsePrice(input.regular_price);\n    const v = validatePrice(np);\n    if (!v.ok) {\n      summary.skipped.push({ sku, reason: `regular_price:${v.reason}` });\n      logEntry({ timestamp: ts, sku, action: 'skip', status: 'skipped', error: v.reason });\n      continue;\n    }\n    payload.regular_price = String(np);\n  } else if (!isUpdate) {\n    summary.skipped.push({ sku, reason: 'regular_price_required_for_create' });\n    continue;\n  }\n\n  if (input.sale_price !== undefined && input.sale_price !== null && String(input.sale_price).trim() !== '') {\n    const sp = parsePrice(input.sale_price);\n    const v = validatePrice(sp);\n    if (!v.ok) {\n      summary.skipped.push({ sku, reason: `sale_price:${v.reason}` });\n      continue;\n    }\n    payload.sale_price = String(sp);\n  }\n\n  let stockSkipped = false;\n  if (input.stock_quantity === null || input.stock_quantity === undefined || input.stock_quantity === '') {\n    stockSkipped = true;\n  } else {\n    const qty = Number(input.stock_quantity);\n    if (!Number.isFinite(qty) || qty < 0) {\n      stockSkipped = true;\n      summary.skipped.push({ sku, reason: 'stock_malformed' });\n      logEntry({ timestamp: ts, sku, action: 'skip', status: 'skipped', error: 'stock_malformed' });\n      continue;\n    }\n    payload.stock_quantity = qty;\n    payload.stock_status = qty === 0 ? 'outofstock' : 'instock';\n  }\n\n  if (input.featured === true) payload.featured = true;\n  else if (input.featured === false && isUpdate) payload.featured = false;\n\n  const categorySlug = String(input.category || '').trim();\n  if (categorySlug) {\n    try {\n      const cat = await findCategory.call(this, categorySlug);\n      if (!cat) {\n        summary.unknown_categories.push({ sku, category: categorySlug });\n      } else {\n        payload.categories = [{ id: cat.id }];\n      }\n    } catch (e) {\n      summary.errors.push({ sku, error: 'category_lookup_failed' });\n    }\n  }\n\n  const imageUrl = String(input.image_url || '').trim();\n  if (shouldImportImage(imageUrl, existing?.images)) {\n    payload.images = [{ src: imageUrl }];\n  }\n\n  const effectiveNew = parsePrice(payload.sale_price) ?? parsePrice(payload.regular_price);\n  let pct = null;\n  if (effectiveOld != null && effectiveNew != null && effectiveOld > 0) {\n    pct = Math.abs(effectiveNew - effectiveOld) / effectiveOld;\n  }\n\n  if (pct != null && pct > PRICE_THRESHOLD) {\n    summary.price_approvals.push({\n      sku,\n      name: payload.name,\n      old_price: effectiveOld,\n      new_price: effectiveNew,\n      percentage_change: Math.round(pct * 10000) / 100,\n    });\n    logEntry({ timestamp: ts, sku, action: 'price_approval', old_price: effectiveOld, new_price: effectiveNew, status: 'pending' });\n    continue;\n  }\n\n  if (effectiveOld != null && effectiveNew != null && effectiveOld !== effectiveNew) {\n    summary.price_changes.push({ sku, name: payload.name, old_price: effectiveOld, new_price: effectiveNew });\n  }\n  if (!stockSkipped && oldStock !== null && payload.stock_quantity !== oldStock) {\n    summary.stock_changes.push({ sku, name: payload.name, old_stock: oldStock, new_stock: payload.stock_quantity });\n  }\n\n  const action = isUpdate ? 'update' : 'create';\n\n  if (dryRun) {\n    summary[action === 'create' ? 'created' : 'updated'].push({ sku, name: payload.name, dry_run: true, payload_preview: payload });\n    logEntry({ timestamp: ts, sku, action: `dry_run_${action}`, old_price: effectiveOld, new_price: effectiveNew, old_stock: oldStock, new_stock: stockSkipped ? null : payload.stock_quantity, status: 'dry_run' });\n    continue;\n  }\n\n  try {\n    if (isUpdate) {\n      await wcRequest.call(this, 'PUT', `/products/${existing.id}`, {}, payload);\n      summary.updated.push({ sku, name: payload.name, id: existing.id });\n    } else {\n      const created = await wcRequest.call(this, 'POST', '/products', {}, payload);\n      summary.created.push({ sku, name: payload.name, id: created.id });\n    }\n    logEntry({ timestamp: ts, sku, action, old_price: effectiveOld, new_price: effectiveNew, old_stock: oldStock, new_stock: stockSkipped ? null : payload.stock_quantity, status: 'ok' });\n  } catch (e) {\n    summary.errors.push({ sku, error: 'wc_write_failed', detail: String(e.message || e) });\n    logEntry({ timestamp: ts, sku, action, status: 'error', error: String(e.message || e) });\n  }\n}\n\nreturn [{ json: summary }];"
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Process Products",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 0],
+      "credentials": {
+        "wooCommerceApi": {
+          "id": "REPLACE_WC_CREDENTIAL_ID",
+          "name": "CTTEL n8n Automation"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst lines = [\n  'CTTEL Product Sync',\n  '',\n  `DRY_RUN: ${s.dry_run ? 'true' : 'false'}`,\n  '',\n  `Created: ${s.created?.length ?? 0}`,\n  `Updated: ${s.updated?.length ?? 0}`,\n  `Skipped: ${s.skipped?.length ?? 0}`,\n  `Errors: ${s.errors?.length ?? 0}`,\n  '',\n  'Price changes:',\n];\nfor (const p of (s.price_changes || []).slice(0, 15)) {\n  lines.push(`• ${p.sku} ${p.name}: ${p.old_price} → ${p.new_price}`);\n}\nlines.push('', 'Stock changes:');\nfor (const p of (s.stock_changes || []).slice(0, 15)) {\n  lines.push(`• ${p.sku} ${p.name}: ${p.old_stock} → ${p.new_stock}`);\n}\nif ((s.errors || []).length) {\n  lines.push('', 'Errors:');\n  for (const e of s.errors.slice(0, 10)) {\n    lines.push(`• ${e.sku || '-'} ${e.error}`);\n  }\n}\nif ((s.unknown_categories || []).length) {\n  lines.push('', 'UNKNOWN CATEGORY:');\n  for (const u of s.unknown_categories) {\n    lines.push(`• ${u.sku} → ${u.category}`);\n  }\n}\nreturn [{ json: { ...s, telegram_summary: lines.join('\\n') } }];"
+      },
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Format Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID || 'REPLACE_TELEGRAM_CHAT_ID' }}",
+        "text": "={{ $json.telegram_summary }}",
+        "additionalFields": {}
+      },
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Telegram Summary",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, -80],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_TELEGRAM_CREDENTIAL_ID",
+          "name": "CTTEL Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst approvals = s.price_approvals || [];\nif (!approvals.length) {\n  return [];\n}\nconst lines = [\n  '⚠️ CTTEL Price Approval Required',\n  'Change > 15% — NOT applied automatically.',\n  '',\n];\nfor (const a of approvals) {\n  lines.push(`${a.sku} — ${a.name}`);\n  lines.push(`  ${a.old_price} → ${a.new_price} (${a.percentage_change}%)`);\n  lines.push('');\n}\nreturn [{ json: { telegram_text: lines.join('\\n') } }];"
+      },
+      "id": "a1b2c3d4-0006-4000-8000-000000000006",
+      "name": "Format Price Approvals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 160]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID || 'REPLACE_TELEGRAM_CHAT_ID' }}",
+        "text": "={{ $json.telegram_text }}",
+        "additionalFields": {}
+      },
+      "id": "a1b2c3d4-0007-4000-8000-000000000007",
+      "name": "Telegram Price Approval",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 160],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_TELEGRAM_CREDENTIAL_ID",
+          "name": "CTTEL Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $('Process Products').first().json }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0008-4000-8000-000000000008",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Normalize Input", "type": "main", "index": 0 }]]
+    },
+    "Normalize Input": {
+      "main": [[{ "node": "Process Products", "type": "main", "index": 0 }]]
+    },
+    "Process Products": {
+      "main": [
+        [
+          { "node": "Format Summary", "type": "main", "index": 0 },
+          { "node": "Format Price Approvals", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Format Summary": {
+      "main": [[{ "node": "Telegram Summary", "type": "main", "index": 0 }]]
+    },
+    "Telegram Summary": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Format Price Approvals": {
+      "main": [[{ "node": "Telegram Price Approval", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    { "name": "CTTEL" },
+    { "name": "WooCommerce" }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
