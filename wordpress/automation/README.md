@@ -39,7 +39,7 @@ flowchart LR
 |------|---------|
 | `workflows/cttel-product-sync.json` | Import into n8n |
 | `sample-input.json` | DRY_RUN sample payload |
-| `lib/product-sync-logic.mjs` | Shared rules (local tests) |
+| `scripts/product-sync-logic.mjs` | Shared rules (local tests) |
 | `scripts/dry-run-test.mjs` | Local logic test |
 | `scripts/verify-wc-api.sh` | Public API readiness check |
 | `docs/WOOCOMMERCE-API-SETUP.md` | API key creation |

@@ -10,7 +10,7 @@ import {
   parsePrice,
   shouldImportImage,
   PRICE_CHANGE_THRESHOLD,
-} from '../lib/product-sync-logic.mjs';
+} from './product-sync-logic.mjs';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const sample = JSON.parse(readFileSync(join(__dir, '../sample-input.json'), 'utf8'));
