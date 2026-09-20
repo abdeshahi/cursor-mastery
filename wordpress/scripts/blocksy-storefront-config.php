@@ -57,11 +57,12 @@ foreach ( $header['sections'] as &$section ) {
 	foreach ( $section['mobile'] as &$row ) {
 		if ( 'middle-row' === ( $row['id'] ?? '' ) ) {
 			foreach ( $row['placements'] as &$placement ) {
-				if ( 'start' === $placement['id'] && empty( $placement['items'] ) ) {
-					$placement['items'] = array( 'logo' );
+				if ( 'start' === $placement['id'] ) {
+					// RTL mobile: hamburger on far right, then logo.
+					$placement['items'] = array( 'trigger', 'logo' );
 				}
 				if ( 'end' === $placement['id'] ) {
-					$placement['items'] = array( 'search', 'cart', 'trigger' );
+					$placement['items'] = array( 'search', 'cart' );
 				}
 			}
 			unset( $placement );
