@@ -1,13 +1,12 @@
 <?php
 /**
- * CTTEL Homepage v2 sections — visual composition shortcodes only.
+ * CTTEL Homepage sections — approved mockup implementation.
  *
  * @package CTTEL
  */
 
 defined( 'ABSPATH' ) || exit;
 
-/** Resolve product category link by slug. */
 function cttel_home_cat_url( string $slug, string $fallback_path ): string {
 	$term = get_term_by( 'slug', $slug, 'product_cat' );
 	if ( $term instanceof WP_Term ) {
@@ -16,46 +15,92 @@ function cttel_home_cat_url( string $slug, string $fallback_path ): string {
 	return home_url( $fallback_path );
 }
 
-/** Service rail below hero. */
+function cttel_home_hero_image_html(): string {
+	$attach_id = absint( get_option( 'cttel_hero_media_id', 0 ) );
+	if ( $attach_id <= 0 ) {
+		$attach_id = absint( get_option( 'cttel_product_placeholder_id', 0 ) );
+	}
+	if ( $attach_id > 0 ) {
+		$img = wp_get_attachment_image(
+			$attach_id,
+			'large',
+			false,
+			array(
+				'class'   => 'cttel-v2-hero__photo',
+				'loading' => 'eager',
+				'alt'     => '',
+			)
+		);
+		if ( $img ) {
+			return $img;
+		}
+	}
+	return '<div class="cttel-v2-hero__photo cttel-v2-hero__photo--fallback" aria-hidden="true"></div>';
+}
+
+function cttel_shortcode_hero(): string {
+	ob_start();
+	?>
+	<section class="cttel-v2 cttel-v2-hero">
+		<div class="cttel-container">
+			<div class="cttel-v2-hero__card">
+				<div class="cttel-v2-hero__media">
+					<?php echo cttel_home_hero_image_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</div>
+				<div class="cttel-v2-hero__copy">
+					<p class="cttel-v2-hero__eyebrow">سری جدید</p>
+					<h1 class="cttel-v2-hero__title">فراتر از انتظار</h1>
+					<p class="cttel-v2-hero__lead">تجربه خرید مطمئن، پشتیبانی فروشگاه و امکان خرید اقساطی از CTTEL</p>
+					<div class="cttel-v2-hero__actions">
+						<a class="cttel-v2-btn cttel-v2-btn--primary cttel-v2-btn__chev" href="<?php echo esc_url( wc_get_page_permalink( 'shop' ) ); ?>">مشاهده محصولات</a>
+						<a class="cttel-v2-btn cttel-v2-btn--outline-light cttel-v2-btn__chev" href="<?php echo esc_url( home_url( '/installment/' ) ); ?>">خرید اقساطی</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<?php
+	return (string) ob_get_clean();
+}
+add_shortcode( 'cttel_hero', 'cttel_shortcode_hero' );
+
 function cttel_shortcode_service_rail(): string {
 	$items = array(
 		array(
 			'label' => 'خرید اقساطی',
-			'desc'  => 'انتخاب محصول و ثبت درخواست',
+			'desc'  => 'ساده و سریع',
 			'url'   => home_url( '/installment/' ),
 			'icon'  => 'installment',
 		),
 		array(
 			'label' => 'گوشی کارکرده',
-			'desc'  => 'موجودی تأیید‌شده',
+			'desc'  => 'خرید و فروش مطمئن',
 			'url'   => home_url( '/used-phone/' ),
 			'icon'  => 'used',
 		),
 		array(
-			'label' => 'درخواست تأمین گوشی',
-			'desc'  => 'پیدا کردن مدل موردنظر',
+			'label' => 'درخواست تأمین',
+			'desc'  => 'مدل موردنظر را پیدا می‌کنیم',
 			'url'   => home_url( '/used-phone-request/' ),
 			'icon'  => 'sourcing',
 		),
 		array(
-			'label' => 'لوازم جانبی',
-			'desc'  => 'کاور، شارژر، صدا',
-			'url'   => cttel_home_cat_url( 'accessories', '/product-category/accessories/' ),
-			'icon'  => 'accessories',
+			'label' => 'پشتیبانی',
+			'desc'  => 'قبل و بعد از خرید',
+			'url'   => home_url( '/my-account/' ),
+			'icon'  => 'support',
 		),
 	);
 
 	ob_start();
 	?>
 	<nav class="cttel-v2 cttel-v2-service-rail" aria-label="<?php esc_attr_e( 'دسترسی سریع', 'cttel-store' ); ?>">
-		<div class="cttel-container cttel-v2-service-rail__inner">
+		<div class="cttel-container cttel-v2-service-rail__grid">
 			<?php foreach ( $items as $item ) : ?>
 				<a class="cttel-v2-service-rail__item" href="<?php echo esc_url( $item['url'] ); ?>">
 					<span class="cttel-v2-service-rail__icon cttel-v2-service-rail__icon--<?php echo esc_attr( $item['icon'] ); ?>" aria-hidden="true"></span>
-					<span class="cttel-v2-service-rail__text">
-						<span class="cttel-v2-service-rail__label"><?php echo esc_html( $item['label'] ); ?></span>
-						<span class="cttel-v2-service-rail__desc"><?php echo esc_html( $item['desc'] ); ?></span>
-					</span>
+					<span class="cttel-v2-service-rail__label"><?php echo esc_html( $item['label'] ); ?></span>
+					<span class="cttel-v2-service-rail__desc"><?php echo esc_html( $item['desc'] ); ?></span>
 				</a>
 			<?php endforeach; ?>
 		</div>
@@ -65,33 +110,49 @@ function cttel_shortcode_service_rail(): string {
 }
 add_shortcode( 'cttel_service_rail', 'cttel_shortcode_service_rail' );
 
-/** Editorial category mosaic — asymmetric tiles, no emoji. */
+function cttel_mosaic_tile_image( array $tile ): string {
+	if ( ! empty( $tile['slug'] ) ) {
+		$term = get_term_by( 'slug', $tile['slug'], 'product_cat' );
+		if ( $term instanceof WP_Term ) {
+			$thumb_id = (int) get_term_meta( $term->term_id, 'thumbnail_id', true );
+			if ( $thumb_id > 0 ) {
+				return wp_get_attachment_image(
+					$thumb_id,
+					'medium_large',
+					false,
+					array(
+						'class'   => 'cttel-v2-mosaic__img',
+						'loading' => 'lazy',
+						'alt'     => '',
+					)
+				);
+			}
+		}
+	}
+	return '<span class="cttel-v2-mosaic__placeholder cttel-v2-mosaic__placeholder--' . esc_attr( $tile['theme'] ?? 'default' ) . '" aria-hidden="true"></span>';
+}
+
 function cttel_shortcode_category_mosaic(): string {
 	$tiles = array(
 		array(
 			'size'  => 'large',
+			'theme' => 'mobile',
 			'title' => 'موبایل',
-			'desc'  => 'جدیدترین اسمارت‌فون‌ها و پرچمدارها',
+			'desc'  => 'جدیدترین گوشی‌های هوشمند',
 			'slug'  => 'mobile',
 			'path'  => '/product-category/mobile/',
 		),
 		array(
-			'size'  => 'medium',
+			'size'  => 'large',
+			'theme' => 'accessories',
 			'title' => 'لوازم جانبی',
-			'desc'  => 'جانبی اصل و سازگار',
+			'desc'  => 'همراه بهتر برای دستگاه‌های شما',
 			'slug'  => 'accessories',
 			'path'  => '/product-category/accessories/',
 		),
 		array(
-			'size'  => 'medium',
-			'title' => 'گوشی کارکرده',
-			'desc'  => 'کارکرده با شفافیت وضعیت',
-			'slug'  => '',
-			'path'  => '/used-phone/',
-			'url'   => home_url( '/used-phone/' ),
-		),
-		array(
 			'size'  => 'small',
+			'theme' => 'headphones',
 			'title' => 'هندزفری',
 			'desc'  => 'صدا و تماس',
 			'slug'  => 'headphones',
@@ -99,6 +160,7 @@ function cttel_shortcode_category_mosaic(): string {
 		),
 		array(
 			'size'  => 'small',
+			'theme' => 'watch',
 			'title' => 'ساعت هوشمند',
 			'desc'  => 'پوشیدنی‌های هوشمند',
 			'slug'  => 'smartwatch',
@@ -106,10 +168,16 @@ function cttel_shortcode_category_mosaic(): string {
 		),
 		array(
 			'size'  => 'small',
+			'theme' => 'used',
+			'title' => 'گوشی کارکرده',
+			'desc'  => 'موجودی تأیید‌شده',
+			'url'   => home_url( '/used-phone/' ),
+		),
+		array(
+			'size'  => 'small',
+			'theme' => 'installment',
 			'title' => 'خرید اقساطی',
 			'desc'  => 'مسیر خرید منعطف',
-			'slug'  => '',
-			'path'  => '/installment/',
 			'url'   => home_url( '/installment/' ),
 		),
 	);
@@ -118,49 +186,20 @@ function cttel_shortcode_category_mosaic(): string {
 	?>
 	<section class="cttel-v2 cttel-v2-section cttel-v2-mosaic">
 		<div class="cttel-container">
-			<p class="cttel-v2-eyebrow">دسته‌بندی</p>
-			<h2 class="cttel-v2-heading">کشف محصولات CTTEL</h2>
-			<p class="cttel-v2-lead">از موبایل و پرچمدار تا جانبی و خدمات اقساطی — با چیدمان ویرایشی برای دسترسی سریع‌تر.</p>
 			<div class="cttel-v2-mosaic__grid">
 				<?php foreach ( $tiles as $tile ) : ?>
 					<?php
 					$url = ! empty( $tile['url'] )
 						? $tile['url']
 						: cttel_home_cat_url( $tile['slug'], $tile['path'] );
-					$thumb = '';
-					if ( ! empty( $tile['slug'] ) ) {
-						$term = get_term_by( 'slug', $tile['slug'], 'product_cat' );
-						if ( $term instanceof WP_Term ) {
-							$thumb_id = (int) get_term_meta( $term->term_id, 'thumbnail_id', true );
-							if ( $thumb_id > 0 ) {
-								$thumb = wp_get_attachment_image(
-									$thumb_id,
-									'medium_large',
-									false,
-									array(
-										'class'   => 'cttel-v2-mosaic__img',
-										'loading' => 'lazy',
-										'alt'     => '',
-									)
-								);
-							}
-						}
-					}
 					?>
-					<a class="cttel-v2-tile cttel-v2-mosaic__tile cttel-v2-mosaic__tile--<?php echo esc_attr( $tile['size'] ); ?>" href="<?php echo esc_url( $url ); ?>">
-						<div class="cttel-v2-mosaic__visual">
-							<?php
-							if ( $thumb ) {
-								echo $thumb; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-							} else {
-								echo '<span class="cttel-v2-mosaic__placeholder" aria-hidden="true"></span>';
-							}
-							?>
-						</div>
+					<a class="cttel-v2-mosaic__tile cttel-v2-mosaic__tile--<?php echo esc_attr( $tile['size'] ); ?> cttel-v2-mosaic__tile--<?php echo esc_attr( $tile['theme'] ); ?>" href="<?php echo esc_url( $url ); ?>">
+						<div class="cttel-v2-mosaic__visual"><?php echo cttel_mosaic_tile_image( $tile ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 						<div class="cttel-v2-mosaic__copy">
 							<h3 class="cttel-v2-mosaic__title"><?php echo esc_html( $tile['title'] ); ?></h3>
 							<p class="cttel-v2-mosaic__desc"><?php echo esc_html( $tile['desc'] ); ?></p>
 						</div>
+						<span class="cttel-v2-mosaic__go" aria-hidden="true">‹</span>
 					</a>
 				<?php endforeach; ?>
 			</div>
@@ -171,91 +210,77 @@ function cttel_shortcode_category_mosaic(): string {
 }
 add_shortcode( 'cttel_category_mosaic', 'cttel_shortcode_category_mosaic' );
 
-/** Accessory collection editorial tiles (links only — no invented SKUs). */
-function cttel_shortcode_accessory_collections(): string {
-	$collections = array(
-		array( 'title' => 'لوازم آیفون', 'desc' => 'جانبی سازگار با اکوسیستم Apple', 'slug' => 'accessories' ),
-		array( 'title' => 'صدا و هندزفری', 'desc' => 'هدفون، ایرباد و hands-free', 'slug' => 'headphones' ),
-		array( 'title' => 'شارژ و پاور', 'desc' => 'شارژر، کابل و power bank', 'slug' => 'accessories' ),
-		array( 'title' => 'محافظت و کاور', 'desc' => 'گلس، قاب و محافظ بدنه', 'slug' => 'accessories' ),
-		array( 'title' => 'ساعت و گجت', 'desc' => 'ساعت هوشمند و گجت', 'slug' => 'gadgets' ),
-	);
-
+function cttel_shortcode_used_phone_banner(): string {
 	ob_start();
 	?>
-	<section class="cttel-v2 cttel-v2-section cttel-v2-accessories">
-		<div class="cttel-container">
-			<p class="cttel-v2-eyebrow">لوازم جانبی</p>
-			<h2 class="cttel-v2-heading">کلکسیون‌های جانبی</h2>
-			<p class="cttel-v2-lead">مسیرهای منتخب برای خرید جانبی — بدون شلوغی ویترین عمومی.</p>
-			<div class="cttel-v2-accessories__scroll">
-				<?php foreach ( $collections as $col ) : ?>
-					<a class="cttel-v2-accessories__card cttel-v2-tile" href="<?php echo esc_url( cttel_home_cat_url( $col['slug'], '/shop/' ) ); ?>">
-						<span class="cttel-v2-accessories__index" aria-hidden="true"></span>
-						<h3 class="cttel-v2-accessories__title"><?php echo esc_html( $col['title'] ); ?></h3>
-						<p class="cttel-v2-accessories__desc"><?php echo esc_html( $col['desc'] ); ?></p>
-						<span class="cttel-v2-link-arrow"><?php esc_html_e( 'مشاهده', 'cttel-store' ); ?></span>
-					</a>
-				<?php endforeach; ?>
+	<section class="cttel-v2 cttel-v2-used-banner">
+		<div class="cttel-container cttel-v2-used-banner__inner">
+			<div class="cttel-v2-used-banner__copy">
+				<h2 class="cttel-v2-used-banner__title">گوشی کارکرده</h2>
+				<p class="cttel-v2-used-banner__lead">کیفیت بالا، قیمت بهتر — موجودی فروشگاه یا درخواست تأمین اختصاصی</p>
+				<a class="cttel-v2-btn cttel-v2-btn--outline-dark cttel-v2-btn__chev" href="<?php echo esc_url( home_url( '/used-phone/' ) ); ?>">مشاهده و درخواست</a>
 			</div>
+			<div class="cttel-v2-used-banner__visual" aria-hidden="true"></div>
 		</div>
 	</section>
 	<?php
 	return (string) ob_get_clean();
 }
-add_shortcode( 'cttel_accessory_collections', 'cttel_shortcode_accessory_collections' );
+add_shortcode( 'cttel_used_phone_banner', 'cttel_shortcode_used_phone_banner' );
 
-/** Used phone dual-path experience block. */
-function cttel_shortcode_used_phone_experience(): string {
-	ob_start();
-	?>
-	<section class="cttel-v2 cttel-v2-section cttel-v2-used">
-		<div class="cttel-container cttel-v2-used__grid">
-			<div class="cttel-v2-used__intro">
-				<p class="cttel-v2-eyebrow">گوشی کارکرده</p>
-				<h2 class="cttel-v2-heading">تجربه‌ای متفاوت از بازار کارکرده</h2>
-				<p class="cttel-v2-lead">موجودی آماده یا جست‌وجوی اختصاصی — هر دو با استاندارد CTTEL در شفافیت و پیگیری.</p>
-			</div>
-			<div class="cttel-v2-used__paths">
-				<a class="cttel-v2-used__path cttel-v2-tile" href="<?php echo esc_url( home_url( '/used-phone/' ) ); ?>">
-					<span class="cttel-v2-used__path-tag"><?php esc_html_e( 'مسیر A', 'cttel-store' ); ?></span>
-					<h3 class="cttel-v2-used__path-title">موجودی گوشی‌های کارکرده</h3>
-					<p class="cttel-v2-used__path-desc">مشاهده مدل‌های موجود در فروشگاه و خرید مستقیم.</p>
-					<span class="cttel-v2-btn cttel-v2-btn--ghost"><?php esc_html_e( 'مشاهده موجودی', 'cttel-store' ); ?></span>
-				</a>
-				<a class="cttel-v2-used__path cttel-v2-used__path--accent cttel-v2-tile" href="<?php echo esc_url( home_url( '/used-phone-request/' ) ); ?>">
-					<span class="cttel-v2-used__path-tag"><?php esc_html_e( 'مسیر B', 'cttel-store' ); ?></span>
-					<h3 class="cttel-v2-used__path-title">گوشی موردنظرت رو برات پیدا می‌کنیم</h3>
-					<p class="cttel-v2-used__path-desc">ثبت درخواست تأمین با بیعانه — بدون تغییر در فرآیند فعلی سایت.</p>
-					<span class="cttel-v2-btn cttel-v2-btn--primary"><?php esc_html_e( 'ثبت درخواست', 'cttel-store' ); ?></span>
-				</a>
-			</div>
-		</div>
-	</section>
-	<?php
-	return (string) ob_get_clean();
-}
-add_shortcode( 'cttel_used_phone_experience', 'cttel_shortcode_used_phone_experience' );
+/** @deprecated Use cttel_used_phone_banner — kept for rollback. */
+add_shortcode( 'cttel_used_phone_experience', 'cttel_shortcode_used_phone_banner' );
 
-/** Full-width installment campaign. */
 function cttel_shortcode_installment_campaign(): string {
 	ob_start();
 	?>
-	<section class="cttel-v2 cttel-v2-installment-campaign" aria-labelledby="cttel-installment-campaign-title">
-		<div class="cttel-v2-installment-campaign__inner">
-			<div class="cttel-container cttel-v2-installment-campaign__content">
-				<p class="cttel-v2-eyebrow cttel-v2-eyebrow--on-dark"><?php esc_html_e( 'خرید اقساطی', 'cttel-store' ); ?></p>
-				<h2 id="cttel-installment-campaign-title" class="cttel-v2-installment-campaign__title">خرید اقساطی با هویت CTTEL</h2>
-				<p class="cttel-v2-installment-campaign__lead">محصول را انتخاب کنید و از مسیر اختصاصی اقساط در فروشگاه استفاده کنید — بدون شلوغی اطلاعات غیرضروری در صفحه اصلی.</p>
-				<a class="cttel-v2-btn cttel-v2-btn--on-dark" href="<?php echo esc_url( home_url( '/installment/' ) ); ?>"><?php esc_html_e( 'مشاهده خرید اقساطی', 'cttel-store' ); ?></a>
+	<section class="cttel-v2 cttel-v2-installment-light" aria-labelledby="cttel-installment-title">
+		<div class="cttel-container cttel-v2-installment-light__inner">
+			<div class="cttel-v2-installment-light__visual" aria-hidden="true"></div>
+			<div class="cttel-v2-installment-light__copy">
+				<h2 id="cttel-installment-title" class="cttel-v2-installment-light__title">خرید اقساطی موبایل و لوازم دیجیتال</h2>
+				<p class="cttel-v2-installment-light__lead">مسیر مشخص انتخاب محصول و ثبت درخواست — بدون اطلاعات مالی ساختگی در صفحه اصلی.</p>
+				<ul class="cttel-v2-installment-light__chips">
+					<li>سریع</li>
+					<li>مطمئن</li>
+					<li>شفاف</li>
+				</ul>
+				<a class="cttel-v2-btn cttel-v2-btn--primary cttel-v2-btn__chev" href="<?php echo esc_url( home_url( '/installment/' ) ); ?>">مشاهده شرایط</a>
 			</div>
-			<div class="cttel-v2-installment-campaign__visual" aria-hidden="true"></div>
 		</div>
 	</section>
 	<?php
 	return (string) ob_get_clean();
 }
 add_shortcode( 'cttel_installment_campaign', 'cttel_shortcode_installment_campaign' );
+
+function cttel_shortcode_trust_bar(): string {
+	$items = array(
+		array( 'icon' => 'ship', 'title' => 'ارسال سریع', 'desc' => 'ارسال به سراسر ایران' ),
+		array( 'icon' => 'shield', 'title' => 'ضمانت اصالت', 'desc' => 'کالای اورجینال' ),
+		array( 'icon' => 'pay', 'title' => 'پرداخت امن', 'desc' => 'درگاه معتبر' ),
+		array( 'icon' => 'support', 'title' => 'پشتیبانی تخصصی', 'desc' => 'همراه شما' ),
+	);
+
+	ob_start();
+	?>
+	<section class="cttel-v2 cttel-v2-trust-bar" aria-label="<?php esc_attr_e( 'مزایای خرید', 'cttel-store' ); ?>">
+		<div class="cttel-container cttel-v2-trust-bar__grid">
+			<?php foreach ( $items as $item ) : ?>
+				<div class="cttel-v2-trust-bar__item">
+					<span class="cttel-v2-trust-bar__icon cttel-v2-trust-bar__icon--<?php echo esc_attr( $item['icon'] ); ?>" aria-hidden="true"></span>
+					<div>
+						<strong class="cttel-v2-trust-bar__title"><?php echo esc_html( $item['title'] ); ?></strong>
+						<span class="cttel-v2-trust-bar__desc"><?php echo esc_html( $item['desc'] ); ?></span>
+					</div>
+				</div>
+			<?php endforeach; ?>
+		</div>
+	</section>
+	<?php
+	return (string) ob_get_clean();
+}
+add_shortcode( 'cttel_trust_bar', 'cttel_shortcode_trust_bar' );
 
 add_action(
 	'wp_enqueue_scripts',
@@ -267,7 +292,7 @@ add_action(
 		if ( ! file_exists( $path ) ) {
 			return;
 		}
-		wp_register_style( 'cttel-home-v2', false, array( 'cttel-design-system' ), '2.0.0' );
+		wp_register_style( 'cttel-home-v2', false, array( 'cttel-design-system' ), '3.0.0' );
 		wp_enqueue_style( 'cttel-home-v2' );
 		wp_add_inline_style( 'cttel-home-v2', (string) file_get_contents( $path ) );
 	},

@@ -238,8 +238,8 @@ function cttel_storefront_inline_css(): string {
 		. '.cttel-pcard__stock.is-out-of-stock{color:var(--cttel-warning,#d97706);}'
 		. '.cttel-pcard__stock.is-in-stock{color:var(--cttel-success,#0d9488);}'
 		. '.cttel-pcard__actions{padding:0 .85rem .85rem;margin-top:0;}'
-		. '.cttel-pcard__btn,.cttel-pcard .button{width:100%;text-align:center;min-height:44px;display:inline-flex!important;align-items:center;justify-content:center;border-radius:var(--cttel-radius-md,10px);font-size:.8125rem;font-weight:700;box-sizing:border-box;background:var(--cttel-brand-primary,#1a56db)!important;color:#fff!important;border:none!important;}'
-		. '.cttel-pcard__btn:hover,.cttel-pcard .button:hover{background:var(--cttel-brand-primary-hover,#1446b8)!important;}'
+		. '.cttel-pcard__btn,.cttel-pcard .button{width:100%;text-align:center;min-height:44px;display:inline-flex!important;align-items:center;justify-content:center;border-radius:var(--cttel-radius-md,12px);font-size:.8125rem;font-weight:700;box-sizing:border-box;background:var(--cttel-installment-surface,#eff6ff)!important;color:var(--cttel-brand-primary,#2563eb)!important;border:1px solid rgba(37,99,235,.18)!important;}'
+		. '.cttel-pcard__btn:hover,.cttel-pcard .button:hover{background:#dbeafe!important;border-color:rgba(37,99,235,.28)!important;}'
 		. '.cttel-products ul.products li.product .woocommerce-loop-product__title{font-size:.9375rem;line-height:1.35;margin:0;padding:.75rem .85rem 0;font-weight:700;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}'
 		. '.cttel-products ul.products li.product .price{font-size:1.0625rem;font-weight:800;margin:0;padding:0 .85rem .65rem;}'
 		. '.cttel-products ul.products li.product .button{margin:.65rem .85rem .85rem;width:calc(100% - 1.7rem);}'
@@ -254,7 +254,7 @@ add_action(
 		if ( ! is_front_page() && ! is_shop() && ! is_product_taxonomy() && ! is_cart() && ! is_checkout() ) {
 			return;
 		}
-		wp_register_style( 'cttel-storefront', false, array( 'cttel-design-system' ), '2.0.0' );
+		wp_register_style( 'cttel-storefront', false, array( 'cttel-design-system' ), '3.0.0' );
 		wp_enqueue_style( 'cttel-storefront' );
 		wp_add_inline_style( 'cttel-storefront', cttel_storefront_inline_css() );
 	},
