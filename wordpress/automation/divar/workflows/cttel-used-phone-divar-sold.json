@@ -1,0 +1,59 @@
+{
+  "name": "CTTEL Used Phone Sold → Divar Close",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cttel-divar-sold",
+        "responseMode": "responseNode",
+        "options": { "responseNode": "Respond" }
+      },
+      "id": "d2-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "cttel-divar-sold"
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || $input.first().json;\nconst dryRun = b.dry_run === true || $env.DRY_RUN === 'true' || $env.DRY_RUN === true;\nconst live = b.divar_live_submit === true || $env.DIVAR_LIVE_SUBMIT === 'true';\nconst token = String(b.divar_post_token || '').trim();\nconst sku = String(b.sku || '');\nconst productId = b.product_id;\n\nif (!token) {\n  return [{ json: { result: 'SKIP', reason: 'no_divar_post_token', sku, product_id: productId } }];\n}\n\nconst deleteEndpoint = `DELETE https://open-api.divar.ir/v1/open-platform/post/${token}`;\nconst requiredPermission = 'DELETE_USER_POST';\n\nif (dryRun || !live) {\n  return [{ json: { result: 'DRY_RUN_OK', action: 'would_close_divar', delete_endpoint: deleteEndpoint, permission: requiredPermission, sku, product_id: productId, post_token: token, manual_fallback: 'If API not enabled, close listing manually in Divar panel' } }];\n}\n\nreturn [{ json: { result: 'READY_FOR_LIVE', action: 'delete_post', delete_endpoint: deleteEndpoint, permission: requiredPermission, sku, post_token: token, note: 'Implement HTTP DELETE with x-api-key + Bearer in next phase after Divar approval' } }];"
+      },
+      "id": "d2-0002-4000-8000-000000000002",
+      "name": "Plan Close",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CTTEL_CHAT_ID || 'REPLACE_CHAT_ID' }}",
+        "text": "={{ 'CTTEL → Divar (Sold)\\n\\nSKU: ' + ($json.sku || '') + '\\nPost token: ' + ($json.post_token || '—') + '\\nResult: ' + ($json.result || '') + '\\n' + ($json.manual_fallback || '') }}"
+      },
+      "id": "d2-0003-4000-8000-000000000003",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [480, 0],
+      "credentials": { "telegramApi": { "id": "REPLACE_TG_CTTEL", "name": "CTTEL Automation Telegram" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "d2-0004-4000-8000-000000000004",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Plan Close", "type": "main", "index": 0 }]] },
+    "Plan Close": { "main": [[{ "node": "Telegram", "type": "main", "index": 0 }]] },
+    "Telegram": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "CTTEL" }, { "name": "Divar" }]
+}

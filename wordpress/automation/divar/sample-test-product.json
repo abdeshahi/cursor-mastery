@@ -1,0 +1,6 @@
+{
+  "dry_run": true,
+  "divar_live_submit": false,
+  "product_id": 0,
+  "comment": "Replace product_id with ONE test used-phone product ID after creating it in wp-admin. First live submit requires owner approval."
+}
