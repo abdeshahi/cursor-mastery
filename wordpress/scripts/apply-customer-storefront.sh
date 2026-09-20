@@ -23,7 +23,7 @@ WP post update 2 --post_status=draft 2>/dev/null || true
 
 echo "==> Deploy mu-plugins..."
 docker exec wp_app mkdir -p /var/www/html/wp-content/mu-plugins
-for f in cttel-store.php cttel-customizer.php cttel-quick-categories.php cttel-product-cards.php; do
+for f in cttel-store.php cttel-customizer.php cttel-quick-categories.php cttel-product-cards.php cttel-blocksy-mobile-offcanvas.php; do
   [ -f "${ROOT}/mu-plugins/${f}" ] && \
     docker cp "${ROOT}/mu-plugins/${f}" "wp_app:/var/www/html/wp-content/mu-plugins/${f}"
 done

@@ -67,6 +67,10 @@ foreach ( $header['sections'] as &$section ) {
 			unset( $placement );
 		}
 		if ( 'offcanvas' === ( $row['id'] ?? '' ) ) {
+			if ( isset( $row['settings'] ) && is_array( $row['settings'] ) ) {
+				$row['settings']['has_offcanvas_panel']     = 'yes';
+				$row['settings']['offcanvas_panel_position'] = 'right';
+			}
 			foreach ( $row['placements'] as &$placement ) {
 				if ( 'start' === $placement['id'] ) {
 					$placement['items'] = array( 'mobile-menu', 'button:cttel-installment', 'account' );
