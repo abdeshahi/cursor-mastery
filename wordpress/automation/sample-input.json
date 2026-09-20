@@ -1,0 +1,41 @@
+{
+  "dry_run": true,
+  "products": [
+    {
+      "sku": "CTTEL-DRY-001",
+      "name": "تست Dry Run — هدفون نمونه",
+      "regular_price": "3500000",
+      "sale_price": "",
+      "stock_quantity": 5,
+      "manage_stock": true,
+      "status": "publish",
+      "category": "headphones",
+      "brand": "SampleBrand",
+      "image_url": "",
+      "description": "توضیح کامل تست — فقط dry run.",
+      "short_description": "توضیح کوتاه تست.",
+      "installment_available": true,
+      "featured": false
+    },
+    {
+      "sku": "CTTEL-PRICE-APPROVAL-TEST",
+      "name": "تست تأیید قیمت (+20%)",
+      "regular_price": "12000000",
+      "stock_quantity": 2,
+      "manage_stock": true,
+      "status": "publish",
+      "category": "mobile",
+      "installment_available": false,
+      "featured": false
+    },
+    {
+      "sku": "CTTEL-UNKNOWN-CAT",
+      "name": "تست دسته نامعتبر",
+      "regular_price": "100000",
+      "stock_quantity": 1,
+      "category": "nonexistent-category-slug-xyz",
+      "installment_available": false,
+      "featured": false
+    }
+  ]
+}

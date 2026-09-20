@@ -1,0 +1,128 @@
+{
+  "name": "CTTEL Used Phone → Divar",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cttel-divar-publish",
+        "responseMode": "responseNode",
+        "options": { "responseNode": "Respond" }
+      },
+      "id": "d1-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "cttel-divar-publish"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "dry_run", "name": "dry_run", "value": "={{ $json.body?.dry_run ?? $env.DRY_RUN ?? true }}", "type": "boolean" },
+            { "id": "divar_live", "name": "divar_live_submit", "value": "={{ $json.body?.divar_live_submit ?? $env.DIVAR_LIVE_SUBMIT ?? false }}", "type": "boolean" },
+            { "id": "product_id", "name": "product_id", "value": "={{ $json.body?.product_id }}", "type": "number" }
+          ]
+        }
+      },
+      "id": "d1-0002-4000-8000-000000000002",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($credentials.wooCommerceApi.url || 'https://cttel.ir').replace(/\\/$/, '') + '/wp-json/cttel/v1/divar-product/' + $json.product_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wooCommerceApi",
+        "options": {}
+      },
+      "id": "d1-0003-4000-8000-000000000003",
+      "name": "Fetch CTTEL Payload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "credentials": {
+        "wooCommerceApi": { "id": "REPLACE_WC", "name": "CTTEL n8n Automation" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $input.first().json;\nconst cfg = $('Config').first().json;\nconst dryRun = cfg.dry_run === true || cfg.dry_run === 'true';\nconst live = cfg.divar_live_submit === true || cfg.divar_live_submit === 'true';\n\nfunction validate(p) {\n  const errors = [];\n  if (!p.used_phone) errors.push('not_used_phone');\n  if (!p.publish_to_divar) errors.push('publish_to_divar_disabled');\n  const title = String(p.divar_title || p.name || '').trim();\n  if (title.length < 3) errors.push('missing_title');\n  const price = Number(String(p.divar_price || '').replace(/,/g, ''));\n  if (!Number.isFinite(price) || price <= 0) errors.push('invalid_price');\n  const imgs = (p.images || []).filter(u => /^https?:\\/\\//.test(String(u)));\n  if (!imgs.length) errors.push('missing_real_image');\n  if (!String(p.divar_city || '').trim()) errors.push('missing_city');\n  if (!String(p.divar_category_slug || '').trim()) errors.push('missing_divar_category');\n  return { ok: !errors.length, errors, imgs, title, price };\n}\n\nconst v = validate(p);\nif (!v.ok) {\n  return [{ json: { result: 'ERROR', validation_errors: v.errors, product: p, telegram_error: true } }];\n}\n\nconst token = String(p.divar_post_token || '').trim();\nif (token) {\n  return [{ json: { result: 'DUPLICATE_OR_UPDATE', action: 'update', post_token: token, product: p, dry_run: dryRun, divar_live_submit: live, divar_layer: { title: v.title, price: v.price, city_slug: p.divar_city, category_slug: p.divar_category_slug, image_urls: v.imgs } } }];\n}\n\nconst layer = {\n  title: v.title,\n  price: v.price,\n  city_slug: p.divar_city,\n  category_slug: p.divar_category_slug,\n  description: [p.description, p.body_condition, p.accessories, p.warranty].filter(Boolean).join('\\n'),\n  image_urls: v.imgs,\n  attributes: { condition: p.condition, battery_health: p.battery_health, storage: p.storage, color: p.color, repair_history: p.repair_history, registered: p.registered === 'yes', box: p.box === 'yes' },\n  wc_sku: p.sku,\n  wc_product_id: p.product_id,\n};\n\nif (dryRun || !live) {\n  return [{ json: { result: 'DRY_RUN_OK', action: 'preview', product: p, divar_layer: layer, divar_live_submit: false, note: 'Map divar_layer to Kenar schema from Swagger before live submit' } }];\n}\n\nreturn [{ json: { result: 'READY_FOR_LIVE', action: 'create', product: p, divar_layer: layer, divar_live_submit: true, divar_endpoint: 'POST https://open-api.divar.ir/experimental/open-platform/posts/new-v2', required_permission: 'SUBMIT_POST' } }];"
+      },
+      "id": "d1-0004-4000-8000-000000000004",
+      "name": "Validate and Build",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            { "id": "err", "leftValue": "={{ $json.telegram_error }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "d1-0005-4000-8000-000000000005",
+      "name": "IF Validation Error",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CTTEL_CHAT_ID || 'REPLACE_CHAT_ID' }}",
+        "text": "={{ 'CTTEL → Divar ERROR\\n\\nProduct: ' + ($json.product?.name || '') + '\\nSKU: ' + ($json.product?.sku || '') + '\\nReason: ' + ($json.validation_errors || []).join(', ') + '\\nAction required: Fix product in wp-admin' }}"
+      },
+      "id": "d1-0006-4000-8000-000000000006",
+      "name": "Telegram Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, -120],
+      "credentials": { "telegramApi": { "id": "REPLACE_TG_CTTEL", "name": "CTTEL Automation Telegram" } }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CTTEL_CHAT_ID || 'REPLACE_CHAT_ID' }}",
+        "text": "={{ 'CTTEL → Divar\\n\\nProduct: ' + ($json.product?.name || '') + '\\nSKU: ' + ($json.product?.sku || '') + '\\nDivar Status: ' + ($json.result || '') + '\\nPrice: ' + ($json.divar_layer?.price || '') + '\\nPost ID: ' + ($json.post_token || '—') + '\\nResult: ' + ($json.result === 'DRY_RUN_OK' ? 'DRY_RUN SUCCESS' : $json.result) }}"
+      },
+      "id": "d1-0007-4000-8000-000000000007",
+      "name": "Telegram Success",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 120],
+      "credentials": { "telegramApi": { "id": "REPLACE_TG_CTTEL", "name": "CTTEL Automation Telegram" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "d1-0008-4000-8000-000000000008",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1320, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Config", "type": "main", "index": 0 }]] },
+    "Config": { "main": [[{ "node": "Fetch CTTEL Payload", "type": "main", "index": 0 }]] },
+    "Fetch CTTEL Payload": { "main": [[{ "node": "Validate and Build", "type": "main", "index": 0 }]] },
+    "Validate and Build": { "main": [[{ "node": "IF Validation Error", "type": "main", "index": 0 }]] },
+    "IF Validation Error": {
+      "main": [
+        [{ "node": "Telegram Error", "type": "main", "index": 0 }],
+        [{ "node": "Telegram Success", "type": "main", "index": 0 }]
+      ]
+    },
+    "Telegram Error": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] },
+    "Telegram Success": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "CTTEL" }, { "name": "Divar" }]
+}
