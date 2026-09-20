@@ -215,57 +215,37 @@ add_filter(
 	3
 );
 
-/** Minimal storefront CSS (no external assets). */
+/** Premium product card + grid CSS (design tokens from cttel-design-system). */
 function cttel_storefront_inline_css(): string {
 	return 'html,body{overflow-x:hidden;}'
-		. '.cttel-section-intro{color:#64748b;font-size:.95rem;line-height:1.6;margin:0 0 1.25rem;}'
-		. '.cttel-hero{overflow:hidden;}'
-		. '.cttel-hero__columns{align-items:center!important;}'
-		. '.cttel-hero__content{text-align:right;}'
-		. '.cttel-hero__media{display:flex;justify-content:center;align-items:center;}'
-		. '.cttel-hero__image img{width:100%;max-width:480px;max-height:360px;border-radius:16px;object-fit:cover;box-shadow:0 8px 24px rgba(15,23,42,.08);}'
-		. '.cttel-hero__image img:not([src]),.cttel-hero__image img[src=""]{display:none;}'
-		. '@media (max-width:781px){.cttel-hero__image img{max-height:260px;object-fit:cover;}.cttel-hero__media{margin-top:.5rem;}}'
-		. '.cttel-hero .wp-block-button__link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:.75rem 1.25rem;}'
-		. '@media (max-width:781px){.cttel-hero__columns{flex-direction:column!important;}.cttel-hero__content{order:1;text-align:center;}.cttel-hero__media{order:2;}.cttel-hero .wp-block-buttons{justify-content:center;}}'
-		. '.cttel-installment-band{border-radius:16px;margin:0 auto;box-shadow:0 6px 20px rgba(30,64,175,.18);}'
-		. '.cttel-categories{margin-top:.25rem;}'
-		. '.cttel-products{margin-top:.5rem;}'
-		. '.cttel-section-intro{margin-bottom:1rem!important;}'
-		. '.cttel-installment-band .wp-block-button__link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:.75rem 1.25rem;}'
-		. '.cttel-quick-cat-card,.cttel-quick-cat-item .cttel-quick-cat-card{transition:transform .15s ease,box-shadow .15s ease;}'
-		. '.cttel-quick-cat-card:hover,.cttel-quick-cat-item .cttel-quick-cat-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(15,23,42,.08);}'
-		. '.cttel-trust .wp-block-group.has-background{height:100%;border:1px solid #e2e8f0;}'
-		. '.cttel-promo-banner .wp-block-button__link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}'
-		. '@media (max-width:781px){.cttel-trust .wp-block-columns{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;}.cttel-trust .wp-block-column{width:100%!important;}}'
-		. '.cttel-products .wc-block-grid__products,.cttel-products ul.products{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;list-style:none;margin:0;padding:0;}'
+		. '.cttel-products .wc-block-grid__products,.cttel-products ul.products{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(.65rem,1.5vw,1rem);list-style:none;margin:0;padding:0;}'
 		. '.cttel-products .wc-block-grid__product,.cttel-products ul.products li.product{margin:0!important;width:100%!important;float:none!important;}'
-		. '.cttel-pcard{display:flex;flex-direction:column;height:100%;min-width:0;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.75rem;box-sizing:border-box;box-shadow:0 1px 2px rgba(15,23,42,.04);}'
+		. '.cttel-pcard{display:flex;flex-direction:column;height:100%;min-width:0;background:var(--cttel-surface,#fff);border:1px solid var(--cttel-border,rgba(20,28,38,.1));border-radius:var(--cttel-radius-lg,16px);padding:0;box-sizing:border-box;box-shadow:var(--cttel-shadow-sm);overflow:hidden;transition:transform .22s cubic-bezier(.22,1,.36,1),box-shadow .22s ease,border-color .2s ease;}'
+		. '.cttel-pcard:hover{transform:translateY(-3px);box-shadow:var(--cttel-shadow-md);border-color:var(--cttel-border-strong,rgba(20,28,38,.16));}'
 		. '.cttel-pcard__link{text-decoration:none;color:inherit;display:block;}'
-		. '.cttel-pcard__media{position:relative;aspect-ratio:1/1;background:linear-gradient(180deg,#fff 0%,#f8fafc 100%);border-radius:10px;overflow:hidden;margin-bottom:.65rem;display:flex;align-items:center;justify-content:center;padding:.5rem;box-sizing:border-box;}'
-		. '.cttel-pcard__img,.cttel-pcard__media img{width:100%;height:100%;object-fit:contain;display:block;}'
-		. '.cttel-quick-cat-thumb{width:3.5rem;height:3.5rem;object-fit:contain;}'
-		. '.cttel-pcard-badges{position:absolute;top:.5rem;right:.5rem;left:.5rem;display:flex;flex-wrap:wrap;gap:.35rem;z-index:2;}'
-		. '.cttel-pcard-badge{font-size:.7rem;line-height:1.2;padding:.2rem .45rem;border-radius:999px;font-weight:600;}'
-		. '.cttel-pcard-badge--sale{background:#fef2f2;color:#b91c1c;}'
-		. '.cttel-pcard-badge--installment{background:#eff6ff;color:#1d4ed8;}'
-		. '.cttel-pcard__title{font-size:.95rem;line-height:1.35;margin:0 0 .5rem;font-weight:600;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;min-height:2.7em;}'
-		. '.cttel-pcard__meta{margin-top:auto;}'
-		. '.cttel-pcard__price{font-size:1rem;font-weight:700;margin:0 0 .35rem;}'
-		. '.cttel-pcard__price del{opacity:.55;font-weight:400;font-size:.85rem;margin-left:.35rem;}'
-		. '.cttel-pcard__stock{font-size:.75rem;margin:0;opacity:.8;}'
-		. '.cttel-pcard__stock.is-out-of-stock{color:#b91c1c;opacity:1;}'
-		. '.cttel-pcard__actions{margin-top:.65rem;}'
-		. '.cttel-pcard__btn,.cttel-pcard .button{width:100%;text-align:center;min-height:44px;display:inline-flex!important;align-items:center;justify-content:center;border-radius:8px;font-size:.875rem;box-sizing:border-box;}'
-		. '.cttel-pcard .add_to_cart_button{padding:.5rem .75rem;}'
-		. '.cttel-products ul.products li.product .woocommerce-loop-product__title{font-size:.95rem;line-height:1.35;margin:.5rem 0;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}'
-		. '.cttel-products ul.products li.product .price{font-size:1rem;font-weight:700;margin-bottom:.35rem;}'
-		. '.cttel-products ul.products li.product .button{margin-top:.65rem;}'
-		. '.cttel-products ul.products li.product > a:first-of-type img,.cttel-products ul.products li.product .cttel-pcard__media img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#f8fafc;border-radius:8px;}'
-		. '.cttel-products ul.products li.product .cttel-pcard__media{position:relative;margin-bottom:.65rem;}'
+		. '.cttel-pcard__media{position:relative;aspect-ratio:var(--cttel-img-product,1/1);background:linear-gradient(180deg,#fafbfc 0%,#eef2f7 100%);overflow:hidden;margin:0;display:flex;align-items:center;justify-content:center;padding:.35rem;box-sizing:border-box;}'
+		. '.cttel-pcard__img,.cttel-pcard__media img{width:100%;height:100%;object-fit:contain;display:block;transition:transform .35s cubic-bezier(.22,1,.36,1);}'
+		. '.cttel-pcard:hover .cttel-pcard__img,.cttel-pcard:hover .cttel-pcard__media img{transform:scale(1.03);}'
+		. '.cttel-pcard-badges{position:absolute;top:.55rem;inset-inline-start:.55rem;inset-inline-end:.55rem;display:flex;flex-wrap:wrap;gap:.35rem;z-index:2;justify-content:flex-start;}'
+		. '.cttel-pcard-badge{font-size:.6875rem;line-height:1.2;padding:.25rem .5rem;border-radius:var(--cttel-radius-pill,999px);font-weight:700;letter-spacing:.01em;}'
+		. '.cttel-pcard-badge--sale{background:#fef2f2;color:#b91c1c;border:1px solid rgba(185,28,28,.12);}'
+		. '.cttel-pcard-badge--installment{background:#eff6ff;color:#1d4ed8;border:1px solid rgba(29,78,216,.12);}'
+		. '.cttel-pcard__title{font-size:.9375rem;line-height:1.35;margin:0;padding:.75rem .85rem 0;font-weight:700;color:var(--cttel-text,#141c26);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;min-height:2.55em;}'
+		. '.cttel-pcard__meta{padding:0 .85rem .65rem;margin-top:auto;}'
+		. '.cttel-pcard__price{font-size:1.0625rem;font-weight:800;margin:0 0 .25rem;color:var(--cttel-text);}'
+		. '.cttel-pcard__price del{opacity:.5;font-weight:500;font-size:.8125rem;margin-inline-start:.35rem;}'
+		. '.cttel-pcard__stock{font-size:.75rem;margin:0;color:var(--cttel-text-secondary,#5c6b7a);}'
+		. '.cttel-pcard__stock.is-out-of-stock{color:var(--cttel-warning,#d97706);}'
+		. '.cttel-pcard__stock.is-in-stock{color:var(--cttel-success,#0d9488);}'
+		. '.cttel-pcard__actions{padding:0 .85rem .85rem;margin-top:0;}'
+		. '.cttel-pcard__btn,.cttel-pcard .button{width:100%;text-align:center;min-height:44px;display:inline-flex!important;align-items:center;justify-content:center;border-radius:var(--cttel-radius-md,10px);font-size:.8125rem;font-weight:700;box-sizing:border-box;background:var(--cttel-brand-primary,#1a56db)!important;color:#fff!important;border:none!important;}'
+		. '.cttel-pcard__btn:hover,.cttel-pcard .button:hover{background:var(--cttel-brand-primary-hover,#1446b8)!important;}'
+		. '.cttel-products ul.products li.product .woocommerce-loop-product__title{font-size:.9375rem;line-height:1.35;margin:0;padding:.75rem .85rem 0;font-weight:700;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}'
+		. '.cttel-products ul.products li.product .price{font-size:1.0625rem;font-weight:800;margin:0;padding:0 .85rem .65rem;}'
+		. '.cttel-products ul.products li.product .button{margin:.65rem .85rem .85rem;width:calc(100% - 1.7rem);}'
 		. '@media (max-width:1024px){.cttel-products .wc-block-grid__products,.cttel-products ul.products{grid-template-columns:repeat(3,minmax(0,1fr))!important;}}'
-		. '@media (max-width:781px){.cttel-products .wc-block-grid__products,.cttel-products ul.products{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:.65rem;}.cttel-pcard{padding:.65rem;}}'
-		. '@media (max-width:430px){.cttel-pcard__title{font-size:.875rem;min-height:2.45em;}.cttel-pcard__price{font-size:.925rem;}}';
+		. '@media (max-width:781px){.cttel-products .wc-block-grid__products,.cttel-products ul.products{grid-template-columns:repeat(2,minmax(0,1fr))!important;}}'
+		. '@media (max-width:430px){.cttel-pcard__title{font-size:.875rem;min-height:2.45em;}.cttel-pcard__price{font-size:1rem;}}';
 }
 
 add_action(
@@ -274,7 +254,7 @@ add_action(
 		if ( ! is_front_page() && ! is_shop() && ! is_product_taxonomy() && ! is_cart() && ! is_checkout() ) {
 			return;
 		}
-		wp_register_style( 'cttel-storefront', false, array(), '1.0.0' );
+		wp_register_style( 'cttel-storefront', false, array( 'cttel-design-system' ), '2.0.0' );
 		wp_enqueue_style( 'cttel-storefront' );
 		wp_add_inline_style( 'cttel-storefront', cttel_storefront_inline_css() );
 	},
