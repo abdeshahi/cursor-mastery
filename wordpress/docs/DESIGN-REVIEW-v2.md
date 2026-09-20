@@ -13,7 +13,9 @@ cd wordpress/design-review
 python3 -m http.server 8765
 ```
 
-Open `http://127.0.0.1:8765/preview.html`
+Open `http://127.0.0.1:8765/preview-mockup.html` (approved mockup implementation)
+
+Reference JPEG: `design-review/assets/approved-mockup-reference.jpg`
 
 ## Out of scope (unchanged)
 
