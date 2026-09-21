@@ -50,9 +50,10 @@ const shots = [
   { name: '390-header-hero', width: 390, prepare: async (page) => page.evaluate(() => window.scrollTo(0, 0)) },
   { name: '390-rail-mosaic', width: 390, prepare: (page) => scrollToSelector(page, '.cttel-v2-service-rail') },
   { name: '390-products', width: 390, prepare: (page) => scrollToSelector(page, '.cttel-v2-special-products') },
-  { name: '390-used-installment', width: 390, prepare: (page) => scrollToSelector(page, '.cttel-v2-used-banner') },
-  { name: '1440-hero-top', width: 1440, prepare: async (page) => page.evaluate(() => window.scrollTo(0, 0)) },
+  { name: '390-used-trust', width: 390, prepare: (page) => scrollToSelector(page, '.cttel-v2-used-banner'), height: 920 },
+  { name: '1440-header-hero', width: 1440, prepare: async (page) => page.evaluate(() => window.scrollTo(0, 0)) },
   { name: '1440-mosaic-products', width: 1440, prepare: (page) => scrollToSelector(page, '.cttel-v2-mosaic') },
+  { name: '1440-lower-home', width: 1440, prepare: (page) => scrollToSelector(page, '.cttel-v2-used-banner'), height: 1000 },
 ];
 
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
@@ -72,7 +73,7 @@ for (const shot of shots) {
       JSON.stringify(audit, null, 2)
     );
   }
-  const height = shot.width === 390 ? 820 : 980;
+  const height = shot.height || (shot.width === 390 ? 820 : 980);
   await page.screenshot({
     path: path.join(OUT, `${shot.name}.png`),
     clip: { x: 0, y: 0, width: shot.width, height },

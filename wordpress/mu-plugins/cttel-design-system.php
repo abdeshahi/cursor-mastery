@@ -178,7 +178,13 @@ CSS;
 add_action(
 	'wp_enqueue_scripts',
 	static function (): void {
-		wp_register_style( 'cttel-design-system', false, array(), '3.0.0' );
+		wp_enqueue_style(
+			'cttel-vazirmatn',
+			'https://fonts.bunny.net/css?family=vazirmatn:400,500,600,700,800',
+			array(),
+			null
+		);
+		wp_register_style( 'cttel-design-system', false, array( 'cttel-vazirmatn' ), '4.0.0' );
 		wp_enqueue_style( 'cttel-design-system' );
 		wp_add_inline_style( 'cttel-design-system', cttel_design_system_css() );
 	},

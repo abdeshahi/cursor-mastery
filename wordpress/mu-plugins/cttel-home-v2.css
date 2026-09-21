@@ -1,176 +1,307 @@
-/* CTTEL — approved mockup homepage (RTL-native, mobile-first) */
+/* CTTEL homepage v4 — art direction (RTL, mobile-first) */
 
-.cttel-v2-hero {
-	padding-block: 0.85rem 0.35rem;
+body.cttel-v2-home {
+	background: var(--cttel-bg, #f5f7fb);
 }
 
-.cttel-v2-hero__card {
+body.cttel-v2-home,
+body.cttel-v2-home #main-container,
+body.cttel-v2-home .site-main,
+body.cttel-v2-home .cttel-v2 {
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+body.cttel-v2-home [class*="ct-container"] {
+	--theme-container-edge-spacing: min(92vw, 100%);
+	max-width: 100%;
+}
+
+body.cttel-v2-home .entry-content > .cttel-v2,
+body.cttel-v2-home .entry-content {
+	max-width: 100%;
+	min-width: 0;
+}
+
+body.cttel-v2-home img,
+body.cttel-v2-home .cttel-v2-hero__photo {
+	max-width: 100%;
+}
+
+/* —— Hero —— */
+.cttel-v2-hero {
+	padding-block: 0.65rem 0.5rem;
+}
+
+.cttel-v2-hero__card--editorial {
 	position: relative;
 	border-radius: var(--cttel-radius-xl);
 	overflow: hidden;
-	background: linear-gradient(135deg, var(--cttel-navy-deep) 0%, var(--cttel-navy) 55%, #1e3a5f 100%);
-	min-height: 220px;
+	background: linear-gradient(165deg, var(--cttel-navy-deep) 0%, var(--cttel-navy) 48%, #152d52 100%);
+	box-shadow: 0 20px 50px rgba(7, 21, 38, 0.22);
 	display: grid;
 	grid-template-columns: 1fr;
-	box-shadow: var(--cttel-shadow-lg);
+	min-height: 0;
 }
 
 .cttel-v2-hero__media {
 	position: relative;
-	min-height: 180px;
-	order: 1;
+	min-height: 168px;
+	max-height: 220px;
+	overflow: hidden;
+	background: linear-gradient(180deg, #e8eef8 0%, #d4dff0 100%);
 }
 
 .cttel-v2-hero__photo {
 	width: 100%;
 	height: 100%;
-	min-height: 180px;
+	min-height: 168px;
+	max-height: 220px;
 	object-fit: cover;
-	object-position: center;
+	object-position: center 35%;
 	display: block;
 }
 
 .cttel-v2-hero__photo--fallback {
-	min-height: 180px;
 	background:
-		radial-gradient(circle at 70% 40%, rgba(59, 130, 246, 0.25), transparent 55%),
-		linear-gradient(160deg, #1a3358 0%, #0b1f3a 100%);
+		radial-gradient(circle at 72% 38%, rgba(59, 130, 246, 0.35), transparent 52%),
+		linear-gradient(160deg, #c7d7ef 0%, #8fa8cf 45%, #1a3358 100%);
+}
+
+.cttel-v2-hero__media-scrim {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(180deg, rgba(7, 21, 38, 0) 35%, rgba(7, 21, 38, 0.55) 100%);
+	pointer-events: none;
 }
 
 .cttel-v2-hero__copy {
-	padding: 1.1rem 1.15rem 1.25rem;
-	order: 2;
+	padding: 1.15rem 1.1rem 1.2rem;
 	text-align: right;
+	background: linear-gradient(180deg, rgba(11, 31, 58, 0.98), var(--cttel-navy-deep));
 }
 
 .cttel-v2-hero__eyebrow {
-	margin: 0 0 0.35rem;
+	margin: 0 0 0.4rem;
 	font-size: var(--cttel-font-caption);
-	color: var(--cttel-text-muted-on-dark);
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	color: var(--cttel-brand-accent);
 }
 
 .cttel-v2-hero__title {
-	margin: 0 0 0.5rem;
-	font-size: var(--cttel-font-display);
+	margin: 0 0 0.45rem;
+	font-size: clamp(1.55rem, 6.5vw, 2.1rem);
 	font-weight: 800;
-	line-height: 1.15;
+	line-height: 1.12;
 	color: var(--cttel-text-on-dark);
 }
 
 .cttel-v2-hero__lead {
-	margin: 0 0 1rem;
-	font-size: var(--cttel-font-small);
-	line-height: var(--cttel-line-body);
+	margin: 0 0 0.95rem;
+	font-size: 0.8125rem;
+	line-height: 1.55;
 	color: var(--cttel-text-muted-on-dark);
-	max-width: 36ch;
+	max-width: 38ch;
 }
 
 .cttel-v2-hero__actions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.45rem;
 }
 
+.cttel-v2-hero__actions .cttel-v2-btn {
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	white-space: normal;
+	text-align: center;
+	font-size: 0.75rem;
+	padding-inline: 0.65rem;
+}
+
+/* —— Service rail —— */
 .cttel-v2-service-rail {
-	padding-block: 0.65rem 0.85rem;
+	padding-block: 0.55rem 0.65rem;
+}
+
+.cttel-v2-service-rail__strip {
+	background: var(--cttel-surface);
+	border: 1px solid var(--cttel-border);
+	border-radius: var(--cttel-radius-lg);
+	box-shadow: var(--cttel-shadow-sm);
+	overflow: hidden;
 }
 
 .cttel-v2-service-rail__grid {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 0.5rem;
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
 }
 
 .cttel-v2-service-rail__item {
+	flex: 1 1 25%;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 0.35rem;
+	padding: 0.65rem 0.35rem;
+	min-height: 44px;
+	text-decoration: none;
+	color: inherit;
+	border-inline-end: 1px solid var(--cttel-border);
+	transition: background 0.2s var(--cttel-ease);
+}
+
+.cttel-v2-service-rail__item:last-child {
+	border-inline-end: none;
+}
+
+.cttel-v2-service-rail__item:hover {
+	background: var(--cttel-surface-muted);
+}
+
+.cttel-v2-service-rail__icon {
+	width: 1.65rem;
+	height: 1.65rem;
+	flex-shrink: 0;
+	position: relative;
+	background: transparent;
+	border: none;
+}
+
+.cttel-v2-service-rail__icon::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border: 1.5px solid var(--cttel-brand-primary);
+	border-radius: 6px;
+	opacity: 0.9;
+}
+
+.cttel-v2-service-rail__icon--installment::after {
+	content: "٪";
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.65rem;
+	font-weight: 800;
+	color: var(--cttel-brand-primary);
+}
+
+.cttel-v2-service-rail__icon--used::after {
+	content: "";
+	position: absolute;
+	inset: 22% 28%;
+	border: 1.5px solid var(--cttel-brand-primary);
+	border-radius: 4px;
+}
+
+.cttel-v2-service-rail__icon--sourcing::after {
+	content: "";
+	position: absolute;
+	left: 30%;
+	right: 30%;
+	top: 35%;
+	bottom: 35%;
+	border: 1.5px solid var(--cttel-brand-primary);
+	border-radius: 2px;
+	box-shadow: -4px 0 0 var(--cttel-surface);
+}
+
+.cttel-v2-service-rail__icon--support::after {
+	content: "?";
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.7rem;
+	font-weight: 800;
+	color: var(--cttel-brand-primary);
+}
+
+.cttel-v2-service-rail__text {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	text-align: center;
-	padding: 0.75rem 0.5rem;
-	min-height: 44px;
-	border-radius: var(--cttel-radius-md);
-	background: var(--cttel-surface-muted);
-	border: 1px solid var(--cttel-border);
-	text-decoration: none;
-	color: inherit;
-	transition: background 0.2s var(--cttel-ease);
-}
-
-.cttel-v2-service-rail__item:hover {
-	background: var(--cttel-installment-surface);
-}
-
-.cttel-v2-service-rail__icon {
-	width: 2rem;
-	height: 2rem;
-	margin-bottom: 0.35rem;
-	border-radius: var(--cttel-radius-sm);
-	background: #fff;
-	border: 1px solid var(--cttel-border);
-	position: relative;
-}
-
-.cttel-v2-service-rail__icon--installment::after,
-.cttel-v2-service-rail__icon--used::after,
-.cttel-v2-service-rail__icon--sourcing::after,
-.cttel-v2-service-rail__icon--support::after {
-	content: "";
-	position: absolute;
-	inset: 30%;
-	background: var(--cttel-brand-primary);
-	border-radius: 2px;
-	opacity: 0.85;
+	min-width: 0;
 }
 
 .cttel-v2-service-rail__label {
-	font-size: var(--cttel-font-small);
+	font-size: 0.6875rem;
 	font-weight: 800;
 	line-height: 1.25;
+	color: var(--cttel-navy);
 }
 
 .cttel-v2-service-rail__desc {
-	font-size: var(--cttel-font-caption);
+	display: none;
+	font-size: 0.625rem;
 	color: var(--cttel-text-secondary);
-	margin-top: 0.15rem;
+	margin-top: 0.1rem;
+	line-height: 1.2;
+}
+
+/* —— Category mosaic —— */
+.cttel-v2-mosaic {
+	padding-block: 0.55rem 0.65rem;
 }
 
 .cttel-v2-mosaic__grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 0.55rem;
+	gap: 0.5rem;
 }
 
 .cttel-v2-mosaic__tile {
 	position: relative;
 	border-radius: var(--cttel-radius-lg);
 	overflow: hidden;
-	min-height: 120px;
+	min-height: 108px;
 	text-decoration: none;
 	color: var(--cttel-text-on-dark);
-	display: flex;
-	flex-direction: column;
-	justify-content: flex-end;
-	box-shadow: var(--cttel-shadow-sm);
+	display: block;
+	box-shadow: 0 6px 18px rgba(11, 31, 58, 0.1);
 	transition: transform 0.22s var(--cttel-ease), box-shadow 0.22s ease;
 }
 
 .cttel-v2-mosaic__tile:hover {
 	transform: translateY(-2px);
-	box-shadow: var(--cttel-shadow-md);
+	box-shadow: 0 12px 28px rgba(11, 31, 58, 0.14);
 }
 
 .cttel-v2-mosaic__tile--large {
-	grid-column: span 1;
-	min-height: 150px;
+	grid-column: span 2;
+	min-height: 132px;
+}
+
+.cttel-v2-mosaic__visual {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+}
+
+.cttel-v2-mosaic__scrim {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	background: linear-gradient(0deg, rgba(7, 21, 38, 0.82) 0%, rgba(7, 21, 38, 0.15) 55%, rgba(7, 21, 38, 0.05) 100%);
+}
+
+.cttel-v2-mosaic__tile--accessories .cttel-v2-mosaic__scrim {
+	background: linear-gradient(0deg, rgba(11, 31, 58, 0.75) 0%, rgba(255, 255, 255, 0.05) 60%);
 }
 
 .cttel-v2-mosaic__tile--accessories {
-	color: var(--cttel-text);
-	background: #f3f0ea;
-}
-
-.cttel-v2-mosaic__tile--accessories .cttel-v2-mosaic__desc {
-	color: var(--cttel-text-secondary);
+	color: var(--cttel-text-on-dark);
 }
 
 .cttel-v2-mosaic__tile--mobile {
@@ -184,27 +315,16 @@
 .cttel-v2-mosaic__tile--used,
 .cttel-v2-mosaic__tile--watch,
 .cttel-v2-mosaic__tile--headphones {
-	background: var(--cttel-surface-muted);
-	color: var(--cttel-text);
-}
-
-.cttel-v2-mosaic__tile--used .cttel-v2-mosaic__desc,
-.cttel-v2-mosaic__tile--watch .cttel-v2-mosaic__desc,
-.cttel-v2-mosaic__tile--headphones .cttel-v2-mosaic__desc {
-	color: var(--cttel-text-secondary);
-}
-
-.cttel-v2-mosaic__visual {
-	position: absolute;
-	inset: 0;
-	z-index: 0;
+	color: var(--cttel-text-on-dark);
 }
 
 .cttel-v2-mosaic__img {
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
-	opacity: 0.65;
+	object-position: center;
+	opacity: 0.92;
+	transform: scale(1.02);
 }
 
 .cttel-v2-mosaic__placeholder {
@@ -218,55 +338,60 @@
 }
 
 .cttel-v2-mosaic__placeholder--accessories {
-	background: linear-gradient(145deg, #f8f4ee, #e8e2d8);
+	background: linear-gradient(145deg, #d6cec2, #b8aea0);
 }
 
 .cttel-v2-mosaic__placeholder--headphones,
 .cttel-v2-mosaic__placeholder--watch {
-	background: linear-gradient(145deg, #e2e8f0, #cbd5e1);
+	background: linear-gradient(145deg, #94a3b8, #64748b);
 }
 
 .cttel-v2-mosaic__placeholder--used {
-	background: linear-gradient(145deg, #dbeafe, #bfdbfe);
+	background: linear-gradient(145deg, #60a5fa, #2563eb);
 }
 
 .cttel-v2-mosaic__placeholder--installment {
-	background: linear-gradient(145deg, #3b82f6, #2563eb);
+	background: linear-gradient(145deg, #3b82f6, #1d4ed8);
 }
 
 .cttel-v2-mosaic__copy {
-	position: relative;
-	z-index: 1;
-	padding: 0.85rem 0.9rem;
+	position: absolute;
+	inset-inline: 0;
+	inset-block-end: 0;
+	z-index: 2;
+	padding: 0.75rem 0.8rem;
 }
 
 .cttel-v2-mosaic__title {
-	margin: 0 0 0.15rem;
-	font-size: var(--cttel-font-h3);
+	margin: 0 0 0.1rem;
+	font-size: clamp(0.95rem, 2.8vw, 1.1rem);
 	font-weight: 800;
+	line-height: 1.2;
 }
 
 .cttel-v2-mosaic__desc {
 	margin: 0;
-	font-size: var(--cttel-font-caption);
-	opacity: 0.9;
+	font-size: 0.6875rem;
+	opacity: 0.88;
+	line-height: 1.35;
 }
 
 .cttel-v2-mosaic__go {
 	position: absolute;
-	inset-inline-start: 0.65rem;
-	inset-block-end: 0.65rem;
-	width: 1.75rem;
-	height: 1.75rem;
+	inset-inline-start: 0.55rem;
+	inset-block-end: 0.55rem;
+	width: 1.55rem;
+	height: 1.55rem;
 	border-radius: var(--cttel-radius-pill);
-	background: var(--cttel-navy);
+	background: rgba(11, 31, 58, 0.92);
 	color: #fff;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 1rem;
+	font-size: 0.95rem;
 	line-height: 1;
-	z-index: 2;
+	z-index: 3;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .cttel-v2-mosaic__tile--accessories .cttel-v2-mosaic__go,
@@ -276,8 +401,120 @@
 	background: var(--cttel-brand-primary);
 }
 
+/* —— Homepage product cards —— */
+.cttel-v2-special-products {
+	padding-block: 0.65rem 0.75rem;
+}
+
+.cttel-products--home {
+	display: grid !important;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.5rem;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.cttel-hp-card {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	background: var(--cttel-surface);
+	border: 1px solid var(--cttel-border);
+	border-radius: var(--cttel-radius-md);
+	box-shadow: var(--cttel-shadow-sm);
+	overflow: hidden;
+}
+
+.cttel-hp-card__link {
+	text-decoration: none;
+	color: inherit;
+	display: block;
+}
+
+.cttel-hp-card__media {
+	position: relative;
+	aspect-ratio: 1.15 / 1;
+	max-height: 118px;
+	background: linear-gradient(180deg, #f8fafc 0%, #edf2f9 100%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.35rem;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+.cttel-hp-card__img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	display: block;
+}
+
+.cttel-hp-card__title {
+	margin: 0;
+	padding: 0.45rem 0.55rem 0;
+	font-size: 0.75rem;
+	font-weight: 800;
+	line-height: 1.35;
+	color: var(--cttel-navy);
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	min-height: 2.05em;
+}
+
+.cttel-hp-card__meta {
+	padding: 0.15rem 0.55rem 0.35rem;
+}
+
+.cttel-hp-card__price {
+	font-size: 0.8125rem;
+	font-weight: 800;
+	margin: 0;
+	color: var(--cttel-navy);
+}
+
+.cttel-hp-card__price del {
+	font-size: 0.6875rem;
+	opacity: 0.55;
+}
+
+.cttel-hp-card__stock {
+	margin: 0.15rem 0 0;
+	font-size: 0.625rem;
+	color: var(--cttel-text-secondary);
+}
+
+.cttel-hp-card__stock.is-in-stock {
+	color: var(--cttel-success);
+}
+
+.cttel-hp-card__actions {
+	padding: 0 0.45rem 0.45rem;
+	margin-top: auto;
+}
+
+.cttel-hp-card__btn {
+	width: 100%;
+	min-height: 40px;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.6875rem !important;
+	font-weight: 700 !important;
+	border-radius: 10px !important;
+	background: var(--cttel-installment-surface) !important;
+	color: var(--cttel-brand-primary) !important;
+	border: 1px solid rgba(37, 99, 235, 0.16) !important;
+	padding: 0.35rem 0.5rem !important;
+}
+
+/* —— Used phone —— */
 .cttel-v2-used-banner {
-	padding-block: 0.85rem;
+	padding-block: 0.55rem;
 }
 
 .cttel-v2-used-banner__inner {
@@ -285,70 +522,99 @@
 	grid-template-columns: 1fr;
 	border-radius: var(--cttel-radius-xl);
 	overflow: hidden;
-	background: linear-gradient(135deg, var(--cttel-navy-deep), var(--cttel-navy));
+	background: linear-gradient(135deg, var(--cttel-navy-deep), #0f2847 55%, var(--cttel-navy));
 	color: var(--cttel-text-on-dark);
-	box-shadow: var(--cttel-shadow-md);
+	box-shadow: 0 14px 36px rgba(7, 21, 38, 0.2);
 }
 
 .cttel-v2-used-banner__copy {
-	padding: 1.15rem 1.1rem;
+	padding: 1.1rem 1rem;
+	z-index: 1;
+}
+
+.cttel-v2-used-banner__eyebrow {
+	color: var(--cttel-brand-accent) !important;
+	margin-bottom: 0.25rem !important;
 }
 
 .cttel-v2-used-banner__title {
 	margin: 0 0 0.35rem;
-	font-size: var(--cttel-font-h2);
+	font-size: clamp(1.15rem, 4vw, 1.45rem);
 	font-weight: 800;
+	line-height: 1.2;
+	color: var(--cttel-text-on-dark);
 }
 
 .cttel-v2-used-banner__lead {
 	margin: 0 0 0.85rem;
-	font-size: var(--cttel-font-small);
+	font-size: 0.8125rem;
 	color: var(--cttel-text-muted-on-dark);
-	line-height: var(--cttel-line-body);
-	max-width: 34ch;
+	line-height: 1.55;
+	max-width: 36ch;
 }
 
 .cttel-v2-used-banner__visual {
-	min-height: 120px;
+	position: relative;
+	min-height: 100px;
 	background:
-		radial-gradient(circle at 80% 50%, rgba(59, 130, 246, 0.2), transparent 50%),
-		linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04));
+		radial-gradient(circle at 75% 50%, rgba(59, 130, 246, 0.25), transparent 55%),
+		linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03));
 }
 
+.cttel-v2-used-banner__photo {
+	width: 100%;
+	height: 100%;
+	min-height: 100px;
+	object-fit: cover;
+	object-position: center;
+	opacity: 0.85;
+}
+
+/* —— Installment campaign —— */
 .cttel-v2-installment-light {
-	padding-block: 0.85rem;
+	padding-block: 0.55rem;
 }
 
 .cttel-v2-installment-light__inner {
 	display: grid;
 	grid-template-columns: 1fr;
-	gap: 0.75rem;
-	background: var(--cttel-installment-bg);
+	gap: 0.65rem;
+	background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 45%, #e0edff 100%);
 	border-radius: var(--cttel-radius-xl);
-	padding: 1rem;
-	border: 1px solid rgba(37, 99, 235, 0.12);
+	padding: 0.95rem;
+	border: 1px solid rgba(37, 99, 235, 0.14);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
 .cttel-v2-installment-light__visual {
-	min-height: 100px;
+	min-height: 88px;
 	border-radius: var(--cttel-radius-md);
+	overflow: hidden;
 	background:
-		radial-gradient(circle at 30% 50%, rgba(37, 99, 235, 0.15), transparent 60%),
-		linear-gradient(135deg, var(--cttel-installment-surface), var(--cttel-installment-bg));
+		radial-gradient(circle at 25% 50%, rgba(37, 99, 235, 0.12), transparent 55%),
+		linear-gradient(135deg, #fff, #dbeafe);
+}
+
+.cttel-v2-installment-light__photo {
+	width: 100%;
+	height: 100%;
+	min-height: 88px;
+	object-fit: cover;
 }
 
 .cttel-v2-installment-light__title {
 	margin: 0 0 0.35rem;
-	font-size: var(--cttel-font-h2);
+	font-size: clamp(1.05rem, 3.5vw, 1.35rem);
 	font-weight: 800;
 	color: var(--cttel-navy);
+	line-height: 1.25;
 }
 
 .cttel-v2-installment-light__lead {
-	margin: 0 0 0.65rem;
-	font-size: var(--cttel-font-small);
+	margin: 0 0 0.55rem;
+	font-size: 0.8125rem;
 	color: var(--cttel-text-secondary);
-	line-height: var(--cttel-line-body);
+	line-height: 1.55;
 }
 
 .cttel-v2-installment-light__chips {
@@ -356,21 +622,23 @@
 	flex-wrap: wrap;
 	gap: 0.35rem;
 	list-style: none;
-	margin: 0 0 0.85rem;
+	margin: 0 0 0.75rem;
 	padding: 0;
 }
 
 .cttel-v2-installment-light__chips li {
-	font-size: var(--cttel-font-caption);
-	font-weight: 600;
-	padding: 0.25rem 0.55rem;
-	border-radius: var(--cttel-radius-pill);
-	background: rgba(255, 255, 255, 0.65);
+	font-size: 0.6875rem;
+	font-weight: 700;
+	padding: 0.2rem 0.5rem;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.75);
 	color: var(--cttel-navy);
+	border: 1px solid rgba(37, 99, 235, 0.1);
 }
 
+/* —— Trust bar —— */
 .cttel-v2-trust-bar {
-	padding-block: 0.85rem 1.25rem;
+	padding-block: 0.65rem 1rem;
 	background: var(--cttel-surface);
 	border-top: 1px solid var(--cttel-border);
 }
@@ -378,58 +646,86 @@
 .cttel-v2-trust-bar__grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 0.65rem 0.85rem;
+	gap: 0.55rem 0.75rem;
 }
 
 .cttel-v2-trust-bar__item {
 	display: flex;
-	align-items: flex-start;
-	gap: 0.5rem;
+	align-items: center;
+	gap: 0.45rem;
+	min-width: 0;
 }
 
 .cttel-v2-trust-bar__icon {
-	width: 1.75rem;
-	height: 1.75rem;
-	border-radius: var(--cttel-radius-sm);
+	width: 1.5rem;
+	height: 1.5rem;
+	border-radius: 6px;
 	border: 1px solid var(--cttel-border);
 	background: var(--cttel-surface-muted);
 	flex-shrink: 0;
+	position: relative;
+}
+
+.cttel-v2-trust-bar__icon--ship::after,
+.cttel-v2-trust-bar__icon--shield::after,
+.cttel-v2-trust-bar__icon--pay::after,
+.cttel-v2-trust-bar__icon--support::after {
+	content: "";
+	position: absolute;
+	inset: 28%;
+	border: 1.5px solid var(--cttel-brand-primary);
+	border-radius: 2px;
 }
 
 .cttel-v2-trust-bar__title {
 	display: block;
-	font-size: var(--cttel-font-small);
+	font-size: 0.6875rem;
 	font-weight: 800;
 	color: var(--cttel-navy);
+	line-height: 1.25;
 }
 
 .cttel-v2-trust-bar__desc {
 	display: block;
-	font-size: var(--cttel-font-caption);
+	font-size: 0.625rem;
 	color: var(--cttel-text-secondary);
-	margin-top: 0.1rem;
+	margin-top: 0.05rem;
+	line-height: 1.3;
 }
 
-.cttel-v2-special-products {
-	padding-block: 0.85rem;
+/* —— Section headings —— */
+.cttel-v2-section-head {
+	margin-bottom: 0.55rem;
 }
 
-@media (min-width: 430px) {
-	.cttel-v2-service-rail__grid {
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-	}
+.cttel-v2-heading {
+	font-size: clamp(1rem, 3.2vw, 1.25rem);
+	font-weight: 800;
+	color: var(--cttel-navy);
 }
 
+/* —— Desktop —— */
 @media (min-width: 768px) {
-	.cttel-v2-hero__card {
-		grid-template-columns: 1.05fr 0.95fr;
-		min-height: 320px;
+	.cttel-v2-hero__card--editorial {
+		grid-template-columns: 1fr 1.05fr;
+		min-height: 340px;
 		align-items: stretch;
 	}
 
 	.cttel-v2-hero__media {
 		order: 2;
+		max-height: none;
 		min-height: 100%;
+	}
+
+	.cttel-v2-hero__photo {
+		max-height: none;
+		min-height: 100%;
+		object-position: center;
+	}
+
+	.cttel-v2-hero__media-scrim {
+		background: linear-gradient(90deg, rgba(7, 21, 38, 0.65) 0%, rgba(7, 21, 38, 0) 45%);
 	}
 
 	.cttel-v2-hero__copy {
@@ -437,11 +733,50 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		padding: 2rem;
+		padding: 2.25rem 2rem;
+		background: transparent;
+	}
+
+	.cttel-v2-hero__lead {
+		font-size: var(--cttel-font-body);
+		max-width: 42ch;
+	}
+
+	.cttel-v2-hero__actions {
+		display: flex;
+		flex-wrap: wrap;
+		max-width: 22rem;
+	}
+
+	.cttel-v2-hero__actions .cttel-v2-btn {
+		flex: 0 1 auto;
+		font-size: var(--cttel-font-small);
+	}
+
+	.cttel-v2-service-rail__item {
+		flex-direction: row;
+		justify-content: center;
+		gap: 0.55rem;
+		padding: 0.85rem 0.65rem;
+	}
+
+	.cttel-v2-service-rail__text {
+		align-items: flex-start;
+		text-align: right;
+	}
+
+	.cttel-v2-service-rail__label {
+		font-size: var(--cttel-font-small);
+	}
+
+	.cttel-v2-service-rail__desc {
+		display: block;
+		font-size: var(--cttel-font-caption);
 	}
 
 	.cttel-v2-mosaic__grid {
 		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 0.65rem;
 	}
 
 	.cttel-v2-mosaic__tile--large {
@@ -449,8 +784,30 @@
 		min-height: 200px;
 	}
 
+	.cttel-v2-mosaic__tile:not(.cttel-v2-mosaic__tile--large) {
+		min-height: 150px;
+	}
+
+	.cttel-products--home {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 0.75rem;
+	}
+
+	.cttel-hp-card__media {
+		max-height: 150px;
+	}
+
+	.cttel-hp-card__title {
+		font-size: 0.875rem;
+		padding-inline: 0.75rem;
+	}
+
+	.cttel-hp-card__price {
+		font-size: 0.9375rem;
+	}
+
 	.cttel-v2-used-banner__inner {
-		grid-template-columns: 1.2fr 0.8fr;
+		grid-template-columns: 1.15fr 0.85fr;
 		align-items: stretch;
 	}
 
@@ -459,22 +816,33 @@
 	}
 
 	.cttel-v2-installment-light__inner {
-		grid-template-columns: 0.85fr 1.15fr;
+		grid-template-columns: 0.9fr 1.1fr;
 		align-items: center;
-		padding: 1.25rem 1.5rem;
+		padding: 1.35rem 1.5rem;
 	}
 
 	.cttel-v2-trust-bar__grid {
 		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 0.75rem;
 	}
 }
 
 @media (min-width: 1024px) {
-	.cttel-v2-hero__card {
-		min-height: 360px;
+	.cttel-v2-hero__card--editorial {
+		min-height: 380px;
 	}
 
 	.cttel-v2-mosaic__tile--large {
-		min-height: 240px;
+		min-height: 228px;
+	}
+}
+
+@media (max-width: 359px) {
+	.cttel-v2-service-rail__desc {
+		display: none;
+	}
+
+	.cttel-v2-hero__actions {
+		grid-template-columns: 1fr;
 	}
 }

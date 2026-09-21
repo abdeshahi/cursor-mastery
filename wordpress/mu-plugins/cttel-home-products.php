@@ -60,6 +60,55 @@ function cttel_filter_homepage_products_with_thumbs( array $products, int $limit
 	return $out;
 }
 
+/** Compact premium product card for homepage (avoids theme duplicate markup). */
+function cttel_render_home_product_card( WC_Product $product ): string {
+	$permalink = $product->get_permalink();
+	$thumb_id  = $product->get_image_id();
+	$image     = wp_get_attachment_image(
+		$thumb_id,
+		'woocommerce_thumbnail',
+		false,
+		array(
+			'class'   => 'cttel-hp-card__img',
+			'loading' => 'lazy',
+			'alt'     => $product->get_name(),
+		)
+	);
+	$badges    = function_exists( 'cttel_product_card_badges' )
+		? cttel_product_card_badges( $product )
+		: '';
+	$stock     = function_exists( 'cttel_product_stock_label' )
+		? cttel_product_stock_label( $product )
+		: '';
+	$stock_cls = function_exists( 'cttel_product_stock_class' )
+		? cttel_product_stock_class( $product )
+		: 'is-in-stock';
+
+	$cart_url = $product->add_to_cart_url();
+	$cart_txt = $product->add_to_cart_text();
+
+	ob_start();
+	?>
+	<li <?php wc_product_class( 'cttel-hp-card', $product ); ?>>
+		<a class="cttel-hp-card__link" href="<?php echo esc_url( $permalink ); ?>">
+			<div class="cttel-hp-card__media">
+				<?php echo $badges; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<?php echo $image; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			</div>
+			<h3 class="cttel-hp-card__title"><?php echo esc_html( $product->get_name() ); ?></h3>
+		</a>
+		<div class="cttel-hp-card__meta">
+			<div class="cttel-hp-card__price price"><?php echo wp_kses_post( $product->get_price_html() ); ?></div>
+			<p class="cttel-hp-card__stock <?php echo esc_attr( $stock_cls ); ?>"><?php echo esc_html( $stock ); ?></p>
+		</div>
+		<div class="cttel-hp-card__actions">
+			<a href="<?php echo esc_url( $cart_url ); ?>" class="button cttel-hp-card__btn add_to_cart_button product_type_<?php echo esc_attr( $product->get_type() ); ?>" data-product_id="<?php echo esc_attr( (string) $product->get_id() ); ?>" data-product_sku="<?php echo esc_attr( $product->get_sku() ); ?>" aria-label="<?php echo esc_attr( $product->add_to_cart_description() ); ?>"><?php echo esc_html( $cart_txt ); ?></a>
+		</div>
+	</li>
+	<?php
+	return (string) ob_get_clean();
+}
+
 /** Render homepage special offers grid. */
 function cttel_shortcode_special_products( $atts ): string {
 	if ( ! function_exists( 'wc_get_products' ) ) {
@@ -89,20 +138,11 @@ function cttel_shortcode_special_products( $atts ): string {
 			<?php if ( empty( $products ) ) : ?>
 				<p class="cttel-v2-lead"><?php esc_html_e( 'به‌زودی محصولات منتخب با تصویر در این بخش نمایش داده می‌شوند.', 'cttel-store' ); ?></p>
 			<?php else : ?>
-				<ul class="products cttel-products cttel-products--featured columns-<?php echo esc_attr( (string) $limit ); ?>">
+				<ul class="products cttel-products cttel-products--home columns-<?php echo esc_attr( (string) $limit ); ?>">
 					<?php
-					global $post;
 					foreach ( $products as $product ) {
-						$post_object = get_post( $product->get_id() );
-						if ( ! $post_object ) {
-							continue;
-						}
-						$post               = $post_object; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-						$GLOBALS['product'] = $product; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-						setup_postdata( $post_object );
-						wc_get_template_part( 'content', 'product' );
+						echo cttel_render_home_product_card( $product ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					}
-					wp_reset_postdata();
 					?>
 				</ul>
 			<?php endif; ?>

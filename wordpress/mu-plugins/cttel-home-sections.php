@@ -23,7 +23,7 @@ function cttel_home_hero_image_html(): string {
 	if ( $attach_id > 0 ) {
 		$img = wp_get_attachment_image(
 			$attach_id,
-			'large',
+			'1536x1536',
 			false,
 			array(
 				'class'   => 'cttel-v2-hero__photo',
@@ -43,9 +43,10 @@ function cttel_shortcode_hero(): string {
 	?>
 	<section class="cttel-v2 cttel-v2-hero">
 		<div class="cttel-container">
-			<div class="cttel-v2-hero__card">
+			<div class="cttel-v2-hero__card cttel-v2-hero__card--editorial">
 				<div class="cttel-v2-hero__media">
 					<?php echo cttel_home_hero_image_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<div class="cttel-v2-hero__media-scrim" aria-hidden="true"></div>
 				</div>
 				<div class="cttel-v2-hero__copy">
 					<p class="cttel-v2-hero__eyebrow">سری جدید</p>
@@ -95,14 +96,20 @@ function cttel_shortcode_service_rail(): string {
 	ob_start();
 	?>
 	<nav class="cttel-v2 cttel-v2-service-rail" aria-label="<?php esc_attr_e( 'دسترسی سریع', 'cttel-store' ); ?>">
-		<div class="cttel-container cttel-v2-service-rail__grid">
-			<?php foreach ( $items as $item ) : ?>
-				<a class="cttel-v2-service-rail__item" href="<?php echo esc_url( $item['url'] ); ?>">
-					<span class="cttel-v2-service-rail__icon cttel-v2-service-rail__icon--<?php echo esc_attr( $item['icon'] ); ?>" aria-hidden="true"></span>
-					<span class="cttel-v2-service-rail__label"><?php echo esc_html( $item['label'] ); ?></span>
-					<span class="cttel-v2-service-rail__desc"><?php echo esc_html( $item['desc'] ); ?></span>
-				</a>
-			<?php endforeach; ?>
+		<div class="cttel-container">
+			<div class="cttel-v2-service-rail__strip">
+				<div class="cttel-v2-service-rail__grid">
+					<?php foreach ( $items as $item ) : ?>
+						<a class="cttel-v2-service-rail__item" href="<?php echo esc_url( $item['url'] ); ?>">
+							<span class="cttel-v2-service-rail__icon cttel-v2-service-rail__icon--<?php echo esc_attr( $item['icon'] ); ?>" aria-hidden="true"></span>
+							<span class="cttel-v2-service-rail__text">
+								<span class="cttel-v2-service-rail__label"><?php echo esc_html( $item['label'] ); ?></span>
+								<span class="cttel-v2-service-rail__desc"><?php echo esc_html( $item['desc'] ); ?></span>
+							</span>
+						</a>
+					<?php endforeach; ?>
+				</div>
+			</div>
 		</div>
 	</nav>
 	<?php
@@ -194,7 +201,10 @@ function cttel_shortcode_category_mosaic(): string {
 						: cttel_home_cat_url( $tile['slug'], $tile['path'] );
 					?>
 					<a class="cttel-v2-mosaic__tile cttel-v2-mosaic__tile--<?php echo esc_attr( $tile['size'] ); ?> cttel-v2-mosaic__tile--<?php echo esc_attr( $tile['theme'] ); ?>" href="<?php echo esc_url( $url ); ?>">
-						<div class="cttel-v2-mosaic__visual"><?php echo cttel_mosaic_tile_image( $tile ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+						<div class="cttel-v2-mosaic__visual">
+							<?php echo cttel_mosaic_tile_image( $tile ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							<span class="cttel-v2-mosaic__scrim" aria-hidden="true"></span>
+						</div>
 						<div class="cttel-v2-mosaic__copy">
 							<h3 class="cttel-v2-mosaic__title"><?php echo esc_html( $tile['title'] ); ?></h3>
 							<p class="cttel-v2-mosaic__desc"><?php echo esc_html( $tile['desc'] ); ?></p>
@@ -210,17 +220,38 @@ function cttel_shortcode_category_mosaic(): string {
 }
 add_shortcode( 'cttel_category_mosaic', 'cttel_shortcode_category_mosaic' );
 
+function cttel_home_section_promo_image( string $option_key, string $css_class ): string {
+	$attach_id = absint( get_option( $option_key, 0 ) );
+	if ( $attach_id <= 0 ) {
+		return '';
+	}
+	return wp_get_attachment_image(
+		$attach_id,
+		'medium_large',
+		false,
+		array(
+			'class'   => $css_class,
+			'loading' => 'lazy',
+			'alt'     => '',
+		)
+	);
+}
+
 function cttel_shortcode_used_phone_banner(): string {
+	$visual = cttel_home_section_promo_image( 'cttel_used_banner_media_id', 'cttel-v2-used-banner__photo' );
 	ob_start();
 	?>
 	<section class="cttel-v2 cttel-v2-used-banner">
 		<div class="cttel-container cttel-v2-used-banner__inner">
 			<div class="cttel-v2-used-banner__copy">
+				<p class="cttel-v2-eyebrow cttel-v2-used-banner__eyebrow">CTTEL</p>
 				<h2 class="cttel-v2-used-banner__title">گوشی کارکرده</h2>
 				<p class="cttel-v2-used-banner__lead">کیفیت بالا، قیمت بهتر — موجودی فروشگاه یا درخواست تأمین اختصاصی</p>
 				<a class="cttel-v2-btn cttel-v2-btn--outline-dark cttel-v2-btn__chev" href="<?php echo esc_url( home_url( '/used-phone/' ) ); ?>">مشاهده و درخواست</a>
 			</div>
-			<div class="cttel-v2-used-banner__visual" aria-hidden="true"></div>
+			<div class="cttel-v2-used-banner__visual" aria-hidden="true">
+				<?php echo $visual; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			</div>
 		</div>
 	</section>
 	<?php
@@ -232,12 +263,16 @@ add_shortcode( 'cttel_used_phone_banner', 'cttel_shortcode_used_phone_banner' );
 add_shortcode( 'cttel_used_phone_experience', 'cttel_shortcode_used_phone_banner' );
 
 function cttel_shortcode_installment_campaign(): string {
+	$visual = cttel_home_section_promo_image( 'cttel_installment_campaign_media_id', 'cttel-v2-installment-light__photo' );
 	ob_start();
 	?>
 	<section class="cttel-v2 cttel-v2-installment-light" aria-labelledby="cttel-installment-title">
 		<div class="cttel-container cttel-v2-installment-light__inner">
-			<div class="cttel-v2-installment-light__visual" aria-hidden="true"></div>
+			<div class="cttel-v2-installment-light__visual" aria-hidden="true">
+				<?php echo $visual; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			</div>
 			<div class="cttel-v2-installment-light__copy">
+				<p class="cttel-v2-eyebrow">خرید اقساطی</p>
 				<h2 id="cttel-installment-title" class="cttel-v2-installment-light__title">خرید اقساطی موبایل و لوازم دیجیتال</h2>
 				<p class="cttel-v2-installment-light__lead">مسیر مشخص انتخاب محصول و ثبت درخواست — بدون اطلاعات مالی ساختگی در صفحه اصلی.</p>
 				<ul class="cttel-v2-installment-light__chips">
@@ -292,7 +327,7 @@ add_action(
 		if ( ! file_exists( $path ) ) {
 			return;
 		}
-		wp_register_style( 'cttel-home-v2', false, array( 'cttel-design-system' ), '3.0.0' );
+		wp_register_style( 'cttel-home-v2', false, array( 'cttel-design-system' ), '4.0.0' );
 		wp_enqueue_style( 'cttel-home-v2' );
 		wp_add_inline_style( 'cttel-home-v2', (string) file_get_contents( $path ) );
 	},

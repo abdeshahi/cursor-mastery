@@ -43,12 +43,18 @@ INST_ID="$(import_media "${ASSETS}/cat-installment.png" "CTTEL Category Installm
 
 echo "==> Options + category thumbnails..."
 WP option update cttel_product_placeholder_id "${PRODUCT_ID}"
+WP option update cttel_hero_media_id "${HERO_ID}"
+WP option update cttel_used_banner_media_id "${MOBILE_ID}"
+WP option update cttel_installment_campaign_media_id "${INST_ID}"
 WP theme mod set cttel_installment_card_image "${INST_ID}" 2>/dev/null || true
-WP term meta update 18 thumbnail_id "${MOBILE_ID}"
-WP term meta update 19 thumbnail_id "${HEAD_ID}"
-WP term meta update 20 thumbnail_id "${WATCH_ID}"
-WP term meta update 21 thumbnail_id "${ACC_ID}"
-WP term meta update 22 thumbnail_id "${GAD_ID}"
+for pair in "mobile:${MOBILE_ID}" "headphones:${HEAD_ID}" "smartwatch:${WATCH_ID}" "accessories:${ACC_ID}" "gadgets:${GAD_ID}"; do
+  slug="${pair%%:*}"
+  img_id="${pair##*:}"
+  tid="$(WP term list product_cat --slug="${slug}" --field=term_id 2>/dev/null | head -1)"
+  if [ -n "${tid}" ]; then
+    WP term meta update "${tid}" thumbnail_id "${img_id}" 2>/dev/null || true
+  fi
+done
 
 echo "==> Homepage hero..."
 docker cp "${ROOT}/scripts/seed-brand-images.php" wp_app:/var/www/html/seed-brand-images.php
