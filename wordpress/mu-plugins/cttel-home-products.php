@@ -31,10 +31,25 @@ function cttel_get_homepage_products( int $limit = 4, string $visibility = 'feat
 	}
 
 	$products = wc_get_products( $args );
-	$out      = array();
+	$out      = cttel_filter_homepage_products_with_thumbs( $products, $limit );
 
+	if ( empty( $out ) && 'featured' === $visibility ) {
+		unset( $args['featured'] );
+		$products = wc_get_products( $args );
+		$out      = cttel_filter_homepage_products_with_thumbs( $products, $limit );
+	}
+
+	return $out;
+}
+
+/**
+ * @param WC_Product[] $products
+ * @return WC_Product[]
+ */
+function cttel_filter_homepage_products_with_thumbs( array $products, int $limit ): array {
+	$out = array();
 	foreach ( $products as $product ) {
-		if ( ! cttel_product_has_thumbnail( $product ) ) {
+		if ( ! $product instanceof WC_Product || ! cttel_product_has_thumbnail( $product ) ) {
 			continue;
 		}
 		$out[] = $product;
@@ -42,7 +57,6 @@ function cttel_get_homepage_products( int $limit = 4, string $visibility = 'feat
 			break;
 		}
 	}
-
 	return $out;
 }
 
@@ -77,14 +91,18 @@ function cttel_shortcode_special_products( $atts ): string {
 			<?php else : ?>
 				<ul class="products cttel-products cttel-products--featured columns-<?php echo esc_attr( (string) $limit ); ?>">
 					<?php
+					global $post;
 					foreach ( $products as $product ) {
 						$post_object = get_post( $product->get_id() );
 						if ( ! $post_object ) {
 							continue;
 						}
+						$post               = $post_object; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 						$GLOBALS['product'] = $product; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+						setup_postdata( $post_object );
 						wc_get_template_part( 'content', 'product' );
 					}
+					wp_reset_postdata();
 					?>
 				</ul>
 			<?php endif; ?>

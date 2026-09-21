@@ -14,6 +14,16 @@ add_action(
 			return;
 		}
 		$css = <<<'CSS'
+/* Front page: hide default Blocksy page hero/title — mockup sections provide the hero */
+body.cttel-v2-home article.page .entry-header,
+body.cttel-v2-home .hero-section[data-type="type-2"] {
+	display: none !important;
+}
+
+body.cttel-v2-home {
+	--theme-content-vertical-spacing: 24px;
+}
+
 /* Header surface only — mobile menu behavior unchanged */
 #header.ct-header,
 #header [data-row*="middle"] {
