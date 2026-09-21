@@ -17,8 +17,12 @@ import_media() {
   base="$(basename "${file}")"
   existing="$(WP db query "SELECT ID FROM wp_posts WHERE post_type='attachment' AND post_name='${slug}' LIMIT 1;" --skip-column-names 2>/dev/null | tr -d ' \n')"
   if [ -n "${existing}" ] && [ "${existing}" != "0" ]; then
-    echo "${existing}"
-    return 0
+    if [ "${REFRESH_CAMPAIGN_MEDIA:-0}" = "1" ]; then
+      WP post delete "${existing}" --force >/dev/null 2>&1 || true
+    else
+      echo "${existing}"
+      return 0
+    fi
   fi
   sudo docker cp "${file}" "wp_app:/var/www/html/${base}"
   id="$(WP media import "/var/www/html/${base}" --title="${title}" --post_name="${slug}" --porcelain)"
@@ -26,10 +30,10 @@ import_media() {
   echo "${id}"
 }
 
-if [ ! -f "${ASSETS}/hero-campaign.png" ]; then
-  echo "==> Generate campaign PNGs..."
-  python3 "${ROOT}/scripts/generate-campaign-assets.py"
-fi
+echo "==> Generate campaign PNGs..."
+python3 "${ROOT}/scripts/generate-campaign-assets.py"
+REFRESH_CAMPAIGN_MEDIA=1
+export REFRESH_CAMPAIGN_MEDIA
 
 echo "==> Import campaign images..."
 HERO_ID="$(import_media "${ASSETS}/hero-campaign.png" "CTTEL Campaign Hero" "cttel-campaign-hero")"

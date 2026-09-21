@@ -115,7 +115,7 @@ foreach ( $footer['sections'] as &$section ) {
 	);
 
 	$section['items']['copyright'] = array(
-		'copyright_text' => '© {current_year} {site_title} — تمامی حقوق محفوظ است.',
+		'copyright_text' => '© {current_year} CTTEL.ir',
 	);
 
 	$section['items']['menu'] = array(

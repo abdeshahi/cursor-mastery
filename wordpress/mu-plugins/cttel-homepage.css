@@ -49,6 +49,57 @@ body.cttel-dedicated-home #header .site-title a {
 	font-weight: 800;
 	color: #0b1f3a !important;
 	text-transform: none !important;
+	letter-spacing: -0.03em;
+}
+
+body.cttel-dedicated-home #header [data-device="mobile"] [data-row="middle"] [data-items="primary"] {
+	align-items: center;
+	gap: 0.25rem;
+}
+
+body.cttel-dedicated-home #header [data-id="trigger"],
+body.cttel-dedicated-home #header [data-id="search"],
+body.cttel-dedicated-home #header [data-id="cart"] .ct-cart-item {
+	min-width: 44px;
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+body.cttel-dedicated-home #header [data-id="search"] {
+	opacity: 0.92;
+}
+
+body.cttel-dedicated-home #header [data-id="cart"] .ct-cart-item {
+	gap: 0.2rem;
+	padding-inline: 0.15rem;
+	max-width: 42vw;
+}
+
+body.cttel-dedicated-home #header [data-id="cart"] .ct-label {
+	font-size: 0.625rem !important;
+	font-weight: 700 !important;
+	text-transform: none !important;
+	letter-spacing: -0.02em;
+	color: #0b1f3a !important;
+	line-height: 1.15;
+	white-space: nowrap;
+}
+
+body.cttel-dedicated-home #header [data-id="cart"] .ct-icon-container {
+	--theme-icon-size: 18px;
+}
+
+body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
+	padding-block: 0.85rem;
+}
+
+body.cttel-dedicated-home .ct-footer-copyright {
+	font-size: 0.8125rem !important;
+	font-weight: 600;
+	color: #64748b !important;
+	text-align: center;
 }
 
 body.cttel-dedicated-home .ct-footer [data-row="middle"],
@@ -115,15 +166,24 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 }
 
 .cttel-home-hero__media {
-	max-height: 200px;
+	max-height: 220px;
 	overflow: hidden;
+	position: relative;
+}
+
+.cttel-home-hero__media::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(180deg, transparent 35%, rgba(7, 21, 38, 0.35) 100%);
+	pointer-events: none;
 }
 
 .cttel-home-hero__img {
 	width: 100%;
-	height: 200px;
+	height: 220px;
 	object-fit: cover;
-	object-position: center;
+	object-position: 62% center;
 	display: block;
 }
 
@@ -300,8 +360,22 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 	content: "";
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(0deg, rgba(7, 21, 38, 0.85) 0%, rgba(7, 21, 38, 0.15) 60%);
+	background: linear-gradient(0deg, rgba(7, 21, 38, 0.82) 0%, rgba(7, 21, 38, 0.12) 62%);
 	z-index: 1;
+}
+
+.cttel-home-mosaic__tile--accessories.cttel-home-mosaic__tile--photo::after {
+	background: linear-gradient(0deg, rgba(28, 25, 23, 0.78) 0%, rgba(28, 25, 23, 0.08) 65%);
+}
+
+.cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo::after {
+	background: linear-gradient(0deg, rgba(15, 23, 42, 0.72) 0%, rgba(255, 255, 255, 0) 58%);
+}
+
+.cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo .cttel-home-mosaic__title,
+.cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo .cttel-home-mosaic__desc {
+	color: #0b1f3a;
+	text-shadow: 0 1px 8px rgba(255, 255, 255, 0.35);
 }
 
 .cttel-home-mosaic__copy {
@@ -354,14 +428,15 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 
 .cttel-home-products__empty {
 	margin: 0.75rem 0 0;
-	padding: 1.25rem 1rem;
+	padding: 1.35rem 1rem;
 	text-align: center;
 	font-size: 0.875rem;
 	font-weight: 700;
-	color: #64748b;
-	background: #fff;
-	border: 1px dashed rgba(11, 31, 58, 0.12);
-	border-radius: 12px;
+	color: #475569;
+	background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+	border: 1px solid rgba(11, 31, 58, 0.08);
+	border-radius: 14px;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .cttel-home-products__title {
@@ -500,10 +575,23 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 	max-height: 140px;
 }
 
+.cttel-home-used__media {
+	position: relative;
+}
+
+.cttel-home-used__media::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, rgba(7, 21, 38, 0.55) 0%, transparent 55%);
+	pointer-events: none;
+}
+
 .cttel-home-used__photo {
 	width: 100%;
 	height: 140px;
 	object-fit: cover;
+	object-position: 70% center;
 }
 
 .cttel-home-installment__panel {
@@ -535,10 +623,16 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 	max-height: 120px;
 }
 
+.cttel-home-installment__media {
+	position: relative;
+	overflow: hidden;
+}
+
 .cttel-home-installment__photo {
 	width: 100%;
-	height: 120px;
+	height: 132px;
 	object-fit: cover;
+	object-position: center;
 }
 
 /* Trust */
