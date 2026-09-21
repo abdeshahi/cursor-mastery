@@ -51,7 +51,7 @@ const shots = [
   { name: '390-header-hero', width: 390, prepare: async (page) => page.evaluate(() => window.scrollTo(0, 0)) },
   { name: '390-rail-mosaic', width: 390, prepare: (page) => scrollToSelector(page, '.cttel-home-rail') },
   { name: '390-products', width: 390, prepare: (page) => scrollToSelector(page, '.cttel-home-products') },
-  { name: '390-used-trust', width: 390, prepare: (page) => scrollToSelector(page, '.cttel-home-used'), height: 920 },
+  { name: '390-used-installment', width: 390, prepare: (page) => scrollToSelector(page, '.cttel-home-used'), height: 980 },
   { name: '1440-header-hero', width: 1440, prepare: async (page) => page.evaluate(() => window.scrollTo(0, 0)) },
   { name: '1440-mosaic-products', width: 1440, prepare: (page) => scrollToSelector(page, '.cttel-home-mosaic') },
   { name: '1440-lower-home', width: 1440, prepare: (page) => scrollToSelector(page, '.cttel-home-used'), height: 1000 },

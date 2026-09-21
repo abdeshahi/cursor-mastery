@@ -118,6 +118,28 @@ function cttel_homepage_attachment_img( int $attach_id, string $size, string $cl
 	);
 }
 
+/** Campaign mosaic / banner attachment for non-catalog tiles. */
+function cttel_homepage_campaign_media_id( string $key ): int {
+	$map = array(
+		'used'        => 'cttel_mosaic_used_media_id',
+		'installment' => 'cttel_mosaic_installment_media_id',
+	);
+	if ( ! isset( $map[ $key ] ) ) {
+		return 0;
+	}
+	$id = absint( get_option( $map[ $key ], 0 ) );
+	if ( $id > 0 && ! cttel_is_preview_attachment( $id ) ) {
+		return $id;
+	}
+	if ( 'used' === $key ) {
+		return absint( get_option( 'cttel_used_banner_media_id', 0 ) );
+	}
+	if ( 'installment' === $key ) {
+		return absint( get_option( 'cttel_installment_campaign_media_id', 0 ) );
+	}
+	return 0;
+}
+
 function cttel_homepage_term_image( string $slug, string $size = 'medium_large' ): string {
 	$term = get_term_by( 'slug', $slug, 'product_cat' );
 	if ( ! $term instanceof WP_Term ) {
@@ -204,12 +226,12 @@ function cttel_homepage_render_service_rail(): void {
 
 function cttel_homepage_render_mosaic(): void {
 	$tiles = array(
-		array( 'large', 'mobile', 'موبایل', 'جدیدترین گوشی‌های هوشمند', 'mobile', '/product-category/mobile/' ),
-		array( 'large', 'accessories', 'لوازم جانبی', 'همراه بهتر برای دستگاه‌های شما', 'accessories', '/product-category/accessories/' ),
-		array( 'small', 'headphones', 'هندزفری', 'صدا و تماس', 'headphones', '/product-category/headphones/' ),
-		array( 'small', 'watch', 'ساعت هوشمند', 'پوشیدنی‌های هوشمند', 'smartwatch', '/product-category/smartwatch/' ),
-		array( 'small', 'used', 'گوشی کارکرده', 'موجودی تأیید‌شده', '', '/used-phone/' ),
-		array( 'small', 'installment', 'خرید اقساطی', 'مسیر خرید منعطف', '', '/installment/' ),
+		array( 'large', 'mobile', 'موبایل', 'جدیدترین گوشی‌های هوشمند', 'mobile', '/product-category/mobile/', '' ),
+		array( 'large', 'accessories', 'لوازم جانبی', 'همراه بهتر برای دستگاه‌های شما', 'accessories', '/product-category/accessories/', '' ),
+		array( 'small', 'headphones', 'هندزفری', 'صدا و تماس', 'headphones', '/product-category/headphones/', '' ),
+		array( 'small', 'watch', 'ساعت هوشمند', 'پوشیدنی‌های هوشمند', 'smartwatch', '/product-category/smartwatch/', '' ),
+		array( 'small', 'used', 'گوشی کارکرده', 'موجودی تأیید‌شده', '', '/used-phone/', 'used' ),
+		array( 'small', 'installment', 'خرید اقساطی', 'مسیر خرید منعطف', '', '/installment/', 'installment' ),
 	);
 	?>
 	<section class="cttel-home-mosaic" aria-label="<?php esc_attr_e( 'دسته‌بندی‌ها', 'cttel-store' ); ?>">
@@ -217,9 +239,13 @@ function cttel_homepage_render_mosaic(): void {
 			<div class="cttel-home-mosaic__grid">
 				<?php foreach ( $tiles as $tile ) : ?>
 					<?php
-					list( $size, $theme, $title, $desc, $slug, $path ) = $tile;
+					list( $size, $theme, $title, $desc, $slug, $path, $campaign_key ) = $tile;
 					$url = $slug ? cttel_home_cat_link( $slug, $path ) : home_url( $path );
 					$img = $slug ? cttel_homepage_term_image( $slug ) : '';
+					if ( '' === $img && $campaign_key ) {
+						$campaign_id = cttel_homepage_campaign_media_id( $campaign_key );
+						$img         = cttel_homepage_attachment_img( $campaign_id, 'medium_large', 'cttel-home-mosaic__photo' );
+					}
 					?>
 					<a class="cttel-home-mosaic__tile cttel-home-mosaic__tile--<?php echo esc_attr( $size ); ?> cttel-home-mosaic__tile--<?php echo esc_attr( $theme ); ?><?php echo $img ? ' cttel-home-mosaic__tile--photo' : ''; ?>" href="<?php echo esc_url( $url ); ?>">
 						<?php if ( $img ) : ?>
@@ -248,7 +274,7 @@ function cttel_homepage_render_products(): void {
 				<a class="cttel-home-products__all" href="<?php echo esc_url( wc_get_page_permalink( 'shop' ) ); ?>">مشاهده همه</a>
 			</div>
 			<?php if ( empty( $products ) ) : ?>
-				<p class="cttel-home-products__empty"><?php esc_html_e( 'به‌زودی محصولات منتخب با تصویر واقعی در این بخش نمایش داده می‌شوند.', 'cttel-store' ); ?></p>
+				<p class="cttel-home-products__empty"><?php esc_html_e( 'محصولات جدید به‌زودی', 'cttel-store' ); ?></p>
 			<?php else : ?>
 				<ul class="cttel-home-products__grid">
 					<?php foreach ( $products as $product ) : ?>
@@ -293,7 +319,7 @@ function cttel_homepage_render_used_phone(): void {
 	?>
 	<section class="cttel-home-used">
 		<div class="cttel-home-wrap">
-			<div class="cttel-home-used__panel<?php echo $photo ? ' cttel-home-used__panel--photo' : ''; ?>">
+			<div class="cttel-home-used__panel<?php echo $photo ? ' cttel-home-used__panel--photo' : ' cttel-home-used__panel--texture'; ?>">
 				<div class="cttel-home-used__copy">
 					<h2 class="cttel-home-used__title">گوشی کارکرده</h2>
 					<p class="cttel-home-used__lead">کیفیت بالا، قیمت بهتر — موجودی فروشگاه یا درخواست تأمین اختصاصی</p>
