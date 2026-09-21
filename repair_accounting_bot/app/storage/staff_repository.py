@@ -46,14 +46,7 @@ class StaffRepository:
         return dict(row) if row else None
 
     async def can_edit_repair(self, telegram_id: int) -> bool:
-        if await self.is_admin(telegram_id):
-            return True
-        cursor = await self.conn.execute(
-            'SELECT can_edit_repair FROM staff WHERE telegram_id = ? AND active = 1',
-            (telegram_id,),
-        )
-        row = await cursor.fetchone()
-        return bool(row and row['can_edit_repair'])
+        return await self.is_active_staff(telegram_id)
 
     async def set_can_edit_repair(self, telegram_id: int, enabled: bool) -> bool:
         if await self.is_admin(telegram_id):

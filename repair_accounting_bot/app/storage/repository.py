@@ -146,6 +146,81 @@ class RepairRepository:
         await self.conn.commit()
         return cursor.rowcount > 0
 
+    async def _repair_is_open(self, repair_id: int) -> bool:
+        cursor = await self.conn.execute(
+            "SELECT id FROM repairs WHERE id = ? AND status = 'open'",
+            (repair_id,),
+        )
+        return await cursor.fetchone() is not None
+
+    async def update_repair_customer(
+        self,
+        repair_id: int,
+        *,
+        name: str | None = None,
+        phone: str | None = None,
+    ) -> bool:
+        cursor = await self.conn.execute(
+            """
+            SELECT customer_id FROM repairs WHERE id = ? AND status = 'open'
+            """,
+            (repair_id,),
+        )
+        row = await cursor.fetchone()
+        if not row:
+            return False
+        customer_id = int(row['customer_id'])
+        if name is not None:
+            await self.conn.execute(
+                'UPDATE customers SET name = ? WHERE id = ?',
+                (name.strip(), customer_id),
+            )
+        if phone is not None:
+            await self.conn.execute(
+                'UPDATE customers SET phone = ? WHERE id = ?',
+                (phone.strip(), customer_id),
+            )
+        await self.conn.commit()
+        return True
+
+    async def update_repair_device(self, repair_id: int, device: str) -> bool:
+        cursor = await self.conn.execute(
+            """
+            UPDATE repairs SET device = ?
+            WHERE id = ? AND status = 'open'
+            """,
+            (device.strip(), repair_id),
+        )
+        await self.conn.commit()
+        return cursor.rowcount > 0
+
+    async def update_repair_issue(self, repair_id: int, issue: str) -> bool:
+        cursor = await self.conn.execute(
+            """
+            UPDATE repairs SET issue = ?
+            WHERE id = ? AND status = 'open'
+            """,
+            (issue.strip(), repair_id),
+        )
+        await self.conn.commit()
+        return cursor.rowcount > 0
+
+    async def update_repair_technician(
+        self,
+        repair_id: int,
+        technician_id: int,
+        technician_pct: float,
+    ) -> bool:
+        cursor = await self.conn.execute(
+            """
+            UPDATE repairs SET technician_id = ?, technician_pct = ?
+            WHERE id = ? AND status = 'open'
+            """,
+            (technician_id, technician_pct, repair_id),
+        )
+        await self.conn.commit()
+        return cursor.rowcount > 0
+
     async def add_repair_part(self, repair_id: int, part: dict[str, Any]) -> bool:
         cursor = await self.conn.execute(
             "SELECT id FROM repairs WHERE id = ? AND status = 'open'",
@@ -174,6 +249,69 @@ class RepairRepository:
             WHERE id = ?
             """,
             (int(part['cost']), int(part['sell_price']), repair_id),
+        )
+        await self.conn.commit()
+        return True
+
+    async def update_repair_part(
+        self,
+        repair_id: int,
+        part_id: int,
+        part: dict[str, Any],
+    ) -> bool:
+        cursor = await self.conn.execute(
+            'SELECT cost, sell_price FROM repair_parts WHERE id = ? AND repair_id = ?',
+            (part_id, repair_id),
+        )
+        old = await cursor.fetchone()
+        if not old or not await self._repair_is_open(repair_id):
+            return False
+        new_cost = int(part['cost'])
+        new_sell = int(part['sell_price'])
+        await self.conn.execute(
+            """
+            UPDATE repair_parts
+            SET supplier_id = ?, part_name = ?, cost = ?, sell_price = ?
+            WHERE id = ? AND repair_id = ?
+            """,
+            (
+                part.get('supplier_id'),
+                part['part_name'],
+                new_cost,
+                new_sell,
+                part_id,
+                repair_id,
+            ),
+        )
+        await self.conn.execute(
+            """
+            UPDATE repairs SET
+                parts_cost = parts_cost - ? + ?,
+                parts_sell = parts_sell - ? + ?
+            WHERE id = ?
+            """,
+            (int(old['cost']), new_cost, int(old['sell_price']), new_sell, repair_id),
+        )
+        await self.conn.commit()
+        return True
+
+    async def delete_repair_part(self, repair_id: int, part_id: int) -> bool:
+        cursor = await self.conn.execute(
+            'SELECT cost, sell_price FROM repair_parts WHERE id = ? AND repair_id = ?',
+            (part_id, repair_id),
+        )
+        row = await cursor.fetchone()
+        if not row or not await self._repair_is_open(repair_id):
+            return False
+        await self.conn.execute('DELETE FROM repair_parts WHERE id = ?', (part_id,))
+        await self.conn.execute(
+            """
+            UPDATE repairs SET
+                parts_cost = parts_cost - ?,
+                parts_sell = parts_sell - ?
+            WHERE id = ?
+            """,
+            (int(row['cost']), int(row['sell_price']), repair_id),
         )
         await self.conn.commit()
         return True

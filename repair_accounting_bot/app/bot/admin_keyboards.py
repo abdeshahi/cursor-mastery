@@ -36,15 +36,6 @@ def staff_detail_keyboard(
             for role in MANAGEABLE_ROLES
         ]
         rows.append(role_row)
-        if not is_admin_user:
-            toggle_label = (
-                '✅ ویرایش پرونده: روشن'
-                if can_edit_repair
-                else '❌ ویرایش پرونده: خاموش'
-            )
-            rows.append(
-                [InlineKeyboardButton(text=toggle_label, callback_data=f'adm:staff:toggleedit:{telegram_id}')],
-            )
         rows.append(
             [InlineKeyboardButton(text='🚫 حذف دسترسی', callback_data=f'adm:staff:del:{telegram_id}')],
         )

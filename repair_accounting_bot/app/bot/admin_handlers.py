@@ -143,11 +143,8 @@ async def cb_staff_view(callback: CallbackQuery, staff_repo: StaffRepository, is
         return
     role = ROLE_LABELS.get(row.get('role') or 'full', 'کارمند')
     is_admin_user = row.get('role') == ROLE_ADMIN or bool(row.get('is_admin'))
-    if is_admin_user:
-        edit_status = 'همیشه فعال (مدیر)'
-    else:
-        edit_status = '✅ فعال' if row.get('can_edit_repair') else '❌ غیرفعال'
-    hint = 'نام یا نقش را ویرایش کنید:' if telegram_id == callback.from_user.id else 'نام، نقش، یا دسترسی ویرایش پرونده را تنظیم کنید:'
+    edit_status = '✅ برای همه پرسنل فعال'
+    hint = 'نام یا نقش را ویرایش کنید:' if telegram_id == callback.from_user.id else 'نام یا نقش را تنظیم کنید:'
     text = (
         f"👤 **{row['name']}**\n\n"
         f"آیدی: `{telegram_id}`\n"

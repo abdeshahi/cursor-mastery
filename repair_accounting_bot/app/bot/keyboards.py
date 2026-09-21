@@ -200,11 +200,57 @@ def repair_actions(repair_id: int, *, is_open: bool = True, can_edit: bool = Fal
 def edit_repair_menu_keyboard(repair_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text='💼 تغییر اجرت', callback_data=f'edit:labor:{repair_id}')],
-            [InlineKeyboardButton(text='➕ افزودن قطعه', callback_data=f'edit:part:{repair_id}')],
+            [
+                InlineKeyboardButton(text='👤 نام مشتری', callback_data=f'edit:cname:{repair_id}'),
+                InlineKeyboardButton(text='📞 تماس', callback_data=f'edit:cphone:{repair_id}'),
+            ],
+            [
+                InlineKeyboardButton(text='📱 دستگاه', callback_data=f'edit:device:{repair_id}'),
+                InlineKeyboardButton(text='🔧 ایراد', callback_data=f'edit:issue:{repair_id}'),
+            ],
+            [
+                InlineKeyboardButton(text='👨‍🔧 تعمیرکار', callback_data=f'edit:techmenu:{repair_id}'),
+                InlineKeyboardButton(text='💼 اجرت', callback_data=f'edit:labor:{repair_id}'),
+            ],
+            [InlineKeyboardButton(text='🔩 قطعات', callback_data=f'edit:parts:{repair_id}')],
             [InlineKeyboardButton(text='❌ انصراف', callback_data='edit:cancel')],
         ],
     )
+
+
+def edit_technician_keyboard(repair_id: int, technicians: list[dict]) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"{t['name']} ({t['default_pct']}%)",
+                callback_data=f'edit:techpick:{repair_id}:{t["id"]}',
+            ),
+        ]
+        for t in technicians
+    ]
+    rows.append([InlineKeyboardButton(text='⬅️ بازگشت', callback_data=f'edit:menu:{repair_id}')])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def edit_parts_menu_keyboard(repair_id: int, parts: list[dict]) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    for part in parts:
+        label = part['part_name'][:18]
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=f"✏️ {label}",
+                    callback_data=f'edit:patmod:{repair_id}:{part["id"]}',
+                ),
+                InlineKeyboardButton(
+                    text='🗑 حذف',
+                    callback_data=f'edit:patdel:{repair_id}:{part["id"]}',
+                ),
+            ],
+        )
+    rows.append([InlineKeyboardButton(text='➕ قطعه جدید', callback_data=f'edit:part:{repair_id}')])
+    rows.append([InlineKeyboardButton(text='⬅️ بازگشت', callback_data=f'edit:menu:{repair_id}')])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def edit_parts_done_keyboard() -> ReplyKeyboardMarkup:

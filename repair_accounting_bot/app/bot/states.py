@@ -57,6 +57,10 @@ class AdminStaffRename(StatesGroup):
 
 
 class EditRepair(StatesGroup):
+    customer_name = State()
+    customer_phone = State()
+    device = State()
+    issue = State()
     labor_amount = State()
     part_name = State()
     part_cost = State()

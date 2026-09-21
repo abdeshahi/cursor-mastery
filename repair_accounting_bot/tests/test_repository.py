@@ -112,6 +112,51 @@ async def test_update_repair_labor(repo) -> None:
 
 
 @pytest.mark.asyncio
+async def test_update_repair_customer_and_device(repo) -> None:
+    repository, tech_id = repo
+    customer_id = await repository.find_or_create_customer('قدیم', '09120000001')
+    repair_id = await repository.create_repair(
+        customer_id=customer_id,
+        technician_id=tech_id,
+        device='iPhone 11',
+        issue='باتری',
+        labor_amount=100_000,
+        technician_pct=40,
+        parts=[],
+    )
+    assert await repository.update_repair_customer(repair_id, name='جدید', phone='09129999999')
+    assert await repository.update_repair_device(repair_id, 'Samsung S24')
+    assert await repository.update_repair_issue(repair_id, 'صفحه')
+    repair = await repository.get_repair(repair_id)
+    assert repair['customer_name'] == 'جدید'
+    assert repair['customer_phone'] == '09129999999'
+    assert repair['device'] == 'Samsung S24'
+    assert repair['issue'] == 'صفحه'
+
+
+@pytest.mark.asyncio
+async def test_delete_repair_part(repo) -> None:
+    repository, tech_id = repo
+    customer_id = await repository.find_or_create_customer('سارا', '09128888888')
+    repair_id = await repository.create_repair(
+        customer_id=customer_id,
+        technician_id=tech_id,
+        device='Pixel',
+        issue='شارژ',
+        labor_amount=150_000,
+        technician_pct=30,
+        parts=[{'part_name': 'باتری', 'cost': 400_000, 'sell_price': 550_000, 'supplier_id': None}],
+    )
+    repair = await repository.get_repair(repair_id)
+    part_id = int(repair['parts'][0]['id'])
+    assert await repository.delete_repair_part(repair_id, part_id)
+    repair = await repository.get_repair(repair_id)
+    assert repair['parts'] == []
+    assert repair['parts_cost'] == 0
+    assert repair['parts_sell'] == 0
+
+
+@pytest.mark.asyncio
 async def test_add_repair_part(repo) -> None:
     repository, tech_id = repo
     customer_id = await repository.find_or_create_customer('نیما', '09126666666')

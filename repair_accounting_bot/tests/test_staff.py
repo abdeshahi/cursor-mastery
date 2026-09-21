@@ -81,12 +81,8 @@ async def test_can_edit_repair_permission(staff_repo: StaffRepository) -> None:
     await staff_repo.seed_from_env()
     assert await staff_repo.can_edit_repair(111)
     await staff_repo.add_staff(333, 'پذیرش', role=ROLE_RECEPTION)
-    assert not await staff_repo.can_edit_repair(333)
-    assert await staff_repo.set_can_edit_repair(333, True)
     assert await staff_repo.can_edit_repair(333)
-    toggled = await staff_repo.toggle_can_edit_repair(333)
-    assert toggled is False
-    assert not await staff_repo.can_edit_repair(333)
+    assert not await staff_repo.can_edit_repair(999_999)
 
 
 @pytest.mark.asyncio
