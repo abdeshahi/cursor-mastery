@@ -1,0 +1,581 @@
+/* CTTEL dedicated homepage — isolated from Blocksy page/article layout */
+
+body.cttel-dedicated-home {
+	--theme-content-vertical-spacing: 0px;
+	background: #f3f6fb;
+}
+
+body.cttel-dedicated-home #main-container,
+body.cttel-dedicated-home .site-main,
+body.cttel-dedicated-home #cttel-home {
+	padding: 0 !important;
+	margin: 0 !important;
+	max-width: 100%;
+	min-width: 0;
+}
+
+body.cttel-dedicated-home article.page,
+body.cttel-dedicated-home .entry-header,
+body.cttel-dedicated-home .hero-section,
+body.cttel-dedicated-home .entry-content {
+	display: none !important;
+}
+
+body.cttel-dedicated-home [class*="ct-container"] {
+	--theme-container-edge-spacing: 100%;
+	max-width: 100%;
+}
+
+@media (max-width: 999.98px) {
+	body.cttel-dedicated-home #header [data-device="desktop"] {
+		display: none !important;
+	}
+}
+
+@media (min-width: 1000px) {
+	body.cttel-dedicated-home #header [data-device="mobile"] {
+		display: none !important;
+	}
+}
+
+body.cttel-dedicated-home #header [data-row*="middle"] {
+	--height: 64px !important;
+	background: #fff !important;
+	border-bottom: 1px solid rgba(11, 31, 58, 0.08);
+}
+
+body.cttel-dedicated-home #header .site-title,
+body.cttel-dedicated-home #header .site-title a {
+	font-weight: 800;
+	color: #0b1f3a !important;
+	text-transform: none !important;
+}
+
+body.cttel-dedicated-home .ct-footer [data-row="middle"],
+body.cttel-dedicated-home .ct-footer [data-row="top"] {
+	display: none !important;
+}
+
+.cttel-home {
+	font-family: Vazirmatn, system-ui, sans-serif;
+	color: #0b1f3a;
+	padding-block: 0.5rem 1rem;
+}
+
+.cttel-home-wrap {
+	width: min(1180px, 100%);
+	margin-inline: auto;
+	padding-inline: clamp(0.75rem, 3.2vw, 1.25rem);
+	box-sizing: border-box;
+}
+
+.cttel-home-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	padding: 0.55rem 1rem;
+	border-radius: 12px;
+	font-weight: 700;
+	font-size: 0.8125rem;
+	text-decoration: none;
+	border: 1px solid transparent;
+	box-sizing: border-box;
+}
+
+.cttel-home-btn--primary {
+	background: #2563eb;
+	color: #fff;
+}
+
+.cttel-home-btn--ghost {
+	background: transparent;
+	color: #fff;
+	border-color: rgba(255, 255, 255, 0.45);
+}
+
+/* Hero */
+.cttel-home-hero {
+	padding-block: 0.35rem 0.5rem;
+}
+
+.cttel-home-hero__card {
+	border-radius: 18px;
+	overflow: hidden;
+	background: linear-gradient(165deg, #071526 0%, #0b1f3a 55%, #152d52 100%);
+	box-shadow: 0 16px 40px rgba(7, 21, 38, 0.18);
+}
+
+.cttel-home-hero__card--has-media {
+	display: grid;
+	grid-template-columns: 1fr;
+}
+
+.cttel-home-hero__media {
+	max-height: 200px;
+	overflow: hidden;
+}
+
+.cttel-home-hero__img {
+	width: 100%;
+	height: 200px;
+	object-fit: cover;
+	object-position: center;
+	display: block;
+}
+
+.cttel-home-hero__body {
+	padding: 1rem 1rem 1.1rem;
+	text-align: right;
+}
+
+.cttel-home-hero__eyebrow {
+	margin: 0 0 0.35rem;
+	font-size: 0.75rem;
+	color: #93c5fd;
+	font-weight: 600;
+}
+
+.cttel-home-hero__title {
+	margin: 0 0 0.45rem;
+	font-size: clamp(1.45rem, 6vw, 2rem);
+	font-weight: 800;
+	line-height: 1.12;
+	color: #f8fafc;
+}
+
+.cttel-home-hero__lead {
+	margin: 0 0 0.85rem;
+	font-size: 0.8125rem;
+	line-height: 1.55;
+	color: #cbd5e1;
+	max-width: 36ch;
+}
+
+.cttel-home-hero__actions {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.45rem;
+}
+
+/* Service rail */
+.cttel-home-rail {
+	padding-block: 0.45rem 0.55rem;
+}
+
+.cttel-home-rail__strip {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	background: #fff;
+	border: 1px solid rgba(11, 31, 58, 0.08);
+	border-radius: 14px;
+	overflow: hidden;
+}
+
+.cttel-home-rail__cell {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	padding: 0.55rem 0.25rem;
+	min-height: 44px;
+	text-decoration: none;
+	color: inherit;
+	border-inline-end: 1px solid rgba(11, 31, 58, 0.08);
+}
+
+.cttel-home-rail__cell:last-child {
+	border-inline-end: none;
+}
+
+.cttel-home-rail__icon {
+	width: 1.25rem;
+	height: 1.25rem;
+	border: 1.5px solid #2563eb;
+	border-radius: 5px;
+	margin-bottom: 0.25rem;
+}
+
+.cttel-home-rail__label {
+	font-size: 0.625rem;
+	font-weight: 800;
+	line-height: 1.2;
+}
+
+.cttel-home-rail__desc {
+	display: none;
+	font-size: 0.5625rem;
+	color: #64748b;
+}
+
+/* Mosaic */
+.cttel-home-mosaic {
+	padding-block: 0.45rem 0.55rem;
+}
+
+.cttel-home-mosaic__grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.45rem;
+}
+
+.cttel-home-mosaic__tile {
+	position: relative;
+	min-height: 104px;
+	border-radius: 14px;
+	overflow: hidden;
+	text-decoration: none;
+	color: #f8fafc;
+	box-shadow: 0 4px 14px rgba(11, 31, 58, 0.1);
+}
+
+.cttel-home-mosaic__tile--large {
+	grid-column: span 2;
+	min-height: 128px;
+}
+
+.cttel-home-mosaic__tile--mobile {
+	background: linear-gradient(135deg, #0b1f3a, #1e3a5f);
+}
+
+.cttel-home-mosaic__tile--accessories {
+	background: linear-gradient(135deg, #4b5563, #9ca3af);
+}
+
+.cttel-home-mosaic__tile--headphones,
+.cttel-home-mosaic__tile--watch {
+	background: linear-gradient(135deg, #334155, #64748b);
+}
+
+.cttel-home-mosaic__tile--used {
+	background: linear-gradient(135deg, #1d4ed8, #2563eb);
+}
+
+.cttel-home-mosaic__tile--installment {
+	background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+.cttel-home-mosaic__photo-wrap,
+.cttel-home-mosaic__photo {
+	position: absolute;
+	inset: 0;
+}
+
+.cttel-home-mosaic__photo {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.cttel-home-mosaic__tile--photo::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(0deg, rgba(7, 21, 38, 0.85) 0%, rgba(7, 21, 38, 0.15) 60%);
+	z-index: 1;
+}
+
+.cttel-home-mosaic__copy {
+	position: absolute;
+	inset-inline: 0;
+	inset-block-end: 0;
+	z-index: 2;
+	padding: 0.65rem 0.7rem;
+}
+
+.cttel-home-mosaic__title {
+	margin: 0;
+	font-size: 0.9375rem;
+	font-weight: 800;
+}
+
+.cttel-home-mosaic__desc {
+	margin: 0.1rem 0 0;
+	font-size: 0.6875rem;
+	opacity: 0.9;
+}
+
+.cttel-home-mosaic__arrow {
+	position: absolute;
+	inset-inline-start: 0.5rem;
+	inset-block-end: 0.5rem;
+	z-index: 3;
+	width: 1.4rem;
+	height: 1.4rem;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.15);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.9rem;
+}
+
+/* Products */
+.cttel-home-products {
+	padding-block: 0.55rem;
+}
+
+.cttel-home-products__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 0.45rem;
+}
+
+.cttel-home-products__title {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 800;
+}
+
+.cttel-home-products__all {
+	font-size: 0.8125rem;
+	font-weight: 700;
+	color: #2563eb;
+	text-decoration: none;
+}
+
+.cttel-home-products__grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.45rem;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.cttel-home-product {
+	background: #fff;
+	border: 1px solid rgba(11, 31, 58, 0.08);
+	border-radius: 12px;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.cttel-home-product__link {
+	text-decoration: none;
+	color: inherit;
+}
+
+.cttel-home-product__media {
+	height: 96px;
+	background: #f1f5f9;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+
+.cttel-home-product__img {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+}
+
+.cttel-home-product__name {
+	margin: 0;
+	padding: 0.4rem 0.5rem 0;
+	font-size: 0.75rem;
+	font-weight: 800;
+	line-height: 1.35;
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
+.cttel-home-product__price {
+	padding: 0.15rem 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 800;
+}
+
+.cttel-home-product__cart {
+	margin: 0.35rem 0.45rem 0.45rem !important;
+	min-height: 40px !important;
+	font-size: 0.6875rem !important;
+	border-radius: 10px !important;
+	background: #eff6ff !important;
+	color: #2563eb !important;
+	border: 1px solid rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Used + installment — no decorative circles */
+.cttel-home-used,
+.cttel-home-installment {
+	padding-block: 0.45rem;
+}
+
+.cttel-home-used__panel,
+.cttel-home-installment__panel {
+	border-radius: 16px;
+	overflow: hidden;
+}
+
+.cttel-home-used__panel {
+	background: linear-gradient(135deg, #071526, #0b1f3a);
+	color: #f8fafc;
+	display: grid;
+	grid-template-columns: 1fr;
+}
+
+.cttel-home-used__copy {
+	padding: 1rem;
+}
+
+.cttel-home-used__title {
+	margin: 0 0 0.35rem;
+	font-size: 1.125rem;
+	font-weight: 800;
+}
+
+.cttel-home-used__lead {
+	margin: 0 0 0.75rem;
+	font-size: 0.8125rem;
+	color: #cbd5e1;
+	line-height: 1.5;
+}
+
+.cttel-home-used__media {
+	max-height: 140px;
+}
+
+.cttel-home-used__photo {
+	width: 100%;
+	height: 140px;
+	object-fit: cover;
+}
+
+.cttel-home-installment__panel {
+	background: linear-gradient(135deg, #dbeafe, #eff6ff);
+	border: 1px solid rgba(37, 99, 235, 0.12);
+	display: grid;
+	grid-template-columns: 1fr;
+}
+
+.cttel-home-installment__copy {
+	padding: 1rem;
+}
+
+.cttel-home-installment__title {
+	margin: 0 0 0.35rem;
+	font-size: 1.05rem;
+	font-weight: 800;
+	color: #0b1f3a;
+}
+
+.cttel-home-installment__lead {
+	margin: 0 0 0.75rem;
+	font-size: 0.8125rem;
+	color: #64748b;
+	line-height: 1.5;
+}
+
+.cttel-home-installment__media {
+	max-height: 120px;
+}
+
+.cttel-home-installment__photo {
+	width: 100%;
+	height: 120px;
+	object-fit: cover;
+}
+
+/* Trust */
+.cttel-home-trust {
+	padding-block: 0.55rem 0.75rem;
+}
+
+.cttel-home-trust__list {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.45rem 0.65rem;
+	list-style: none;
+	margin: 0;
+	padding: 0.65rem 0 0;
+	border-top: 1px solid rgba(11, 31, 58, 0.08);
+}
+
+.cttel-home-trust__item {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.4rem;
+	min-width: 0;
+}
+
+.cttel-home-trust__icon {
+	width: 1.25rem;
+	height: 1.25rem;
+	border: 1px solid rgba(11, 31, 58, 0.12);
+	border-radius: 6px;
+	flex-shrink: 0;
+}
+
+.cttel-home-trust__text strong {
+	display: block;
+	font-size: 0.6875rem;
+	font-weight: 800;
+}
+
+.cttel-home-trust__text span {
+	display: block;
+	font-size: 0.625rem;
+	color: #64748b;
+}
+
+@media (min-width: 768px) {
+	.cttel-home-hero__card--has-media {
+		grid-template-columns: 1fr 1.05fr;
+		min-height: 320px;
+	}
+
+	.cttel-home-hero__media {
+		order: 2;
+		max-height: none;
+	}
+
+	.cttel-home-hero__img {
+		height: 100%;
+		min-height: 320px;
+	}
+
+	.cttel-home-hero__body {
+		order: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding: 2rem;
+	}
+
+	.cttel-home-rail__desc {
+		display: block;
+	}
+
+	.cttel-home-mosaic__grid {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+
+	.cttel-home-mosaic__tile--large {
+		grid-column: span 2;
+		min-height: 190px;
+	}
+
+	.cttel-home-products__grid {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+
+	.cttel-home-used__panel--photo {
+		grid-template-columns: 1.1fr 0.9fr;
+	}
+
+	.cttel-home-installment__panel {
+		grid-template-columns: 0.85fr 1.15fr;
+		align-items: center;
+	}
+
+	.cttel-home-trust__list {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}

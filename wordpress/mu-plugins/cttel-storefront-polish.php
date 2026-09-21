@@ -10,6 +10,9 @@ defined( 'ABSPATH' ) || exit;
 add_action(
 	'wp_enqueue_scripts',
 	static function (): void {
+		if ( function_exists( 'cttel_is_dedicated_homepage' ) && cttel_is_dedicated_homepage() ) {
+			return;
+		}
 		if ( ! is_front_page() ) {
 			return;
 		}
