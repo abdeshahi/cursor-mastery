@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""CTTEL homepage campaign art — commercial tech/editorial (no inventory silhouettes)."""
+"""CTTEL homepage campaign art v3 — premium retail / fintech editorial (no inventory claims)."""
 from __future__ import annotations
 
 import math
 import random
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
 
 ROOT = Path(__file__).resolve().parent.parent / "assets" / "campaign"
-SEED = 20260921
+SEED = 20260922
 
 
 def _rng(seed_offset: int = 0) -> random.Random:
@@ -57,7 +57,7 @@ def _bokeh(
     for _ in range(count):
         cx = r.randint(-w // 8, w + w // 8)
         cy = r.randint(-h // 8, h + h // 8)
-        rad = r.randint(max(w, h) // 10, max(w, h) // 2)
+        rad = r.randint(max(w, h) // 12, max(w, h) // 2)
         draw.ellipse((cx - rad, cy - rad, cx + rad, cy + rad), fill=r.choice(palette))
     blur = max(4, int(max(w, h) / blur_scale))
     overlay = overlay.filter(ImageFilter.GaussianBlur(radius=blur))
@@ -67,56 +67,67 @@ def _bokeh(
 def _lens_flare(img: Image.Image, cx: float, cy: float, scale: float = 1.0) -> Image.Image:
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    w, h = img.size
-    base = min(w, h) * scale
-    rings = [(base * 0.55, (147, 197, 253, 90)), (base * 0.32, (59, 130, 246, 70)), (base * 0.18, (255, 255, 255, 110))]
+    base = min(img.size[0], img.size[1]) * scale
+    rings = [
+        (base * 0.58, (147, 197, 253, 100)),
+        (base * 0.34, (59, 130, 246, 80)),
+        (base * 0.16, (255, 255, 255, 130)),
+    ]
     for rad, col in rings:
         draw.ellipse((cx - rad, cy - rad, cx + rad, cy + rad), fill=col)
-    draw.line((cx - base * 1.2, cy, cx + base * 1.2, cy), fill=(147, 197, 253, 45), width=max(2, int(base * 0.02)))
-    draw.line((cx, cy - base * 0.8, cx, cy + base * 0.8), fill=(147, 197, 253, 35), width=max(2, int(base * 0.015)))
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=max(3, int(base * 0.04))))
+    draw.line((cx - base * 1.3, cy, cx + base * 1.3, cy), fill=(191, 219, 254, 55), width=max(2, int(base * 0.018)))
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=max(3, int(base * 0.035))))
     return _composite(img, overlay)
 
 
-def _rim_light(img: Image.Image) -> Image.Image:
-    """Soft studio edge glow (abstract product-ad lighting, not a device outline)."""
+def _macro_lens_stack(img: Image.Image, cx: float, cy: float, scale: float = 0.5) -> Image.Image:
+    """Camera-lens macro mood (abstract, not a product photo)."""
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    base = min(img.size[0], img.size[1]) * scale
+    for i, (mult, alpha) in enumerate(((0.95, 70), (0.72, 90), (0.5, 110), (0.28, 130), (0.12, 150))):
+        r = base * mult
+        draw.ellipse((cx - r, cy - r, cx + r, cy + r), outline=(226, 232, 240, alpha), width=max(2, 6 - i))
+    draw.ellipse((cx - base * 0.08, cy - base * 0.08, cx + base * 0.08, cy + base * 0.08), fill=(248, 250, 252, 200))
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=int(base * 0.02)))
+    return _composite(img, overlay)
+
+
+def _studio_slab_glow(img: Image.Image) -> Image.Image:
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
     w, h = img.size
     draw.rounded_rectangle(
-        (int(w * 0.52), int(h * 0.08), int(w * 0.94), int(h * 0.92)),
-        radius=int(min(w, h) * 0.08),
-        fill=(15, 23, 42, 0),
-        outline=(191, 219, 254, 95),
-        width=max(6, int(w * 0.008)),
+        (int(w * 0.48), int(h * 0.06), int(w * 0.96), int(h * 0.94)),
+        radius=int(min(w, h) * 0.07),
+        fill=(12, 22, 42, 180),
     )
     draw.rounded_rectangle(
-        (int(w * 0.54), int(h * 0.11), int(w * 0.92), int(h * 0.89)),
-        radius=int(min(w, h) * 0.07),
-        fill=(30, 58, 110, 140),
+        (int(w * 0.5), int(h * 0.09), int(w * 0.94), int(h * 0.91)),
+        radius=int(min(w, h) * 0.06),
+        fill=(30, 64, 120, 90),
     )
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=int(w * 0.012)))
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=int(w * 0.014)))
     glow = Image.new("RGBA", img.size, (0, 0, 0, 0))
     gdraw = ImageDraw.Draw(glow)
     gdraw.rounded_rectangle(
-        (int(w * 0.56), int(h * 0.14), int(w * 0.9), int(h * 0.86)),
-        radius=int(min(w, h) * 0.06),
-        fill=(56, 189, 248, 35),
+        (int(w * 0.52), int(h * 0.12), int(w * 0.92), int(h * 0.88)),
+        radius=int(min(w, h) * 0.05),
+        fill=(125, 211, 252, 45),
     )
-    glow = glow.filter(ImageFilter.GaussianBlur(radius=int(w * 0.025)))
-    img = _composite(img, overlay)
-    return _composite(img, glow)
+    glow = glow.filter(ImageFilter.GaussianBlur(radius=int(w * 0.022)))
+    return _composite(_composite(img, overlay), glow)
 
 
-def _light_streak(img: Image.Image, strength: int = 38) -> Image.Image:
+def _light_streak(img: Image.Image, strength: int = 42) -> Image.Image:
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
     w, h = img.size
     draw.polygon(
-        [(w * 0.48, -h * 0.05), (w * 1.05, h * 0.32), (w * 0.72, h * 1.05), (w * 0.15, h * 0.42)],
-        fill=(147, 197, 253, strength),
+        [(w * 0.42, -h * 0.08), (w * 1.08, h * 0.28), (w * 0.68, h * 1.08), (w * 0.08, h * 0.38)],
+        fill=(191, 219, 254, strength),
     )
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=w // 28))
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=w // 26))
     return _composite(img, overlay)
 
 
@@ -137,141 +148,125 @@ def _waves(img: Image.Image, color: tuple[int, int, int, int], amplitude: float 
     return _composite(img, overlay)
 
 
-def _noise_grain(img: Image.Image, amount: int = 12, seed_offset: int = 0) -> Image.Image:
-    r = _rng(seed_offset)
+def _nfc_rings(img: Image.Image, cx: float, cy: float) -> Image.Image:
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    px = overlay.load()
-    w, h = img.size
-    step = 3
-    for y in range(0, h, step):
-        for x in range(0, w, step):
-            if r.random() > 0.65:
-                v = r.randint(0, amount)
-                for dy in range(step):
-                    for dx in range(step):
-                        if x + dx < w and y + dy < h:
-                            px[x + dx, y + dy] = (255, 255, 255, v)
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=1))
+    draw = ImageDraw.Draw(overlay)
+    for i, r in enumerate((220, 170, 120, 70)):
+        draw.arc((cx - r, cy - r, cx + r, cy + r), 200, 340, fill=(37, 99, 235, 90 - i * 15), width=8)
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=3))
     return _composite(img, overlay)
 
 
+def _finish(img: Image.Image, contrast: float = 1.08, color: float = 1.06) -> Image.Image:
+    img = ImageEnhance.Contrast(img).enhance(contrast)
+    img = ImageEnhance.Color(img).enhance(color)
+    return img
+
+
 def hero_campaign() -> Image.Image:
-    img = Image.new("RGB", (1800, 1100), (5, 12, 24))
-    _gradient(img, (5, 12, 24), (17, 38, 72), 118)
-    img = _bokeh(
-        img,
-        16,
-        [(37, 99, 235, 40), (14, 165, 233, 35), (248, 250, 252, 18)],
-        blur_scale=22,
-        seed_offset=1,
-    )
-    img = _rim_light(img)
-    img = _lens_flare(img, img.size[0] * 0.72, img.size[1] * 0.38, scale=0.42)
-    img = _lens_flare(img, img.size[0] * 0.58, img.size[1] * 0.52, scale=0.18)
-    img = _light_streak(img, strength=48)
-    img = _noise_grain(img, amount=10, seed_offset=2)
-    return img.convert("RGB")
+    img = Image.new("RGB", (1920, 1200), (4, 10, 22))
+    _gradient(img, (4, 10, 22), (15, 35, 68), 115)
+    img = _bokeh(img, 14, [(37, 99, 235, 45), (14, 165, 233, 38), (255, 255, 255, 22)], blur_scale=20, seed_offset=1)
+    img = _studio_slab_glow(img)
+    img = _macro_lens_stack(img, img.size[0] * 0.74, img.size[1] * 0.42, scale=0.48)
+    img = _lens_flare(img, img.size[0] * 0.74, img.size[1] * 0.42, scale=0.38)
+    img = _light_streak(img, strength=52)
+    return _finish(img.convert("RGB"), 1.12, 1.08)
 
 
 def cat_mobile() -> Image.Image:
-    img = Image.new("RGB", (900, 900), (8, 18, 38))
-    _gradient(img, (8, 18, 38), (29, 78, 216), 135)
-    img = _lens_flare(img, 620, 280, scale=0.35)
-    img = _bokeh(img, 14, [(56, 189, 248, 55), (37, 99, 235, 45)], seed_offset=10)
-    return img.convert("RGB")
+    img = Image.new("RGB", (960, 960), (6, 14, 32))
+    _gradient(img, (6, 14, 32), (37, 99, 235), 130)
+    img = _macro_lens_stack(img, 640, 320, scale=0.38)
+    img = _lens_flare(img, 640, 320, scale=0.28)
+    return _finish(img.convert("RGB"), 1.1, 1.05)
 
 
 def cat_accessories() -> Image.Image:
-    img = Image.new("RGB", (900, 900), (231, 229, 228))
-    _gradient(img, (245, 243, 240), (168, 162, 158), 52)
+    img = Image.new("RGB", (960, 960), (250, 247, 242))
+    _gradient(img, (255, 252, 247), (214, 207, 196), 48)
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    for i in range(6):
-        y = 80 + i * 120
-        draw.arc((-120, y - 220, 1020, y + 220), 25, 155, fill=(255, 255, 255, 70), width=22)
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=10))
+    for i in range(7):
+        y = 60 + i * 110
+        draw.arc((-140, y - 240, 1100, y + 240), 22, 158, fill=(255, 255, 255, 85), width=26)
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=11))
     img = _composite(img, overlay)
-    img = _bokeh(img, 8, [(255, 255, 255, 80), (214, 211, 209, 50)], blur_scale=35, seed_offset=11)
-    return img.convert("RGB")
+    img = _bokeh(img, 6, [(255, 255, 255, 90), (231, 229, 228, 60)], blur_scale=38, seed_offset=11)
+    return _finish(img.convert("RGB"), 1.05, 1.02)
 
 
 def cat_headphones() -> Image.Image:
-    img = Image.new("RGB", (900, 900), (49, 46, 129))
-    _gradient(img, (49, 46, 129), (99, 102, 241), 210)
+    img = Image.new("RGB", (960, 960), (30, 27, 75))
+    _gradient(img, (30, 27, 75), (55, 48, 163), 205)
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    draw.pieslice((60, 60, 840, 840), 205, 335, fill=(196, 181, 253, 100))
-    draw.pieslice((60, 60, 840, 840), 25, 155, fill=(167, 139, 250, 85))
-    for i in range(8):
-        y = 180 + i * 70
-        draw.arc((100, y, 800, y + 400), 0, 180, fill=(224, 231, 255, 35), width=6)
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=12))
-    return _composite(img, overlay).convert("RGB")
+    draw.pieslice((40, 40, 920, 920), 200, 340, fill=(167, 139, 250, 110))
+    draw.pieslice((40, 40, 920, 920), 20, 160, fill=(129, 140, 248, 95))
+    for i in range(10):
+        y = 160 + i * 65
+        draw.arc((80, y, 880, y + 420), 0, 180, fill=(224, 231, 255, 40), width=5)
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=10))
+    return _finish(_composite(img, overlay).convert("RGB"), 1.08, 1.1)
 
 
 def cat_smartwatch() -> Image.Image:
-    img = Image.new("RGB", (900, 900), (6, 78, 59))
-    _gradient(img, (6, 78, 59), (20, 184, 166), 75)
+    img = Image.new("RGB", (960, 960), (15, 47, 42))
+    _gradient(img, (15, 47, 42), (13, 148, 136), 80)
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    cx, cy = 450, 450
-    for r, a in ((320, 40), (250, 55), (180, 70), (110, 90)):
-        draw.ellipse((cx - r, cy - r, cx + r, cy + r), outline=(153, 246, 228, a), width=10)
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=4))
+    cx, cy = 480, 480
+    for r, a in ((340, 45), (270, 60), (200, 75), (130, 95)):
+        draw.ellipse((cx - r, cy - r, cx + r, cy + r), outline=(153, 246, 228, a), width=11)
+    draw.rectangle((cx - 55, cy - 140, cx + 55, cy + 140), fill=(45, 212, 191, 35))
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=5))
     img = _composite(img, overlay)
-    img = _lens_flare(img, 520, 360, scale=0.22)
-    return img.convert("RGB")
+    img = _lens_flare(img, 540, 400, scale=0.2)
+    return _finish(img.convert("RGB"), 1.08, 1.08)
 
 
 def cat_used() -> Image.Image:
-    img = Image.new("RGB", (900, 900), (28, 25, 23))
-    _gradient(img, (28, 25, 23), (120, 53, 15), 145)
-    img = _bokeh(
-        img,
-        16,
-        [(251, 191, 36, 45), (245, 158, 11, 35), (59, 130, 246, 25)],
-        seed_offset=12,
-    )
-    img = _light_streak(img, strength=28)
-    return img.convert("RGB")
+    img = Image.new("RGB", (960, 960), (24, 22, 20))
+    _gradient(img, (24, 22, 20), (146, 64, 14), 150)
+    img = _bokeh(img, 18, [(251, 191, 36, 55), (217, 119, 6, 40), (148, 163, 184, 25)], seed_offset=12)
+    img = _light_streak(img, strength=34)
+    return _finish(img.convert("RGB"), 1.1, 1.06)
 
 
 def cat_installment() -> Image.Image:
-    img = Image.new("RGB", (900, 900), (224, 242, 254))
-    _gradient(img, (224, 242, 254), (186, 230, 253), 100)
-    img = _waves(img, (37, 99, 235, 50), amplitude=0.035)
+    img = Image.new("RGB", (960, 960), (224, 242, 254))
+    _gradient(img, (240, 249, 255), (186, 230, 253), 95)
+    img = _waves(img, (37, 99, 235, 55), amplitude=0.032)
+    img = _nfc_rings(img, 680, 420)
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    draw.rounded_rectangle((160, 300, 740, 560), radius=40, fill=(255, 255, 255, 150))
-    draw.rounded_rectangle((210, 350, 690, 430), radius=14, fill=(37, 99, 235, 100))
-    draw.rounded_rectangle((210, 450, 420, 490), radius=8, fill=(147, 197, 253, 120))
-    draw.rounded_rectangle((450, 450, 620, 490), radius=8, fill=(191, 219, 254, 130))
+    draw.rounded_rectangle((120, 340, 520, 620), radius=36, fill=(255, 255, 255, 140))
+    draw.line([(160, 420), (480, 420)], fill=(37, 99, 235, 100), width=6)
+    draw.line([(160, 480), (380, 480)], fill=(147, 197, 253, 120), width=6)
     overlay = overlay.filter(ImageFilter.GaussianBlur(radius=1))
-    img = _composite(img, overlay)
-    return img.convert("RGB")
+    return _finish(_composite(img, overlay).convert("RGB"), 1.04, 1.05)
 
 
 def used_banner() -> Image.Image:
-    img = Image.new("RGB", (1400, 900), (7, 16, 32))
-    _gradient(img, (7, 16, 32), (30, 41, 59), 95)
-    img = _bokeh(img, 14, [(59, 130, 246, 40), (251, 191, 36, 22)], seed_offset=20)
-    img = _light_streak(img, strength=32)
-    img = _noise_grain(img, 8, seed_offset=21)
-    return img.convert("RGB")
+    img = Image.new("RGB", (1500, 960), (12, 10, 9))
+    _gradient(img, (12, 10, 9), (68, 45, 20), 100)
+    img = _bokeh(img, 16, [(251, 191, 36, 50), (245, 158, 11, 35), (59, 130, 246, 20)], seed_offset=20)
+    img = _studio_slab_glow(img)
+    img = _light_streak(img, strength=36)
+    return _finish(img.convert("RGB"), 1.1, 1.08)
 
 
 def installment_banner() -> Image.Image:
-    img = Image.new("RGB", (1400, 820), (236, 248, 255))
-    _gradient(img, (236, 248, 255), (191, 219, 254), 85)
-    img = _waves(img, (59, 130, 246, 55), amplitude=0.038)
+    img = Image.new("RGB", (1500, 880), (236, 248, 255))
+    _gradient(img, (248, 252, 255), (191, 219, 254), 78)
+    img = _waves(img, (59, 130, 246, 50), amplitude=0.036)
+    img = _nfc_rings(img, 1050, 440)
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    draw.rounded_rectangle((180, 220, 620, 620), radius=48, fill=(255, 255, 255, 130))
-    draw.rounded_rectangle((240, 300, 560, 380), radius=16, fill=(37, 99, 235, 90))
-    draw.ellipse((780, 260, 1100, 580), fill=(147, 197, 253, 80))
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=8))
-    img = _composite(img, overlay)
-    return img.convert("RGB")
+    for x, y in ((220, 280), (320, 380), (420, 300)):
+        draw.rounded_rectangle((x, y, x + 280, y + 180), radius=28, fill=(255, 255, 255, 110))
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=6))
+    return _finish(_composite(img, overlay).convert("RGB"), 1.05, 1.06)
 
 
 def main() -> None:

@@ -1,8 +1,8 @@
 <?php
 /**
- * CTTEL footer — replace Blocksy/CreativeThemes attribution with store copyright.
+ * CTTEL footer — store copyright, compact homepage footer presentation.
  *
- * Does not modify Enamad widgets or footer structure elsewhere.
+ * Does not modify Enamad markup/widgets.
  *
  * @package CTTEL
  */
@@ -41,8 +41,12 @@ add_filter(
 add_filter(
 	'blocksy:footer:copyright:value',
 	static function ( $text ) {
+		$year = gmdate( 'Y' );
 		if ( is_string( $text ) && ( false !== stripos( $text, 'creativethemes' ) || false !== stripos( $text, 'theme_author' ) || false !== stripos( $text, 'قالب وردپرس' ) ) ) {
-			return '© ' . gmdate( 'Y' ) . ' CTTEL.ir';
+			$text = '© ' . $year . ' CTTEL.ir';
+		}
+		if ( function_exists( 'cttel_is_dedicated_homepage' ) && cttel_is_dedicated_homepage() ) {
+			return '© ' . $year . ' CTTEL.ir · موبایل، گجت و لوازم جانبی';
 		}
 		return $text;
 	},
@@ -56,8 +60,60 @@ add_action(
 .ct-footer-copyright a[href*="creativethemes.com"] {
 	display: none !important;
 }
+
+body.cttel-dedicated-home .ct-footer [data-row="middle"] {
+	display: block !important;
+	padding-block: 0.65rem 0.5rem !important;
+	border-top: 1px solid rgba(11, 31, 58, 0.06);
+}
+
+body.cttel-dedicated-home .ct-footer [data-row="middle"] .ct-container {
+	gap: 0.75rem 1rem;
+}
+
+body.cttel-dedicated-home .ct-footer [data-row="middle"] .widget-title {
+	font-size: 0.75rem !important;
+	font-weight: 800 !important;
+	color: #0b1f3a !important;
+	margin-bottom: 0.35rem !important;
+}
+
+body.cttel-dedicated-home .ct-footer [data-row="middle"] .widget,
+body.cttel-dedicated-home .ct-footer [data-row="middle"] [data-column] {
+	font-size: 0.75rem;
+	color: #64748b;
+	line-height: 1.45;
+}
+
+body.cttel-dedicated-home .ct-footer [data-row="middle"] a {
+	color: #2563eb;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+body.cttel-dedicated-home .ct-footer [data-id="menu"] ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 0.85rem;
+	justify-content: center;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+body.cttel-dedicated-home .ct-footer [data-id="socials"] a {
+	opacity: 0.85;
+}
+
+body.cttel-dedicated-home .ct-footer-copyright {
+	font-size: 0.75rem !important;
+	font-weight: 600;
+	color: #64748b !important;
+	text-align: center;
+	line-height: 1.5;
+}
 CSS;
-		wp_register_style( 'cttel-footer-branding', false, array(), '1.0.1' );
+		wp_register_style( 'cttel-footer-branding', false, array(), '1.1.0' );
 		wp_enqueue_style( 'cttel-footer-branding' );
 		wp_add_inline_style( 'cttel-footer-branding', $css );
 	},

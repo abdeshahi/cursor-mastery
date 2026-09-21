@@ -2,7 +2,7 @@
 
 body.cttel-dedicated-home {
 	--theme-content-vertical-spacing: 0px;
-	background: #f3f6fb;
+	background: #f8fafc;
 }
 
 body.cttel-dedicated-home #main-container,
@@ -47,9 +47,14 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 body.cttel-dedicated-home #header .site-title,
 body.cttel-dedicated-home #header .site-title a {
 	font-weight: 800;
+	font-size: clamp(1.05rem, 4.6vw, 1.25rem) !important;
 	color: #0b1f3a !important;
 	text-transform: none !important;
-	letter-spacing: -0.03em;
+	letter-spacing: -0.04em;
+}
+
+body.cttel-dedicated-home #header [data-row*="middle"] {
+	box-shadow: 0 1px 0 rgba(11, 31, 58, 0.05);
 }
 
 body.cttel-dedicated-home #header [data-device="mobile"] [data-row="middle"] [data-items="primary"] {
@@ -72,9 +77,12 @@ body.cttel-dedicated-home #header [data-id="search"] {
 }
 
 body.cttel-dedicated-home #header [data-id="cart"] .ct-cart-item {
-	gap: 0.2rem;
-	padding-inline: 0.15rem;
-	max-width: 42vw;
+	gap: 0.25rem;
+	padding: 0.2rem 0.45rem;
+	max-width: 44vw;
+	background: #f1f5f9;
+	border-radius: 999px;
+	border: 1px solid rgba(11, 31, 58, 0.06);
 }
 
 body.cttel-dedicated-home #header [data-id="cart"] .ct-label {
@@ -91,20 +99,17 @@ body.cttel-dedicated-home #header [data-id="cart"] .ct-icon-container {
 	--theme-icon-size: 18px;
 }
 
-body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
-	padding-block: 0.85rem;
+body.cttel-dedicated-home .ct-footer {
+	background: #fff !important;
+	border-top: 1px solid rgba(11, 31, 58, 0.08);
 }
 
-body.cttel-dedicated-home .ct-footer-copyright {
-	font-size: 0.8125rem !important;
-	font-weight: 600;
-	color: #64748b !important;
-	text-align: center;
-}
-
-body.cttel-dedicated-home .ct-footer [data-row="middle"],
 body.cttel-dedicated-home .ct-footer [data-row="top"] {
 	display: none !important;
+}
+
+body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
+	padding-block: 0.65rem 0.75rem;
 }
 
 .cttel-home {
@@ -157,7 +162,8 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 	border-radius: 18px;
 	overflow: hidden;
 	background: linear-gradient(165deg, #071526 0%, #0b1f3a 55%, #152d52 100%);
-	box-shadow: 0 16px 40px rgba(7, 21, 38, 0.18);
+	box-shadow: 0 12px 32px rgba(7, 21, 38, 0.14);
+	border: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .cttel-home-hero__card--has-media {
@@ -166,7 +172,8 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 }
 
 .cttel-home-hero__media {
-	max-height: 220px;
+	max-height: 260px;
+	min-height: 240px;
 	overflow: hidden;
 	position: relative;
 }
@@ -181,9 +188,10 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 
 .cttel-home-hero__img {
 	width: 100%;
-	height: 220px;
+	height: 260px;
+	min-height: 240px;
 	object-fit: cover;
-	object-position: 62% center;
+	object-position: 68% 42%;
 	display: block;
 }
 
@@ -252,17 +260,21 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 }
 
 .cttel-home-rail__icon {
-	width: 1.35rem;
-	height: 1.35rem;
-	margin-bottom: 0.3rem;
+	width: 1.1rem;
+	height: 1.1rem;
+	margin-bottom: 0.35rem;
 	flex-shrink: 0;
-	background-color: #2563eb;
+	padding: 0.4rem;
+	box-sizing: content-box;
+	border-radius: 999px;
+	background-color: #0b1f3a;
 	mask-repeat: no-repeat;
 	mask-position: center;
-	mask-size: contain;
+	mask-size: 56%;
 	-webkit-mask-repeat: no-repeat;
 	-webkit-mask-position: center;
-	-webkit-mask-size: contain;
+	-webkit-mask-size: 56%;
+	box-shadow: 0 0 0 1px rgba(11, 31, 58, 0.08), 0 0 0 0.42rem #f1f5f9;
 }
 
 .cttel-home-rail__icon--installment {
@@ -324,24 +336,27 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 }
 
 .cttel-home-mosaic__tile--mobile {
-	background: linear-gradient(135deg, #0b1f3a, #1e3a5f);
+	background: linear-gradient(135deg, #0b1f3a, #1d4ed8);
 }
 
 .cttel-home-mosaic__tile--accessories {
-	background: linear-gradient(135deg, #4b5563, #9ca3af);
+	background: linear-gradient(135deg, #e7e5e4, #a8a29e);
 }
 
-.cttel-home-mosaic__tile--headphones,
+.cttel-home-mosaic__tile--headphones {
+	background: linear-gradient(135deg, #312e81, #4338ca);
+}
+
 .cttel-home-mosaic__tile--watch {
-	background: linear-gradient(135deg, #334155, #64748b);
+	background: linear-gradient(135deg, #134e4a, #0d9488);
 }
 
 .cttel-home-mosaic__tile--used {
-	background: linear-gradient(135deg, #1d4ed8, #2563eb);
+	background: linear-gradient(135deg, #292524, #b45309);
 }
 
 .cttel-home-mosaic__tile--installment {
-	background: linear-gradient(135deg, #2563eb, #1e40af);
+	background: linear-gradient(135deg, #e0f2fe, #7dd3fc);
 }
 
 .cttel-home-mosaic__photo-wrap,
@@ -372,10 +387,32 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 	background: linear-gradient(0deg, rgba(15, 23, 42, 0.72) 0%, rgba(255, 255, 255, 0) 58%);
 }
 
+.cttel-home-mosaic__tile--headphones.cttel-home-mosaic__tile--photo::after {
+	background: linear-gradient(0deg, rgba(15, 10, 40, 0.88) 0%, rgba(15, 10, 40, 0.1) 62%);
+}
+
+.cttel-home-mosaic__tile--watch.cttel-home-mosaic__tile--photo::after {
+	background: linear-gradient(0deg, rgba(6, 40, 36, 0.85) 0%, rgba(6, 40, 36, 0.12) 62%);
+}
+
+.cttel-home-mosaic__tile--used.cttel-home-mosaic__tile--photo::after {
+	background: linear-gradient(0deg, rgba(28, 20, 12, 0.86) 0%, rgba(28, 20, 12, 0.15) 62%);
+}
+
+.cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo::after {
+	background: linear-gradient(0deg, rgba(15, 23, 42, 0.65) 0%, rgba(255, 255, 255, 0) 58%);
+}
+
 .cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo .cttel-home-mosaic__title,
 .cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo .cttel-home-mosaic__desc {
 	color: #0b1f3a;
-	text-shadow: 0 1px 8px rgba(255, 255, 255, 0.35);
+	text-shadow: 0 1px 10px rgba(255, 255, 255, 0.55);
+}
+
+.cttel-home-mosaic__tile--accessories:not(.cttel-home-mosaic__tile--photo) .cttel-home-mosaic__title,
+.cttel-home-mosaic__tile--accessories:not(.cttel-home-mosaic__tile--photo) .cttel-home-mosaic__desc {
+	color: #1c1917;
+	text-shadow: none;
 }
 
 .cttel-home-mosaic__copy {
@@ -417,6 +454,7 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 /* Products */
 .cttel-home-products {
 	padding-block: 0.55rem;
+	background: transparent;
 }
 
 .cttel-home-products__head {
@@ -428,7 +466,7 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 
 .cttel-home-products__empty {
 	margin: 0.75rem 0 0;
-	padding: 1.35rem 1rem;
+	padding: 2.35rem 1rem 1.45rem;
 	text-align: center;
 	font-size: 0.875rem;
 	font-weight: 700;
@@ -436,7 +474,24 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 	background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
 	border: 1px solid rgba(11, 31, 58, 0.08);
 	border-radius: 14px;
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+	box-shadow: 0 8px 24px rgba(11, 31, 58, 0.04);
+	position: relative;
+}
+
+.cttel-home-products__empty::before {
+	content: "";
+	position: absolute;
+	top: 1.05rem;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 1.35rem;
+	height: 1.35rem;
+	background-color: #2563eb;
+	opacity: 0.85;
+	mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75'%3E%3Cpath d='M12 3v4M12 17v4M3 12h4M17 12h4'/%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3C/svg%3E");
+	-webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75'%3E%3Cpath d='M12 3v4M12 17v4M3 12h4M17 12h4'/%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3C/svg%3E");
+	mask-size: contain;
+	-webkit-mask-size: contain;
 }
 
 .cttel-home-products__title {
@@ -562,6 +617,7 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 	margin: 0 0 0.35rem;
 	font-size: 1.125rem;
 	font-weight: 800;
+	color: #f8fafc;
 }
 
 .cttel-home-used__lead {
@@ -595,10 +651,11 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 }
 
 .cttel-home-installment__panel {
-	background: linear-gradient(135deg, #dbeafe, #eff6ff);
-	border: 1px solid rgba(37, 99, 235, 0.12);
+	background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+	border: 1px solid rgba(37, 99, 235, 0.14);
 	display: grid;
 	grid-template-columns: 1fr;
+	box-shadow: 0 8px 24px rgba(37, 99, 235, 0.06);
 }
 
 .cttel-home-installment__copy {
@@ -638,6 +695,14 @@ body.cttel-dedicated-home .ct-footer [data-row="top"] {
 /* Trust */
 .cttel-home-trust {
 	padding-block: 0.55rem 0.75rem;
+}
+
+.cttel-home-trust .cttel-home-wrap {
+	background: #fff;
+	border: 1px solid rgba(11, 31, 58, 0.08);
+	border-radius: 14px;
+	padding: 0.65rem 0.75rem 0.75rem;
+	box-shadow: 0 4px 16px rgba(11, 31, 58, 0.04);
 }
 
 .cttel-home-trust__list {

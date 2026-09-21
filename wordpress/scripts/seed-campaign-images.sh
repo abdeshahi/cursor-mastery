@@ -1,5 +1,6 @@
 #!/bin/sh
-# Import premium campaign media for dedicated homepage (local/staging QA).
+# Import premium campaign media for dedicated homepage (local/staging).
+# On staging after deploy: REFRESH_CAMPAIGN_MEDIA=1 ./scripts/seed-campaign-images.sh
 set -eu
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
