@@ -50,6 +50,24 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	--height: 68px !important;
 }
 
+@media (max-width: 999.98px) {
+	body.cttel-dedicated-home #header [data-id="cart"] .ct-cart-item {
+		background: #2872fa !important;
+		border-color: rgba(40, 114, 250, 0.35) !important;
+		box-shadow: 0 4px 14px rgba(40, 114, 250, 0.28);
+		padding: 0.25rem 0.55rem !important;
+	}
+
+	body.cttel-dedicated-home #header [data-id="cart"] .ct-label {
+		color: #fff !important;
+	}
+
+	body.cttel-dedicated-home #header [data-id="cart"] .ct-icon-container {
+		color: #fff !important;
+		--theme-icon-color: #fff;
+	}
+}
+
 /* Hero — overlay composition (mockup) */
 .cttel-home-hero__card--has-media {
 	position: relative;
@@ -81,13 +99,15 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 .cttel-home-hero__card--has-media .cttel-home-hero__body {
 	grid-area: 1 / 1;
 	z-index: 2;
-	align-self: end;
-	width: min(58%, 100%);
+	align-self: start;
+	justify-self: end;
+	width: min(56%, 100%);
 	margin-inline-start: auto;
 	margin-inline-end: 0;
-	padding: 0.85rem 0.95rem 1rem;
+	padding: 0.95rem 0.85rem 0.75rem;
 	background: transparent;
 	box-shadow: none;
+	text-align: right;
 }
 
 .cttel-home-hero__card--has-media .cttel-home-hero__eyebrow {
@@ -103,40 +123,55 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 }
 
 .cttel-home-hero__card--has-media .cttel-home-hero__title {
-	display: inline-block;
-	margin: 0 0 0.35rem;
-	padding: 0.28rem 0.75rem;
-	border-radius: 999px;
-	background: rgba(15, 23, 42, 0.72);
-	backdrop-filter: blur(10px);
-	-webkit-backdrop-filter: blur(10px);
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	display: block;
+	margin: 0 0 0.4rem;
+	padding: 0;
+	border-radius: 0;
+	background: transparent;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	border: none;
 	color: #fff;
-	text-shadow: none;
+	text-shadow: 0 2px 14px rgba(7, 21, 38, 0.45);
 	max-width: 100%;
+	font-size: clamp(1.35rem, 5.6vw, 1.65rem);
+	line-height: 1.15;
 }
 
 .cttel-home-hero__card--has-media .cttel-home-hero__lead {
-	display: inline-block;
-	margin: 0 0 0.65rem;
-	padding: 0.45rem 0.75rem;
-	border-radius: 1.25rem;
-	background: rgba(15, 23, 42, 0.72);
-	backdrop-filter: blur(10px);
-	-webkit-backdrop-filter: blur(10px);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	color: #f8fafc;
-	text-shadow: none;
+	display: block;
+	margin: 0 0 0.7rem;
+	padding: 0;
+	border-radius: 0;
+	background: transparent;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	border: none;
+	color: #f1f5f9;
+	text-shadow: 0 1px 10px rgba(7, 21, 38, 0.4);
 	max-width: 100%;
-	line-height: 1.45;
+	line-height: 1.5;
+	font-size: 0.6875rem;
+}
+
+.cttel-home-hero__card--has-media .cttel-home-hero__actions {
+	gap: 0.35rem;
+}
+
+.cttel-home-hero__card--has-media .cttel-home-btn {
+	min-height: 38px;
+	padding: 0.45rem 0.65rem;
+	font-size: 0.6875rem;
 }
 
 .cttel-home-hero__dots {
 	position: absolute;
-	inset-inline-start: 0.85rem;
+	inset-inline-end: 0.85rem;
+	inset-inline-start: auto;
 	inset-block-end: 0.65rem;
 	z-index: 3;
 	display: flex;
+	flex-direction: row;
 	gap: 0.25rem;
 }
 
@@ -162,7 +197,23 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	background: rgba(10, 22, 40, 0.35);
 }
 
-/* Service rail — separate white cards */
+/* Service rail — 2×2 white cards (mockup mobile) */
+@media (max-width: 767.98px) {
+	.cttel-home-rail__strip {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.4rem;
+	}
+
+	.cttel-home-rail__cell {
+		padding: 0.65rem 0.35rem 0.55rem;
+		min-height: 88px;
+	}
+
+	.cttel-home-rail__desc {
+		display: block !important;
+	}
+}
+
 .cttel-home-rail__strip {
 	display: grid;
 	grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -181,17 +232,30 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	padding: 0.55rem 0.2rem;
 }
 
+.cttel-home-rail__icon {
+	background-color: #64748b !important;
+	box-shadow: none !important;
+	mask-size: 100% !important;
+	-webkit-mask-size: 100% !important;
+	opacity: 0.72;
+	width: 1.35rem !important;
+	height: 1.35rem !important;
+	padding: 0 !important;
+	margin-bottom: 0.4rem !important;
+}
+
 .cttel-home-rail__desc {
 	display: block;
 	font-size: 0.5rem;
 	color: #64748b;
-	margin-top: 0.1rem;
-	line-height: 1.25;
+	margin-top: 0.12rem;
+	line-height: 1.3;
 }
 
 .cttel-home-rail__label {
 	color: #2563eb;
-	font-size: 0.5625rem;
+	font-size: 0.625rem;
+	font-weight: 800;
 }
 
 /* Mosaic — 3×2 mockup grid */
@@ -211,6 +275,8 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 .cttel-home-mosaic__arrow {
 	inset-inline-start: auto;
 	inset-inline-end: 0.45rem;
+	inset-block-start: auto;
+	inset-block-end: 0.45rem;
 	width: 1.55rem;
 	height: 1.55rem;
 	background: #2563eb;
@@ -247,10 +313,11 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	position: absolute;
 	inset-inline-start: 0.4rem;
 	inset-inline-end: auto;
-	inset-block-end: 0.4rem;
+	inset-block-start: 0.4rem;
+	inset-block-end: auto;
 	z-index: 2;
 	width: auto;
-	max-width: min(78%, calc(100% - 2.35rem));
+	max-width: min(82%, calc(100% - 2.35rem));
 	padding: 0.38rem 0.62rem 0.48rem;
 	border-radius: 999px;
 	background: rgba(15, 23, 42, 0.74) !important;
@@ -285,10 +352,68 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	content: " ‹";
 }
 
+@media (max-width: 767.98px) {
+	.cttel-home-products__grid {
+		display: flex;
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		gap: 0.45rem;
+		scroll-snap-type: x mandatory;
+		-webkit-overflow-scrolling: touch;
+		padding-bottom: 0.15rem;
+		scrollbar-width: none;
+	}
+
+	.cttel-home-products__grid::-webkit-scrollbar {
+		display: none;
+	}
+
+	.cttel-home-product {
+		flex: 0 0 42%;
+		max-width: 168px;
+		scroll-snap-align: start;
+	}
+}
+
 .cttel-home-product {
+	position: relative;
 	border-radius: 16px;
 	box-shadow: 0 8px 22px rgba(11, 31, 58, 0.06);
 	border: 1px solid rgba(11, 31, 58, 0.06);
+}
+
+.cttel-home-product__wish {
+	position: absolute;
+	top: 0.45rem;
+	inset-inline-end: 0.45rem;
+	z-index: 2;
+	width: 1.15rem;
+	height: 1.15rem;
+	border-radius: 999px;
+	background-color: #94a3b8;
+	opacity: 0.55;
+	mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75'%3E%3Cpath d='M12 20.5l-1.2-1.1C5.5 14.5 3 12.2 3 9.2 3 6.6 5 4.5 7.6 4.5c1.5 0 2.9.7 3.9 1.8 1-1.1 2.4-1.8 3.9-1.8 2.6 0 4.6 2.1 4.6 4.7 0 3-2.5 5.3-7.8 10.2L12 20.5z'/%3E%3C/svg%3E");
+	-webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75'%3E%3Cpath d='M12 20.5l-1.2-1.1C5.5 14.5 3 12.2 3 9.2 3 6.6 5 4.5 7.6 4.5c1.5 0 2.9.7 3.9 1.8 1-1.1 2.4-1.8 3.9-1.8 2.6 0 4.6 2.1 4.6 4.7 0 3-2.5 5.3-7.8 10.2L12 20.5z'/%3E%3C/svg%3E");
+	mask-size: contain;
+	-webkit-mask-size: contain;
+	pointer-events: none;
+}
+
+.cttel-home-product__media--placeholder {
+	background: linear-gradient(180deg, #fff 0%, #eef2f7 100%);
+}
+
+.cttel-home-product__cart--demo {
+	display: flex !important;
+	align-items: center;
+	justify-content: center;
+	margin: 0.45rem 0.5rem 0.5rem !important;
+	min-height: 40px;
+	border-radius: 999px !important;
+	background: #2872fa !important;
+	color: #fff !important;
+	font-size: 0.6875rem !important;
+	font-weight: 700 !important;
 }
 
 .cttel-home-product__media {
@@ -310,12 +435,29 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 }
 
 .cttel-home-product__cart {
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
 	margin: 0.45rem 0.5rem 0.5rem !important;
 	border-radius: 999px !important;
 	background: #2872fa !important;
 	color: #fff !important;
 	border: none !important;
 	font-weight: 700 !important;
+	width: calc(100% - 1rem);
+	box-sizing: border-box;
+}
+
+.cttel-home-product__cart::before {
+	content: "";
+	width: 0.85rem;
+	height: 0.85rem;
+	margin-inline-end: 0.25rem;
+	background-color: currentColor;
+	mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75'%3E%3Cpath d='M6 6h15l-1.5 9h-12z'/%3E%3Cpath d='M6 6l-1-3H3'/%3E%3Ccircle cx='9' cy='20' r='1'/%3E%3Ccircle cx='18' cy='20' r='1'/%3E%3C/svg%3E");
+	-webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75'%3E%3Cpath d='M6 6h15l-1.5 9h-12z'/%3E%3Cpath d='M6 6l-1-3H3'/%3E%3Ccircle cx='9' cy='20' r='1'/%3E%3Ccircle cx='18' cy='20' r='1'/%3E%3C/svg%3E");
+	mask-size: contain;
+	-webkit-mask-size: contain;
 }
 
 .cttel-home-btn--gold {
@@ -336,8 +478,18 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	margin: 0.55rem;
 	padding: 0.65rem 0.75rem 0.7rem;
 	width: auto;
-	max-width: min(88%, 100%);
-	align-self: end;
+	max-width: min(62%, 100%);
+	align-self: start;
+	justify-self: end;
+}
+
+.cttel-home-used__panel--photo .cttel-home-btn--gold {
+	display: flex;
+	width: 100%;
+	justify-content: center;
+	margin: 0.35rem 0 0.45rem;
+	min-height: 42px;
+	font-size: 0.8125rem;
 }
 
 .cttel-home-used__panel--photo .cttel-home-used__title,
@@ -346,7 +498,7 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 }
 
 .cttel-home-used__panel--photo .cttel-home-used__media::after {
-	background: linear-gradient(to inline-start, transparent 40%, rgba(10, 22, 40, 0.25) 100%);
+	background: linear-gradient(to inline-start, transparent 48%, rgba(10, 22, 40, 0.12) 100%);
 }
 
 .cttel-home-used__badges {
@@ -361,23 +513,34 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 }
 
 .cttel-home-used__badges li {
-	padding: 0.12rem 0.42rem;
+	padding: 0.14rem 0.45rem;
 	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.12);
+	background: rgba(15, 23, 42, 0.55);
+	border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .cttel-home-used__badges li::before {
 	content: "✓ ";
-	opacity: 0.85;
+	color: #d4a574;
+	opacity: 1;
 }
 
 .cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__copy {
 	background: transparent !important;
 	padding: 0.65rem 0.75rem 0.75rem;
-	align-self: end;
+	align-self: start;
+	justify-self: end;
 	width: auto;
-	max-width: min(90%, 100%);
+	max-width: min(72%, 100%);
 	margin: 0.55rem;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+}
+
+.cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-btn--primary {
+	align-self: stretch;
+	margin-top: 0.15rem;
 }
 
 .cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__title {
@@ -466,6 +629,33 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	gap: 0.35rem;
 }
 
+@media (max-width: 767.98px) {
+	.cttel-home-trust__list {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 0.25rem;
+	}
+
+	.cttel-home-trust__item {
+		padding: 0.45rem 0.15rem;
+	}
+
+	.cttel-home-trust__text strong {
+		font-size: 0.5rem;
+		line-height: 1.25;
+	}
+
+	.cttel-home-trust__text span {
+		font-size: 0.4375rem;
+		line-height: 1.2;
+		margin-top: 0.08rem;
+	}
+
+	.cttel-home-trust__icon {
+		width: 1.05rem !important;
+		height: 1.05rem !important;
+	}
+}
+
 .cttel-home-trust__item {
 	flex-direction: column;
 	align-items: center;
@@ -484,6 +674,12 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 .cttel-home-trust__text strong {
 	font-size: 0.5625rem;
 	color: #2563eb;
+}
+
+.cttel-home-trust__text span {
+	display: block;
+	font-size: 0.5rem;
+	color: #64748b;
 }
 
 /* Footer mockup */
@@ -509,7 +705,13 @@ body.cttel-dedicated-home .ct-footer [data-row="middle"] a {
 }
 
 body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
-	padding-block: 1.1rem 1rem;
+	padding-block: 1.15rem 1rem;
+}
+
+body.cttel-dedicated-home .ct-footer [data-row="bottom"] .ct-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
 }
 
 body.cttel-dedicated-home .ct-footer [data-row="bottom"] .ct-container::before {
@@ -519,7 +721,8 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] .ct-container::before {
 	font-size: 1.35rem;
 	font-weight: 800;
 	color: #2872fa;
-	margin-bottom: 0.25rem;
+	margin-bottom: 0.2rem;
+	order: 1;
 }
 
 body.cttel-dedicated-home .ct-footer [data-row="bottom"] .ct-container::after {
@@ -528,7 +731,15 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] .ct-container::after {
 	text-align: center;
 	font-size: 0.6875rem;
 	color: #94a3b8;
-	margin-bottom: 0.65rem;
+	margin-bottom: 0.55rem;
+	padding-bottom: 0.55rem;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	width: min(92%, 20rem);
+	order: 2;
+}
+
+body.cttel-dedicated-home .ct-footer-copyright {
+	order: 3;
 }
 
 body.cttel-dedicated-home .ct-footer-copyright {
