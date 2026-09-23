@@ -204,8 +204,8 @@ function cttel_homepage_render_hero(): void {
 function cttel_homepage_render_service_rail(): void {
 	$items = array(
 		array( 'label' => 'خرید اقساطی', 'desc' => 'کار ساده‌تر، زندگی بهتر', 'url' => home_url( '/installment/' ), 'icon' => 'installment' ),
-		array( 'label' => 'درخواست تأمین', 'desc' => 'هر کالایی که بخواهید', 'url' => home_url( '/used-phone-request/' ), 'icon' => 'supply' ),
 		array( 'label' => 'گوشی کارکرده', 'desc' => 'خرید و فروش مطمئن', 'url' => home_url( '/used-phone/' ), 'icon' => 'used' ),
+		array( 'label' => 'درخواست تأمین', 'desc' => 'هر کالایی که بخواهید', 'url' => home_url( '/used-phone-request/' ), 'icon' => 'supply' ),
 		array( 'label' => 'پشتیبانی', 'desc' => 'همیشه در کنار شما', 'url' => home_url( '/my-account/' ), 'icon' => 'support' ),
 	);
 	?>
@@ -227,12 +227,12 @@ function cttel_homepage_render_service_rail(): void {
 
 function cttel_homepage_render_mosaic(): void {
 	$tiles = array(
-		array( 'tile', 'mobile', 'موبایل', 'گوشی‌های هوشمند', 'mobile', '/product-category/mobile/', '' ),
-		array( 'tile', 'accessories', 'لوازم جانبی', 'لوازم جانبی', 'accessories', '/product-category/accessories/', '' ),
 		array( 'tile', 'watch', 'ساعت هوشمند', 'پوشیدنی‌های هوشمند', 'smartwatch', '/product-category/smartwatch/', '' ),
-		array( 'tile', 'used', 'گوشی کارکرده', 'موجودی تأیید‌شده', '', '/used-phone/', 'used' ),
-		array( 'tile', 'installment', 'خرید اقساطی', 'روش‌های پرداخت', '', '/installment/', 'installment' ),
+		array( 'tile', 'accessories', 'لوازم جانبی', 'لوازم جانبی', 'accessories', '/product-category/accessories/', '' ),
+		array( 'tile', 'mobile', 'موبایل', 'گوشی‌های هوشمند', 'mobile', '/product-category/mobile/', '' ),
 		array( 'tile', 'headphones', 'هندزفری', 'صدا و تماس', 'headphones', '/product-category/headphones/', '' ),
+		array( 'tile', 'installment', 'خرید اقساطی', 'روش‌های پرداخت', '', '/installment/', 'installment' ),
+		array( 'tile', 'used', 'گوشی کارکرده', 'موجودی تأیید‌شده', '', '/used-phone/', 'used' ),
 	);
 	?>
 	<section class="cttel-home-mosaic" aria-label="<?php esc_attr_e( 'دسته‌بندی‌ها', 'cttel-store' ); ?>">

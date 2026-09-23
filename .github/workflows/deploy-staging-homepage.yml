@@ -25,10 +25,11 @@ jobs:
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
           STAGING_SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
         run: |
-          if [ -z "${VPS_PASSWORD}" ]; then
-            echo "VPS_PASSWORD secret not set — skip deploy."
-            exit 0
+          if [ -z "${VPS_PASSWORD}" ] && [ -z "${STAGING_SSH_PRIVATE_KEY}" ]; then
+            echo "::error::Set GitHub secret VPS_PASSWORD or STAGING_SSH_PRIVATE_KEY to deploy staging."
+            exit 1
           fi
           chmod +x wordpress/scripts/sync-staging-homepage.sh
           cd wordpress && ./scripts/sync-staging-homepage.sh
