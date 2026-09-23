@@ -177,3 +177,8 @@ add_filter(
 		return $css;
 	}
 );
+
+$cttel_staging_sync = __DIR__ . '/cttel-staging-home-sync.php';
+if ( is_readable( $cttel_staging_sync ) ) {
+	require_once $cttel_staging_sync;
+}

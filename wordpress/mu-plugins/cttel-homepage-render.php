@@ -227,12 +227,12 @@ function cttel_homepage_render_service_rail(): void {
 
 function cttel_homepage_render_mosaic(): void {
 	$tiles = array(
-		array( 'tile', 'watch', 'ساعت هوشمند', 'پوشیدنی‌های هوشمند', 'smartwatch', '/product-category/smartwatch/', '' ),
-		array( 'tile', 'accessories', 'لوازم جانبی', 'لوازم جانبی', 'accessories', '/product-category/accessories/', '' ),
-		array( 'tile', 'mobile', 'موبایل', 'گوشی‌های هوشمند', 'mobile', '/product-category/mobile/', '' ),
-		array( 'tile', 'headphones', 'هندزفری', 'صدا و تماس', 'headphones', '/product-category/headphones/', '' ),
-		array( 'tile', 'installment', 'خرید اقساطی', 'روش‌های پرداخت', '', '/installment/', 'installment' ),
-		array( 'tile', 'used', 'گوشی کارکرده', 'موجودی تأیید‌شده', '', '/used-phone/', 'used' ),
+		array( 'tile', 'mobile', 'موبایل', 'جدیدترین مدل‌ها', 'mobile', '/product-category/mobile/', '' ),
+		array( 'tile', 'accessories', 'لوازم جانبی', 'همراه بهتر برای هر لحظه', 'accessories', '/product-category/accessories/', '' ),
+		array( 'tile', 'watch', 'ساعت هوشمند', 'سبک زندگی هوشمند', 'smartwatch', '/product-category/smartwatch/', '' ),
+		array( 'tile', 'used', 'گوشی کارکرده', 'کیفیت بالا، قیمت بهتر', '', '/used-phone/', 'used' ),
+		array( 'tile', 'installment', 'خرید اقساطی', 'امکان خرید آسان‌تر', '', '/installment/', 'installment' ),
+		array( 'tile', 'headphones', 'هندزفری', 'کیفیت صدا در مسیر زندگی', 'headphones', '/product-category/headphones/', '' ),
 	);
 	?>
 	<section class="cttel-home-mosaic" aria-label="<?php esc_attr_e( 'دسته‌بندی‌ها', 'cttel-store' ); ?>">
@@ -395,7 +395,7 @@ function cttel_homepage_render_used_phone(): void {
 			<div class="cttel-home-used__panel<?php echo $photo ? ' cttel-home-used__panel--photo' : ' cttel-home-used__panel--texture'; ?>">
 				<div class="cttel-home-used__copy">
 					<h2 class="cttel-home-used__title">گوشی کارکرده</h2>
-					<p class="cttel-home-used__lead">کیفیت بالا، قیمت بهتر — موجودی فروشگاه یا درخواست تأمین اختصاصی</p>
+					<p class="cttel-home-used__lead">کیفیت بالا، قیمت بهتر، موجودی فروشگاه با درخواست تأمین اختصاصی</p>
 					<a class="cttel-home-btn cttel-home-btn--gold" href="<?php echo esc_url( home_url( '/used-phone/' ) ); ?>">مشاهده و درخواست</a>
 					<ul class="cttel-home-used__badges" aria-label="<?php esc_attr_e( 'مزایا', 'cttel-store' ); ?>">
 						<li>تست سلامت</li>
@@ -440,10 +440,10 @@ function cttel_homepage_render_installment(): void {
 
 function cttel_homepage_render_trust(): void {
 	$items = array(
-		array( 'ship', 'ارسال سریع', 'به سراسر ایران' ),
+		array( 'support', 'پشتیبانی تخصصی', 'قبل و بعد از خرید' ),
 		array( 'shield', 'ضمانت اصالت', 'کالای اورجینال' ),
-		array( 'pay', 'پرداخت امن', 'درگاه معتبر' ),
-		array( 'support', 'پشتیبانی تخصصی', 'همراه شما' ),
+		array( 'pay', 'پرداخت امن', 'با درگاه معتبر' ),
+		array( 'ship', 'ارسال سریع', 'به سراسر ایران' ),
 	);
 	?>
 	<section class="cttel-home-trust" aria-label="<?php esc_attr_e( 'مزایای خرید', 'cttel-store' ); ?>">

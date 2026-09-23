@@ -8,6 +8,7 @@ CONTAINER="${STAGING_WP_CONTAINER:-wp_app}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 MU_FILES=(
+	cttel-staging-home-sync.php
 	cttel-homepage.php
 	cttel-homepage-render.php
 	cttel-homepage.css

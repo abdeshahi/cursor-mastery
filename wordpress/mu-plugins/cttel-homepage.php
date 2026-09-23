@@ -10,8 +10,12 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CTTEL_HOMEPAGE_VERSION', '2.0.4-screenshot-order' );
+define( 'CTTEL_HOMEPAGE_VERSION', '2.0.5-screenshot-ref' );
 
+$cttel_staging_sync = __DIR__ . '/cttel-staging-home-sync.php';
+if ( is_readable( $cttel_staging_sync ) ) {
+	require_once $cttel_staging_sync;
+}
 require_once __DIR__ . '/cttel-homepage-render.php';
 
 /** Whether the current request uses the dedicated homepage template. */

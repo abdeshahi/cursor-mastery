@@ -265,9 +265,9 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	font-weight: 800;
 }
 
-/* Mosaic — 3×2 mockup grid */
+/* Mosaic — 2×3 mockup grid (mobile reference) */
 .cttel-home-mosaic__grid {
-	grid-template-columns: repeat(3, minmax(0, 1fr));
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 0.4rem;
 }
 
@@ -549,7 +549,7 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 }
 
 .cttel-home-used__badges {
-	display: none;
+	display: flex;
 	flex-wrap: wrap;
 	gap: 0.3rem;
 	list-style: none;
@@ -591,31 +591,23 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 }
 
 .cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__title {
-	display: inline-block;
+	display: block;
 	margin: 0 0 0.35rem;
-	padding: 0.32rem 0.7rem;
-	border-radius: 999px;
-	background: rgba(15, 23, 42, 0.55);
-	backdrop-filter: blur(10px);
-	-webkit-backdrop-filter: blur(10px);
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	color: #fff !important;
-	max-width: 100%;
-	font-size: 0.875rem;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: #0b1f3a !important;
+	font-size: 0.9375rem;
 	line-height: 1.25;
 }
 
 .cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__lead {
-	display: inline-block;
+	display: block;
 	margin: 0 0 0.45rem;
-	padding: 0.38rem 0.65rem;
-	border-radius: 1rem;
-	background: rgba(15, 23, 42, 0.5);
-	backdrop-filter: blur(10px);
-	-webkit-backdrop-filter: blur(10px);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	color: #f8fafc !important;
-	max-width: 100%;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: #475569 !important;
 	line-height: 1.45;
 	font-size: 0.6875rem;
 }
@@ -636,15 +628,12 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 }
 
 .cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__features li {
-	color: #fff;
-	padding: 0.22rem 0.55rem;
-	padding-inline-start: 0.55rem;
-	border-radius: 999px;
-	background: rgba(15, 23, 42, 0.72);
-	backdrop-filter: blur(10px);
-	-webkit-backdrop-filter: blur(10px);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	width: fit-content;
+	color: #334155;
+	padding: 0.15rem 0;
+	padding-inline-start: 1rem;
+	border-radius: 0;
+	background: transparent;
+	width: auto;
 	max-width: 100%;
 }
 
@@ -661,7 +650,7 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 }
 
 .cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__features li::before {
-	display: none;
+	display: block;
 }
 
 /* Trust — white icon cards */
