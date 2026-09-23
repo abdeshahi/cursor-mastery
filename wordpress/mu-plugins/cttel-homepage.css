@@ -182,7 +182,7 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	content: "";
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(180deg, transparent 35%, rgba(7, 21, 38, 0.35) 100%);
+	background: linear-gradient(180deg, transparent 62%, rgba(7, 21, 38, 0.22) 100%);
 	pointer-events: none;
 }
 
@@ -191,7 +191,7 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	height: 260px;
 	min-height: 240px;
 	object-fit: cover;
-	object-position: 68% 42%;
+	object-position: 50% 38%;
 	display: block;
 }
 
@@ -369,14 +369,40 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
+	object-position: center center;
+}
+
+.cttel-home-mosaic__tile--mobile .cttel-home-mosaic__photo {
+	object-position: 52% 42%;
+}
+
+.cttel-home-mosaic__tile--accessories .cttel-home-mosaic__photo {
+	object-position: 50% 45%;
+}
+
+.cttel-home-mosaic__tile--headphones .cttel-home-mosaic__photo {
+	object-position: 48% 40%;
+}
+
+.cttel-home-mosaic__tile--watch .cttel-home-mosaic__photo {
+	object-position: 50% 38%;
+}
+
+.cttel-home-mosaic__tile--used .cttel-home-mosaic__photo {
+	object-position: 58% 45%;
+}
+
+.cttel-home-mosaic__tile--installment .cttel-home-mosaic__photo {
+	object-position: 50% 42%;
 }
 
 .cttel-home-mosaic__tile--photo::after {
 	content: "";
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(0deg, rgba(7, 21, 38, 0.82) 0%, rgba(7, 21, 38, 0.12) 62%);
+	background: linear-gradient(0deg, rgba(7, 21, 38, 0.68) 0%, rgba(7, 21, 38, 0) 54%);
 	z-index: 1;
+	pointer-events: none;
 }
 
 .cttel-home-mosaic__tile--accessories.cttel-home-mosaic__tile--photo::after {
@@ -647,7 +673,7 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	width: 100%;
 	height: 140px;
 	object-fit: cover;
-	object-position: 70% center;
+	object-position: 55% 42%;
 }
 
 .cttel-home-installment__panel {
@@ -689,7 +715,7 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	width: 100%;
 	height: 132px;
 	object-fit: cover;
-	object-position: center;
+	object-position: 50% 40%;
 }
 
 /* Trust */
@@ -782,6 +808,7 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	.cttel-home-hero__img {
 		height: 100%;
 		min-height: 320px;
+		object-position: 52% 40%;
 	}
 
 	.cttel-home-hero__body {
