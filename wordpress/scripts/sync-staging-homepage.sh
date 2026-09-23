@@ -4,7 +4,7 @@ set -euo pipefail
 
 HOST="${STAGING_SSH_HOST:-root@185.18.214.66}"
 PORT="${STAGING_SSH_PORT:-22}"
-CONTAINER="${STAGING_WP_CONTAINER:-wp_app}"
+CONTAINER="${STAGING_WP_CONTAINER:-wp_staging_app}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 MU_FILES=(

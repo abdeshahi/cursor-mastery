@@ -26,6 +26,7 @@ jobs:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
           STAGING_SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
           STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          STAGING_WP_CONTAINER: wp_staging_app
         run: |
           if [ -z "${VPS_PASSWORD}" ] && [ -z "${STAGING_SSH_PRIVATE_KEY}" ]; then
             echo "::error::Set GitHub secret VPS_PASSWORD or STAGING_SSH_PRIVATE_KEY to deploy staging."
