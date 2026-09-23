@@ -10,7 +10,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CTTEL_HOMEPAGE_VERSION', '2.0.2-layout-match' );
+define( 'CTTEL_HOMEPAGE_VERSION', '2.0.3-staging-visual' );
 
 require_once __DIR__ . '/cttel-homepage-render.php';
 

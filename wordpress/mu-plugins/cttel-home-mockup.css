@@ -4,6 +4,13 @@ body.cttel-dedicated-home {
 	background: #f5f7fb;
 }
 
+body.cttel-dedicated-home #header,
+body.cttel-dedicated-home header[data-id="header"] {
+	background: #fff !important;
+	border-bottom: 1px solid rgba(11, 31, 58, 0.06) !important;
+	box-shadow: 0 1px 0 rgba(11, 31, 58, 0.04);
+}
+
 /* Header branding */
 body.cttel-dedicated-home #header .site-branding {
 	text-align: center;
@@ -347,7 +354,47 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	font-size: 0.5625rem;
 }
 
-/* Products */
+/* Products — four-up row like reference mockup */
+.cttel-home-products__grid {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 0.35rem;
+}
+
+.cttel-home-product__name {
+	font-size: 0.5625rem;
+	line-height: 1.25;
+	padding: 0.35rem 0.4rem 0;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.cttel-home-product__meta {
+	font-size: 0.5rem;
+	padding: 0 0.4rem;
+}
+
+.cttel-home-product__media {
+	height: 72px;
+}
+
+.cttel-home-product__price {
+	font-size: 0.625rem;
+	padding: 0.15rem 0.4rem 0;
+}
+
+.cttel-home-product__price .woocommerce-Price-amount {
+	font-size: inherit;
+}
+
+.cttel-home-product__cart {
+	margin: 0.35rem 0.35rem 0.4rem !important;
+	min-height: 32px !important;
+	font-size: 0.5rem !important;
+	padding: 0.35rem 0.25rem !important;
+}
+
 .cttel-home-products__all::after {
 	content: " ‹";
 }
@@ -502,7 +549,7 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 }
 
 .cttel-home-used__badges {
-	display: flex;
+	display: none;
 	flex-wrap: wrap;
 	gap: 0.3rem;
 	list-style: none;
@@ -548,13 +595,14 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	margin: 0 0 0.35rem;
 	padding: 0.32rem 0.7rem;
 	border-radius: 999px;
-	background: rgba(15, 23, 42, 0.72);
+	background: rgba(15, 23, 42, 0.55);
 	backdrop-filter: blur(10px);
 	-webkit-backdrop-filter: blur(10px);
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.12);
 	color: #fff !important;
 	max-width: 100%;
-	font-size: 0.9375rem;
+	font-size: 0.875rem;
+	line-height: 1.25;
 }
 
 .cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__lead {
@@ -562,13 +610,14 @@ body.cttel-dedicated-home #header [data-row*="middle"] {
 	margin: 0 0 0.45rem;
 	padding: 0.38rem 0.65rem;
 	border-radius: 1rem;
-	background: rgba(15, 23, 42, 0.72);
+	background: rgba(15, 23, 42, 0.5);
 	backdrop-filter: blur(10px);
 	-webkit-backdrop-filter: blur(10px);
 	border: 1px solid rgba(255, 255, 255, 0.1);
-	color: #f1f5f9 !important;
+	color: #f8fafc !important;
 	max-width: 100%;
 	line-height: 1.45;
+	font-size: 0.6875rem;
 }
 
 .cttel-home-installment__features {
