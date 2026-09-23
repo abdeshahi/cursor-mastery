@@ -437,28 +437,8 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	background: linear-gradient(0deg, rgba(15, 23, 42, 0.65) 0%, rgba(255, 255, 255, 0) 58%);
 }
 
-.cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo .cttel-home-mosaic__copy {
-	background: linear-gradient(
-		135deg,
-		rgba(255, 255, 255, 0.96) 0%,
-		rgba(255, 255, 255, 0.82) 55%,
-		rgba(255, 255, 255, 0) 100%
-	);
-}
-
-.cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo .cttel-home-mosaic__title,
-.cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo .cttel-home-mosaic__desc {
-	color: #0b1f3a;
-	text-shadow: none;
-}
-
 .cttel-home-mosaic__tile--accessories.cttel-home-mosaic__tile--photo .cttel-home-mosaic__copy {
-	background: linear-gradient(
-		135deg,
-		rgba(28, 25, 23, 0.9) 0%,
-		rgba(28, 25, 23, 0.72) 58%,
-		rgba(28, 25, 23, 0) 100%
-	);
+	background: transparent;
 }
 
 .cttel-home-mosaic__tile--accessories:not(.cttel-home-mosaic__tile--photo) .cttel-home-mosaic__title,
@@ -801,7 +781,7 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 .cttel-home-installment__lead {
 	margin: 0 0 0.75rem;
 	font-size: 0.8125rem;
-	color: #64748b;
+	color: #475569;
 	line-height: 1.5;
 }
 
@@ -947,7 +927,61 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	}
 
 	.cttel-home-used__panel--photo {
-		grid-template-columns: 1.1fr 0.9fr;
+		grid-template-columns: 1.08fr 0.92fr;
+		grid-template-rows: none;
+		min-height: 228px;
+	}
+
+	.cttel-home-used__panel--photo .cttel-home-used__copy {
+		grid-column: auto;
+		grid-row: auto;
+		display: block;
+		width: auto;
+		max-width: none;
+		margin: 0;
+		align-self: center;
+		padding: 1.25rem 1.35rem;
+		background: transparent;
+	}
+
+	.cttel-home-used__panel--photo .cttel-home-used__media {
+		grid-column: auto;
+		grid-row: auto;
+		min-height: 228px;
+	}
+
+	.cttel-home-used__photo {
+		height: 100%;
+		min-height: 228px;
+	}
+
+	.cttel-home-installment__panel:has(.cttel-home-installment__media) {
+		grid-template-columns: 0.92fr 1.08fr;
+		grid-template-rows: none;
+		min-height: 240px;
+		align-items: stretch;
+	}
+
+	.cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__media {
+		grid-column: auto;
+		grid-row: auto;
+		min-height: 240px;
+	}
+
+	.cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__copy {
+		grid-column: auto;
+		grid-row: auto;
+		width: auto;
+		max-width: none;
+		margin: 0;
+		align-self: center;
+		padding: 1.35rem 1.5rem;
+		background: transparent;
+	}
+
+	.cttel-home-installment__photo {
+		height: 100%;
+		min-height: 240px;
 	}
 
 	.cttel-home-installment__panel {

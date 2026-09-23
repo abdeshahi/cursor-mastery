@@ -188,7 +188,7 @@ function cttel_homepage_render_hero(): void {
 				<div class="cttel-home-hero__body">
 					<p class="cttel-home-hero__eyebrow">سری جدید</p>
 					<h1 id="cttel-home-hero-title" class="cttel-home-hero__title">فراتر از انتظار</h1>
-					<p class="cttel-home-hero__lead">خرید موبایل و لوازم دیجیتال، نقدی یا اقساطی از CTTEL</p>
+					<p class="cttel-home-hero__lead">تجربه خرید مطمئن، پشتیبانی فروشگاه و امکان خرید اقساطی از CTTEL</p>
 					<div class="cttel-home-hero__actions">
 						<a class="cttel-home-btn cttel-home-btn--primary" href="<?php echo esc_url( wc_get_page_permalink( 'shop' ) ); ?>">مشاهده محصولات</a>
 						<a class="cttel-home-btn cttel-home-btn--ghost" href="<?php echo esc_url( home_url( '/installment/' ) ); ?>">خرید اقساطی</a>
@@ -227,12 +227,12 @@ function cttel_homepage_render_service_rail(): void {
 
 function cttel_homepage_render_mosaic(): void {
 	$tiles = array(
-		array( 'tile', 'mobile', 'موبایل', 'گوشی‌های هوشمند', 'mobile', '/product-category/mobile/', '' ),
-		array( 'tile', 'accessories', 'لوازم جانبی', 'لوازم جانبی', 'accessories', '/product-category/accessories/', '' ),
 		array( 'tile', 'watch', 'ساعت هوشمند', 'پوشیدنی‌های هوشمند', 'smartwatch', '/product-category/smartwatch/', '' ),
-		array( 'tile', 'used', 'گوشی کارکرده', 'موجودی تأیید‌شده', '', '/used-phone/', 'used' ),
-		array( 'tile', 'installment', 'خرید اقساطی', 'روش‌های پرداخت', '', '/installment/', 'installment' ),
+		array( 'tile', 'accessories', 'لوازم جانبی', 'لوازم جانبی', 'accessories', '/product-category/accessories/', '' ),
+		array( 'tile', 'mobile', 'موبایل', 'گوشی‌های هوشمند', 'mobile', '/product-category/mobile/', '' ),
 		array( 'tile', 'headphones', 'هندزفری', 'صدا و تماس', 'headphones', '/product-category/headphones/', '' ),
+		array( 'tile', 'installment', 'خرید اقساطی', 'روش‌های پرداخت', '', '/installment/', 'installment' ),
+		array( 'tile', 'used', 'گوشی کارکرده', 'موجودی تأیید‌شده', '', '/used-phone/', 'used' ),
 	);
 	?>
 	<section class="cttel-home-mosaic" aria-label="<?php esc_attr_e( 'دسته‌بندی‌ها', 'cttel-store' ); ?>">
