@@ -10,13 +10,13 @@ ROOT = Path(__file__).resolve().parent.parent / "assets" / "owner-approved"
 MOBILE_W = 390
 
 FOCAL = {
-    "futuristic_blue_tech_showcase.webp": (0.50, 0.38),
-    "futuristic_blue_smartphone_showcase.webp": (0.52, 0.42),
-    "futuristic_tech_accessories_still_life.webp": (0.50, 0.45),
-    "futuristic_purple_earbuds_studio_render.webp": (0.48, 0.40),
-    "futuristic_teal_smartwatch_hero_scene.webp": (0.50, 0.38),
-    "certified_smartphone_golden_halo.webp": (0.55, 0.42),
-    "futuristic_contactless_payment_showcase.webp": (0.50, 0.40),
+    "futuristic_blue_tech_showcase.webp": (0.26, 0.42),
+    "futuristic_blue_smartphone_showcase.webp": (0.24, 0.42),
+    "futuristic_tech_accessories_still_life.webp": (0.76, 0.46),
+    "futuristic_purple_earbuds_studio_render.webp": (0.22, 0.40),
+    "futuristic_teal_smartwatch_hero_scene.webp": (0.24, 0.38),
+    "certified_smartphone_golden_halo.webp": (0.24, 0.42),
+    "futuristic_contactless_payment_showcase.webp": (0.72, 0.38),
 }
 
 

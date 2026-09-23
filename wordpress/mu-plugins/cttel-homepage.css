@@ -182,8 +182,11 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	content: "";
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(180deg, transparent 62%, rgba(7, 21, 38, 0.22) 100%);
+	background:
+		linear-gradient(to inline-start, rgba(7, 21, 38, 0.55) 0%, transparent 42%),
+		linear-gradient(180deg, transparent 58%, rgba(7, 21, 38, 0.35) 100%);
 	pointer-events: none;
+	z-index: 1;
 }
 
 .cttel-home-hero__img {
@@ -191,13 +194,17 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	height: 260px;
 	min-height: 240px;
 	object-fit: cover;
-	object-position: 50% 38%;
+	object-position: 26% 42%;
 	display: block;
 }
 
 .cttel-home-hero__body {
-	padding: 1rem 1rem 1.1rem;
+	padding: 1rem 1rem 1.15rem;
 	text-align: right;
+	position: relative;
+	z-index: 2;
+	background: linear-gradient(180deg, #071526 0%, #0b1f3a 100%);
+	box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.12);
 }
 
 .cttel-home-hero__eyebrow {
@@ -219,8 +226,9 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	margin: 0 0 0.85rem;
 	font-size: 0.8125rem;
 	line-height: 1.55;
-	color: #cbd5e1;
+	color: #e2e8f0;
 	max-width: 36ch;
+	text-shadow: 0 1px 8px rgba(7, 21, 38, 0.35);
 }
 
 .cttel-home-hero__actions {
@@ -373,34 +381,34 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 }
 
 .cttel-home-mosaic__tile--mobile .cttel-home-mosaic__photo {
-	object-position: 52% 42%;
+	object-position: 24% 42%;
 }
 
 .cttel-home-mosaic__tile--accessories .cttel-home-mosaic__photo {
-	object-position: 50% 45%;
+	object-position: 76% 46%;
 }
 
 .cttel-home-mosaic__tile--headphones .cttel-home-mosaic__photo {
-	object-position: 48% 40%;
+	object-position: 22% 40%;
 }
 
 .cttel-home-mosaic__tile--watch .cttel-home-mosaic__photo {
-	object-position: 50% 38%;
+	object-position: 24% 38%;
 }
 
 .cttel-home-mosaic__tile--used .cttel-home-mosaic__photo {
-	object-position: 58% 45%;
+	object-position: 78% 44%;
 }
 
 .cttel-home-mosaic__tile--installment .cttel-home-mosaic__photo {
-	object-position: 50% 42%;
+	object-position: 74% 40%;
 }
 
 .cttel-home-mosaic__tile--photo::after {
 	content: "";
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(0deg, rgba(7, 21, 38, 0.68) 0%, rgba(7, 21, 38, 0) 54%);
+	background: linear-gradient(to inline-start, rgba(7, 21, 38, 0.08) 0%, rgba(7, 21, 38, 0.45) 48%, rgba(7, 21, 38, 0.72) 100%);
 	z-index: 1;
 	pointer-events: none;
 }
@@ -429,10 +437,28 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	background: linear-gradient(0deg, rgba(15, 23, 42, 0.65) 0%, rgba(255, 255, 255, 0) 58%);
 }
 
+.cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo .cttel-home-mosaic__copy {
+	background: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.96) 0%,
+		rgba(255, 255, 255, 0.82) 55%,
+		rgba(255, 255, 255, 0) 100%
+	);
+}
+
 .cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo .cttel-home-mosaic__title,
 .cttel-home-mosaic__tile--installment.cttel-home-mosaic__tile--photo .cttel-home-mosaic__desc {
 	color: #0b1f3a;
-	text-shadow: 0 1px 10px rgba(255, 255, 255, 0.55);
+	text-shadow: none;
+}
+
+.cttel-home-mosaic__tile--accessories.cttel-home-mosaic__tile--photo .cttel-home-mosaic__copy {
+	background: linear-gradient(
+		135deg,
+		rgba(28, 25, 23, 0.9) 0%,
+		rgba(28, 25, 23, 0.72) 58%,
+		rgba(28, 25, 23, 0) 100%
+	);
 }
 
 .cttel-home-mosaic__tile--accessories:not(.cttel-home-mosaic__tile--photo) .cttel-home-mosaic__title,
@@ -443,23 +469,35 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 
 .cttel-home-mosaic__copy {
 	position: absolute;
-	inset-inline: 0;
+	inset-inline-start: 0;
+	inset-inline-end: auto;
 	inset-block-end: 0;
 	z-index: 2;
-	padding: 0.65rem 0.7rem;
+	width: min(68%, 100%);
+	padding: 0.55rem 0.7rem 0.65rem;
+	background: linear-gradient(
+		135deg,
+		rgba(7, 21, 38, 0.94) 0%,
+		rgba(7, 21, 38, 0.78) 58%,
+		rgba(7, 21, 38, 0) 100%
+	);
+	border-end-start-radius: 14px;
 }
 
 .cttel-home-mosaic__title {
 	margin: 0;
 	font-size: 0.9375rem;
 	font-weight: 800;
-	text-shadow: 0 1px 12px rgba(7, 21, 38, 0.45);
+	color: #f8fafc;
+	text-shadow: 0 1px 10px rgba(7, 21, 38, 0.55);
 }
 
 .cttel-home-mosaic__desc {
-	margin: 0.1rem 0 0;
+	margin: 0.15rem 0 0;
 	font-size: 0.6875rem;
-	opacity: 0.9;
+	color: #e2e8f0;
+	opacity: 0.95;
+	line-height: 1.35;
 }
 
 .cttel-home-mosaic__arrow {
@@ -628,6 +666,13 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	grid-template-columns: 1fr;
 }
 
+.cttel-home-used__panel--photo {
+	grid-template-columns: 1fr;
+	grid-template-rows: 1fr;
+	min-height: 196px;
+	background: #0b1f3a;
+}
+
 .cttel-home-used__panel--texture {
 	background:
 		radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.22), transparent 45%),
@@ -637,6 +682,33 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 
 .cttel-home-used__copy {
 	padding: 1rem;
+}
+
+.cttel-home-used__panel--photo .cttel-home-used__copy {
+	grid-column: 1;
+	grid-row: 1;
+	z-index: 2;
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	width: min(72%, 100%);
+	margin-inline-start: 0;
+	margin-inline-end: auto;
+	padding: 0.85rem 0.95rem;
+	background: linear-gradient(
+		to inline-start,
+		rgba(7, 16, 32, 0.96) 0%,
+		rgba(7, 16, 32, 0.84) 55%,
+		rgba(7, 16, 32, 0) 100%
+	);
+}
+
+.cttel-home-used__panel--photo .cttel-home-used__media {
+	grid-column: 1;
+	grid-row: 1;
+	max-height: none;
+	min-height: 196px;
 }
 
 .cttel-home-used__title {
@@ -665,15 +737,17 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	content: "";
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(90deg, rgba(7, 21, 38, 0.55) 0%, transparent 55%);
+	background: linear-gradient(to inline-end, transparent 35%, rgba(7, 21, 38, 0.4) 100%);
 	pointer-events: none;
+	z-index: 1;
 }
 
 .cttel-home-used__photo {
 	width: 100%;
-	height: 140px;
+	height: 196px;
+	min-height: 196px;
 	object-fit: cover;
-	object-position: 55% 42%;
+	object-position: 24% 42%;
 }
 
 .cttel-home-installment__panel {
@@ -682,6 +756,35 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 	display: grid;
 	grid-template-columns: 1fr;
 	box-shadow: 0 8px 24px rgba(37, 99, 235, 0.06);
+}
+
+.cttel-home-installment__panel:has(.cttel-home-installment__media) {
+	grid-template-rows: 1fr;
+	min-height: 204px;
+}
+
+.cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__media {
+	grid-column: 1;
+	grid-row: 1;
+	max-height: none;
+	min-height: 204px;
+}
+
+.cttel-home-installment__panel:has(.cttel-home-installment__media) .cttel-home-installment__copy {
+	grid-column: 1;
+	grid-row: 1;
+	z-index: 2;
+	align-self: end;
+	width: min(74%, 100%);
+	margin-inline-start: 0;
+	margin-inline-end: auto;
+	padding: 0.85rem 0.95rem 1rem;
+	background: linear-gradient(
+		to inline-start,
+		rgba(255, 255, 255, 0.97) 0%,
+		rgba(255, 255, 255, 0.88) 52%,
+		rgba(255, 255, 255, 0) 100%
+	);
 }
 
 .cttel-home-installment__copy {
@@ -713,9 +816,10 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 
 .cttel-home-installment__photo {
 	width: 100%;
-	height: 132px;
+	height: 204px;
+	min-height: 204px;
 	object-fit: cover;
-	object-position: 50% 40%;
+	object-position: 72% 38%;
 }
 
 /* Trust */
@@ -805,10 +909,14 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 		max-height: none;
 	}
 
+	.cttel-home-hero__media::after {
+		background: linear-gradient(to inline-start, rgba(7, 21, 38, 0.82) 0%, rgba(7, 21, 38, 0.35) 38%, transparent 62%);
+	}
+
 	.cttel-home-hero__img {
 		height: 100%;
 		min-height: 320px;
-		object-position: 52% 40%;
+		object-position: 28% 42%;
 	}
 
 	.cttel-home-hero__body {
@@ -817,6 +925,8 @@ body.cttel-dedicated-home .ct-footer [data-row="bottom"] {
 		flex-direction: column;
 		justify-content: center;
 		padding: 2rem;
+		background: linear-gradient(180deg, rgba(7, 21, 38, 0.98) 0%, #0b1f3a 100%);
+		box-shadow: inset 4px 0 24px rgba(7, 21, 38, 0.35);
 	}
 
 	.cttel-home-rail__desc {
