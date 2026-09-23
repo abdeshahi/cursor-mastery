@@ -1,0 +1,36 @@
+name: Deploy staging homepage
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - cursor/cttel-homepage-rebuild-72ff
+    paths:
+      - 'wordpress/mu-plugins/cttel-homepage*.php'
+      - 'wordpress/mu-plugins/cttel-homepage.css'
+      - 'wordpress/mu-plugins/cttel-home-mockup.css'
+      - 'wordpress/mu-plugins/templates/cttel-front-page.php'
+      - 'wordpress/scripts/sync-staging-homepage.sh'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Sync mu-plugins to staging
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          STAGING_SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          STAGING_WP_CONTAINER: wp_staging_app
+        run: |
+          if [ -z "${VPS_PASSWORD}" ] && [ -z "${STAGING_SSH_PRIVATE_KEY}" ]; then
+            echo "::error::Set GitHub secret VPS_PASSWORD or STAGING_SSH_PRIVATE_KEY to deploy staging."
+            exit 1
+          fi
+          chmod +x wordpress/scripts/sync-staging-homepage.sh
+          cd wordpress && ./scripts/sync-staging-homepage.sh
