@@ -10,7 +10,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CTTEL_HOMEPAGE_VERSION', '1.4.1-legibility' );
+define( 'CTTEL_HOMEPAGE_VERSION', '2.0.0-mockup' );
 
 require_once __DIR__ . '/cttel-homepage-render.php';
 
@@ -73,6 +73,10 @@ add_action(
 		if ( is_readable( $css_path ) ) {
 			wp_add_inline_style( 'cttel-homepage', (string) file_get_contents( $css_path ) );
 		}
+		$mockup_path = __DIR__ . '/cttel-home-mockup.css';
+		if ( is_readable( $mockup_path ) ) {
+			wp_add_inline_style( 'cttel-homepage', (string) file_get_contents( $mockup_path ) );
+		}
 	},
 	30
 );
@@ -87,6 +91,18 @@ add_action(
 		}
 	},
 	100
+);
+
+add_filter(
+	'bloginfo',
+	static function ( $output, $show ) {
+		if ( 'description' === $show && cttel_is_dedicated_homepage() ) {
+			return 'انتخاب بهتر، دنیای هوشمندتر';
+		}
+		return $output;
+	},
+	10,
+	2
 );
 
 add_filter(

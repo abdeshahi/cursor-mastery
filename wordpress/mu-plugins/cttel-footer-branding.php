@@ -46,7 +46,7 @@ add_filter(
 			$text = '© ' . $year . ' CTTEL.ir';
 		}
 		if ( function_exists( 'cttel_is_dedicated_homepage' ) && cttel_is_dedicated_homepage() ) {
-			return '© ' . $year . ' CTTEL.ir · موبایل، گجت و لوازم جانبی';
+			return '© ' . $year . ' CTTEL.ir';
 		}
 		return $text;
 	},
