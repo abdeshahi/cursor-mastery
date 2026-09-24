@@ -60,6 +60,33 @@ add_filter(
 add_action(
 	'wp_enqueue_scripts',
 	static function (): void {
+		if ( cttel_ms_is_cart_page() ) {
+			wp_enqueue_script( 'wc-cart' );
+			wp_add_inline_script(
+				'wc-cart',
+				"(function ($) {
+	$(function () {
+		var \$form = $('.woocommerce-cart-form');
+		if (!\$form.length || !$('body').hasClass('cttel-ms-cart')) {
+			return;
+		}
+		function submitCartUpdate() {
+			var \$btn = \$form.find('[name=\"update_cart\"]');
+			if (!\$btn.length) {
+				return;
+			}
+			\$btn.prop('disabled', false).removeAttr('aria-disabled');
+			\$btn.trigger('click');
+		}
+		\$form.on('change', 'input.qty', submitCartUpdate);
+		\$form.on('click', '.quantity .ct-increase, .quantity .ct-decrease', function () {
+			window.setTimeout(submitCartUpdate, 80);
+		});
+	});
+})(jQuery);",
+				'after'
+			);
+		}
 		if ( ! cttel_ms_is_commerce_flow_page() ) {
 			return;
 		}

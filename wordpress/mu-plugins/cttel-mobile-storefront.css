@@ -1603,6 +1603,45 @@ body.cttel-ms-cart .product-quantity .qty {
 	min-height: 40px;
 }
 
+/* One qty field per row — Blocksy duplicates mobile/desktop inputs with the same name. */
+@media (max-width: 999.98px) {
+	body.cttel-ms-cart tr.cart_item td.product-quantity,
+	body.cttel-ms-cart tr.cart_item td.product-subtotal,
+	body.cttel-ms-cart tr.cart_item td.product-remove:not(.product-mobile-actions) {
+		display: none !important;
+	}
+
+	body.cttel-ms-cart .product-mobile-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		margin-top: 6px;
+	}
+
+	body.cttel-ms-cart .product-mobile-actions .product-remove {
+		margin-inline-start: auto;
+	}
+}
+
+@media (min-width: 1000px) {
+	body.cttel-ms-cart .product-mobile-actions {
+		display: none !important;
+	}
+}
+
+body.cttel-ms-cart .actions [name="update_cart"] {
+	width: 100%;
+	min-height: 44px;
+	margin-top: 8px;
+	border-radius: 10px;
+	font-weight: 700;
+}
+
+body.cttel-ms-cart .actions .coupon .button {
+	min-height: 44px;
+}
+
 body.cttel-ms-cart .product-remove a {
 	color: #b45309;
 	font-size: 0.75rem;
