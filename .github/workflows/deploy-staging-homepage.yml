@@ -9,6 +9,7 @@ on:
     paths:
       - 'wordpress/mu-plugins/cttel-homepage.php'
       - 'wordpress/mu-plugins/cttel-mobile-storefront*.php'
+      - 'wordpress/mu-plugins/cttel-staging-wc-readiness.php'
       - 'wordpress/mu-plugins/cttel-mobile-storefront.css'
       - 'wordpress/mu-plugins/assets/cttel-ms/**'
       - 'wordpress/mu-plugins/templates/cttel-mobile-front.php'
