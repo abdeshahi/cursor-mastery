@@ -70,25 +70,15 @@ add_action(
 		if (!\$form.length || !$('body').hasClass('cttel-ms-cart')) {
 			return;
 		}
-		function isMobileCart() {
-			return window.matchMedia('(max-width: 999.98px)').matches;
-		}
-		function activeQtyInput(\$row) {
-			if (isMobileCart()) {
-				return \$row.find('.product-mobile-actions input.qty').first();
-			}
-			return \$row.find('td.product-quantity input.qty').first();
-		}
 		function syncCartQtyInputs() {
 			\$form.find('tr.cart_item').each(function () {
 				var \$row = $(this);
-				var \$primary = activeQtyInput(\$row);
-				var \$all = \$row.find('input.qty[name]');
-				if (!\$primary.length || \$all.length < 2) {
+				var \$primary = \$row.find('td.product-quantity input.qty').first();
+				var \$dupes = \$row.find('.product-mobile-actions input.qty');
+				if (!\$primary.length) {
 					return;
 				}
-				var val = \$primary.val();
-				\$all.not(\$primary).prop('disabled', true).val(val);
+				\$dupes.prop('disabled', true).attr('aria-hidden', 'true');
 				\$primary.prop('disabled', false);
 			});
 		}
@@ -96,9 +86,8 @@ add_action(
 		function submitCartUpdate() {
 			syncCartQtyInputs();
 			var qtyOk = true;
-			\$form.find('tr.cart_item').each(function () {
-				var \$primary = activeQtyInput($(this));
-				var qty = parseInt(\$primary.val(), 10);
+			\$form.find('td.product-quantity input.qty').each(function () {
+				var qty = parseInt($(this).val(), 10);
 				if (!qty || qty < 1) {
 					qtyOk = false;
 				}
@@ -115,12 +104,11 @@ add_action(
 		}
 		function queueCartUpdate() {
 			window.clearTimeout(updateTimer);
-			updateTimer = window.setTimeout(submitCartUpdate, 350);
+			updateTimer = window.setTimeout(submitCartUpdate, 400);
 		}
 		syncCartQtyInputs();
-		$(window).on('resize', syncCartQtyInputs);
-		\$form.on('change', 'input.qty:not(:disabled)', queueCartUpdate);
-		\$form.on('click', '.quantity .ct-increase, .quantity .ct-decrease', queueCartUpdate);
+		\$form.on('change input', 'td.product-quantity input.qty', queueCartUpdate);
+		\$form.on('click', 'td.product-quantity .quantity .ct-increase, td.product-quantity .quantity .ct-decrease', queueCartUpdate);
 	});
 })(jQuery);",
 				'after'

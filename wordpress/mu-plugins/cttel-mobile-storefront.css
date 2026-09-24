@@ -1603,24 +1603,51 @@ body.cttel-ms-cart .product-quantity .qty {
 	min-height: 40px;
 }
 
-/* One qty field per row — Blocksy duplicates mobile/desktop inputs with the same name. */
+/* Single WooCommerce qty control — Blocksy mobile-actions duplicate breaks updates. */
 @media (max-width: 999.98px) {
-	body.cttel-ms-cart tr.cart_item td.product-quantity,
-	body.cttel-ms-cart tr.cart_item td.product-subtotal,
-	body.cttel-ms-cart tr.cart_item td.product-remove:not(.product-mobile-actions) {
+	body.cttel-ms-cart tr.cart_item {
+		display: grid;
+		grid-template-columns: 72px 1fr;
+		grid-template-areas:
+			"thumb name"
+			"qty qty"
+			"subtotal subtotal";
+	}
+
+	body.cttel-ms-cart tr.cart_item td.product-thumbnail {
+		grid-area: thumb;
+	}
+
+	body.cttel-ms-cart tr.cart_item td.product-name {
+		grid-area: name;
+	}
+
+	body.cttel-ms-cart tr.cart_item td.product-quantity {
+		display: block !important;
+		grid-area: qty;
+		padding-top: 0;
+		border-bottom: none;
+	}
+
+	body.cttel-ms-cart tr.cart_item td.product-subtotal {
+		display: block !important;
+		grid-area: subtotal;
+		font-weight: 700;
+	}
+
+	body.cttel-ms-cart tr.cart_item td.product-remove {
+		display: none !important;
+	}
+
+	body.cttel-ms-cart .product-mobile-actions .quantity,
+	body.cttel-ms-cart .product-mobile-actions .ct-product-multiply-symbol,
+	body.cttel-ms-cart .product-mobile-actions .cttel-price {
 		display: none !important;
 	}
 
 	body.cttel-ms-cart .product-mobile-actions {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px;
-		margin-top: 6px;
-	}
-
-	body.cttel-ms-cart .product-mobile-actions .product-remove {
-		margin-inline-start: auto;
+		display: block;
+		margin-top: 4px;
 	}
 }
 
