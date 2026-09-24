@@ -58,7 +58,7 @@ add_action(
  * Staging-only JSON audit (no production): ?cttel_staging_wc_audit=snapshot
  */
 add_action(
-	'init',
+	'template_redirect',
 	static function (): void {
 		if ( ! cttel_is_staging_site() || ! isset( $_GET['cttel_staging_wc_audit'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
