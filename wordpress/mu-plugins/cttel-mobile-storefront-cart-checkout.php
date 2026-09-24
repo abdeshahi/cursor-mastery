@@ -92,8 +92,20 @@ add_action(
 				\$primary.prop('disabled', false);
 			});
 		}
+		var updateTimer = null;
 		function submitCartUpdate() {
 			syncCartQtyInputs();
+			var qtyOk = true;
+			\$form.find('tr.cart_item').each(function () {
+				var \$primary = activeQtyInput($(this));
+				var qty = parseInt(\$primary.val(), 10);
+				if (!qty || qty < 1) {
+					qtyOk = false;
+				}
+			});
+			if (!qtyOk) {
+				return;
+			}
 			var \$btn = \$form.find('[name=\"update_cart\"]');
 			if (!\$btn.length) {
 				return;
@@ -101,12 +113,14 @@ add_action(
 			\$btn.prop('disabled', false).removeAttr('aria-disabled');
 			\$btn.trigger('click');
 		}
+		function queueCartUpdate() {
+			window.clearTimeout(updateTimer);
+			updateTimer = window.setTimeout(submitCartUpdate, 350);
+		}
 		syncCartQtyInputs();
 		$(window).on('resize', syncCartQtyInputs);
-		\$form.on('change', 'input.qty', submitCartUpdate);
-		\$form.on('click', '.quantity .ct-increase, .quantity .ct-decrease', function () {
-			window.setTimeout(submitCartUpdate, 120);
-		});
+		\$form.on('change', 'input.qty:not(:disabled)', queueCartUpdate);
+		\$form.on('click', '.quantity .ct-increase, .quantity .ct-decrease', queueCartUpdate);
 	});
 })(jQuery);",
 				'after'
