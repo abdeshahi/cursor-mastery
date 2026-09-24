@@ -13,7 +13,7 @@ if ( defined( 'CTTEL_MOBILE_STOREFRONT_BOOTSTRAPPED' ) ) {
 	return;
 }
 define( 'CTTEL_MOBILE_STOREFRONT_BOOTSTRAPPED', true );
-define( 'CTTEL_MOBILE_STOREFRONT_VERSION', '1.4.2-cart-checkout-cod' );
+define( 'CTTEL_MOBILE_STOREFRONT_VERSION', '1.4.3-cart-checkout-cod' );
 
 require_once __DIR__ . '/cttel-staging-wc-readiness.php';
 require_once __DIR__ . '/cttel-mobile-storefront-assets.php';

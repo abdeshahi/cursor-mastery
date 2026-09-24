@@ -177,3 +177,64 @@ add_action(
 	},
 	20
 );
+
+if ( ! function_exists( 'cttel_is_staging_site' ) ) {
+	function cttel_is_staging_site(): bool {
+		if ( defined( 'CTTEL_STAGING' ) && CTTEL_STAGING ) {
+			return true;
+		}
+		$host = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( (string) $_SERVER['HTTP_HOST'] ) : '';
+		return str_contains( $host, 'staging.' ) || str_contains( $host, 'staging.cttel' );
+	}
+}
+
+/** Staging-only: enable COD for cash test orders (never production). */
+add_action(
+	'init',
+	static function (): void {
+		if ( ! cttel_is_staging_site() || ! function_exists( 'WC' ) ) {
+			return;
+		}
+		$key = 'cttel_staging_cod_bootstrapped_v3';
+		if ( get_option( $key ) ) {
+			return;
+		}
+		$cod = get_option( 'woocommerce_cod_settings', array() );
+		if ( ! is_array( $cod ) ) {
+			$cod = array();
+		}
+		$cod['enabled']      = 'yes';
+		$cod['title']        = $cod['title'] ?? 'پرداخت در محل';
+		$cod['description']  = $cod['description'] ?? 'پرداخت نقدی هنگام تحویل (استیجینگ).';
+		update_option( 'woocommerce_cod_settings', $cod );
+		update_option( $key, 1 );
+	},
+	20
+);
+
+add_filter(
+	'woocommerce_available_payment_gateways',
+	static function ( array $gateways ): array {
+		if ( ! cttel_is_staging_site() || ! function_exists( 'WC' ) ) {
+			return $gateways;
+		}
+		if ( isset( $gateways['cod'] ) ) {
+			return $gateways;
+		}
+		$all = WC()->payment_gateways()->payment_gateways();
+		if ( isset( $all['cod'] ) ) {
+			$all['cod']->enabled             = 'yes';
+			$all['cod']->settings['enabled'] = 'yes';
+			$gateways['cod']                 = $all['cod'];
+		}
+		return $gateways;
+	},
+	100
+);
+
+add_filter(
+	'woocommerce_gateway_cod_is_available',
+	static function ( bool $available ): bool {
+		return cttel_is_staging_site() ? true : $available;
+	}
+);
