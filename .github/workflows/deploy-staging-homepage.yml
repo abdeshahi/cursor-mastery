@@ -9,6 +9,7 @@ on:
       - 'wordpress/mu-plugins/cttel-homepage.php'
       - 'wordpress/mu-plugins/cttel-mobile-storefront*.php'
       - 'wordpress/mu-plugins/cttel-mobile-storefront.css'
+      - 'wordpress/mu-plugins/assets/cttel-ms/**'
       - 'wordpress/mu-plugins/templates/cttel-mobile-front.php'
       - 'wordpress/mu-plugins/templates/cttel-categories-hub.php'
       - 'wordpress/scripts/sync-staging-homepage.sh'

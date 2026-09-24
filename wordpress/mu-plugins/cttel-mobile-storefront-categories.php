@@ -110,7 +110,7 @@ function cttel_ms_category_card_image( WP_Term $term ): string {
 			return $img;
 		}
 	}
-	return '<span class="cttel-ms-cat-card__img cttel-ms-cat-card__img--fallback" aria-hidden="true">' . cttel_mobile_storefront_category_icon( $term ) . '</span>';
+	return cttel_ms_term_placeholder_visual( $term );
 }
 
 /**
@@ -155,7 +155,7 @@ function cttel_ms_category_hub_product_card_image( WC_Product $product ): string
 			return $img;
 		}
 	}
-	return '<span class="cttel-ms-cat-card__img cttel-ms-cat-card__img--fallback" aria-hidden="true"></span>';
+	return cttel_ms_product_placeholder_visual( $product );
 }
 
 function cttel_ms_categories_hub_render(): void {

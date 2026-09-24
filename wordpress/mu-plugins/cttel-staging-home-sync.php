@@ -36,6 +36,7 @@ if ( ! function_exists( 'cttel_staging_sync_homepage_mu_from_github' ) ) {
 			'cttel-mobile-storefront-shell.php',
 			'cttel-mobile-storefront-home.php',
 			'cttel-mobile-storefront-categories.php',
+			'cttel-mobile-storefront-assets.php',
 			'cttel-mobile-storefront.css',
 			'cttel-design-system.php',
 			'cttel-quick-categories.php',

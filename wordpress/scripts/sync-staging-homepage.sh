@@ -19,6 +19,7 @@ MU_FILES=(
 	cttel-mobile-storefront-shell.php
 	cttel-mobile-storefront-home.php
 	cttel-mobile-storefront-categories.php
+	cttel-mobile-storefront-assets.php
 	cttel-mobile-storefront.css
 	cttel-design-system.php
 	cttel-quick-categories.php
@@ -82,6 +83,17 @@ for rel in "${TEMPLATE_FILES[@]}"; do
 	echo "  ${rel}"
 	"${SSH[@]}" "${HOST}" "docker exec -i ${CONTAINER} tee /var/www/html/wp-content/mu-plugins/${rel}" < "${src}" >/dev/null
 done
+
+ASSETS_DIR="${ROOT}/mu-plugins/assets/cttel-ms"
+if [[ -d "${ASSETS_DIR}" ]]; then
+	echo "==> Sync mu-plugins/assets/cttel-ms/ ..."
+	while IFS= read -r -d '' asset; do
+		rel="${asset#${ROOT}/mu-plugins/}"
+		echo "  ${rel}"
+		"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} mkdir -p /var/www/html/wp-content/mu-plugins/$(dirname "${rel}")"
+		"${SSH[@]}" "${HOST}" "docker exec -i ${CONTAINER} tee /var/www/html/wp-content/mu-plugins/${rel}" < "${asset}" >/dev/null
+	done < <(find "${ASSETS_DIR}" -type f -print0)
+fi
 
 echo "==> Flush rewrite rules + caches (staging)..."
 "${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} wp rewrite flush --allow-root 2>/dev/null || true"

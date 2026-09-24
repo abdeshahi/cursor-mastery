@@ -204,7 +204,7 @@ function cttel_ms_product_card( WC_Product $product ): string {
 				'alt'     => $product->get_name(),
 			)
 		)
-		: '<span class="cttel-ms-pcard__img cttel-ms-pcard__img--empty" aria-hidden="true"></span>';
+		: cttel_ms_product_placeholder_visual( $product );
 
 	ob_start();
 	?>

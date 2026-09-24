@@ -177,7 +177,7 @@ function cttel_mobile_storefront_product_search_form(): void {
 		<input type="search" id="cttel-ms-search-field" class="cttel-ms-search__input" placeholder="<?php esc_attr_e( 'جستجو', 'cttel-store' ); ?>" value="<?php echo esc_attr( get_search_query() ); ?>" name="s" />
 		<input type="hidden" name="post_type" value="product" />
 		<button type="submit" class="cttel-ms-search__btn" aria-label="<?php esc_attr_e( 'جستجو', 'cttel-store' ); ?>">
-			<?php echo cttel_mobile_storefront_icon( 'search' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<?php echo cttel_mobile_storefront_icon( 'search', 22 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</button>
 	</form>
 	<?php
@@ -227,47 +227,4 @@ function cttel_mobile_storefront_render_bottom_nav( string $active = '' ): void 
 		<?php endforeach; ?>
 	</nav>
 	<?php
-}
-
-/**
- * Inline SVG icons (no external assets).
- *
- * @param string $name Icon key.
- */
-function cttel_mobile_storefront_icon( string $name ): string {
-	$icons = array(
-		'cart'   => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>',
-		'search' => '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
-		'home'   => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>',
-		'grid'   => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
-		'user'   => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 6-4 8-4s6.5 0 8 4"/></svg>',
-		'chev'   => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
-		'mobile' => '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
-		'laptop' => '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M2 19h20"/></svg>',
-		'tablet' => '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 17h2"/></svg>',
-		'watch'  => '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6V4h6v2M9 18v2h6v-2"/></svg>',
-		'parts'  => '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>',
-		'audio'  => '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 14v-4a2 2 0 0 1 2-2h3l4-3v16l-4-3H6a2 2 0 0 1-2-2z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg>',
-		'box'    => '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3 4 7v10l8 4 8-4V7z"/><path d="m4 7 8 4 8-4M12 11v10"/></svg>',
-	);
-	return $icons[ $name ] ?? $icons['box'];
-}
-
-/** Map product_cat slug to outline icon. */
-function cttel_mobile_storefront_category_icon( WP_Term $term ): string {
-	$slug = $term->slug;
-	$map  = array(
-		'mobile'              => 'mobile',
-		'mobile-parts'        => 'parts',
-		'mobile_parts'        => 'parts',
-		'parts'               => 'parts',
-		'laptop'              => 'laptop',
-		'tablet'              => 'tablet',
-		'smartwatch'          => 'watch',
-		'watch'               => 'watch',
-		'headphones'          => 'audio',
-		'accessories'         => 'box',
-	);
-	$icon = $map[ $slug ] ?? 'box';
-	return cttel_mobile_storefront_icon( $icon );
 }
