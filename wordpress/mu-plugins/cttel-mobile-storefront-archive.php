@@ -93,20 +93,69 @@ add_filter(
 	}
 );
 
+function cttel_ms_use_ms_product_card_template(): bool {
+	if ( ! cttel_mobile_storefront_uses_shell() ) {
+		return false;
+	}
+	if ( cttel_ms_is_product_archive() ) {
+		return true;
+	}
+	return function_exists( 'cttel_ms_is_single_product' ) && cttel_ms_is_single_product();
+}
+
+function cttel_ms_product_card_template_path(): string {
+	return __DIR__ . '/templates/content-product-ms.php';
+}
+
 add_filter(
 	'woocommerce_locate_template',
 	static function ( string $template, string $template_name, string $template_path ): string {
-		if ( 'content-product.php' !== $template_name || ! cttel_mobile_storefront_uses_shell() ) {
+		if ( 'content-product.php' !== $template_name || ! cttel_ms_use_ms_product_card_template() ) {
 			return $template;
 		}
-		if ( ! cttel_ms_is_product_archive() && ! ( function_exists( 'cttel_ms_is_single_product' ) && cttel_ms_is_single_product() ) ) {
-			return $template;
-		}
-		$custom = __DIR__ . '/templates/content-product-ms.php';
+		$custom = cttel_ms_product_card_template_path();
 		return is_readable( $custom ) ? $custom : $template;
 	},
-	30,
+	999,
 	3
+);
+
+add_filter(
+	'wc_get_template_part',
+	static function ( $template, $slug, $name ) {
+		if ( 'content' !== $slug || 'product' !== $name || ! cttel_ms_use_ms_product_card_template() ) {
+			return $template;
+		}
+		$custom = cttel_ms_product_card_template_path();
+		return is_readable( $custom ) ? $custom : $template;
+	},
+	999,
+	3
+);
+
+add_filter(
+	'wc_get_template',
+	static function ( $template, $template_name, $args, $template_path, $default_path ) {
+		if ( 'content-product.php' !== $template_name || ! cttel_ms_use_ms_product_card_template() ) {
+			return $template;
+		}
+		$custom = cttel_ms_product_card_template_path();
+		return is_readable( $custom ) ? $custom : $template;
+	},
+	999,
+	5
+);
+
+add_action(
+	'wp',
+	static function (): void {
+		if ( ! cttel_ms_use_ms_product_card_template() ) {
+			return;
+		}
+		remove_all_actions( 'woocommerce_before_shop_loop_item_title' );
+		remove_all_actions( 'woocommerce_after_shop_loop_item_title' );
+	},
+	999
 );
 
 /** Apply archive filters to main product query. */

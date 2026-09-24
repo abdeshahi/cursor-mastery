@@ -265,6 +265,9 @@ add_action(
 add_filter(
 	'woocommerce_post_class',
 	static function ( $classes, $product ) {
+		if ( function_exists( 'cttel_ms_use_ms_product_card_template' ) && cttel_ms_use_ms_product_card_template() ) {
+			return $classes;
+		}
 		if ( is_front_page() || is_shop() || is_product_taxonomy() ) {
 			$classes[] = 'cttel-pcard';
 		}

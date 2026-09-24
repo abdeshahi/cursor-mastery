@@ -22,7 +22,7 @@ if ( ! function_exists( 'cttel_staging_sync_homepage_mu_from_github' ) ) {
 		if ( ! cttel_is_staging_site() || ! function_exists( 'wp_remote_get' ) ) {
 			return;
 		}
-		$sync_key = 'cttel_staging_mu_sync_1_3_0_shop_pdp';
+		$sync_key = 'cttel_staging_mu_sync_1_3_1_shop_pdp_cards';
 		if ( get_transient( $sync_key ) ) {
 			return;
 		}
