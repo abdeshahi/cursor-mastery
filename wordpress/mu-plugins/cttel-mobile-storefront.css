@@ -1657,6 +1657,15 @@ body.cttel-ms-cart .product-quantity .qty {
 	}
 }
 
+body.cttel-ms-cart .woocommerce-cart-form .actions {
+	position: sticky;
+	bottom: calc(var(--cttel-ms-nav-height, 56px) + 8px);
+	z-index: 35;
+	background: var(--cttel-ms-bg, #f7f9fc);
+	padding: 10px 0 6px;
+	margin-top: 8px;
+}
+
 body.cttel-ms-cart .actions [name="update_cart"] {
 	width: 100%;
 	min-height: 44px;

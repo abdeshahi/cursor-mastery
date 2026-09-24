@@ -87,14 +87,13 @@ add_action(
 			\$btn.prop('disabled', false).removeAttr('aria-disabled');
 			if (\$btn.length) {
 				\$btn.trigger('click');
-			} else {
-				\$form.trigger('submit');
 			}
 		}
 		function queueCartUpdate() {
 			window.clearTimeout(updateTimer);
-			updateTimer = window.setTimeout(submitCartUpdate, 550);
+			updateTimer = window.setTimeout(submitCartUpdate, 900);
 		}
+		\$form.on('click', 'td.product-quantity .ct-increase, td.product-quantity .ct-decrease', queueCartUpdate);
 		\$form.on('change', 'td.product-quantity input.qty', queueCartUpdate);
 	});
 })(jQuery);",
