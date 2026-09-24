@@ -66,12 +66,20 @@ add_filter(
 		}
 		$all = WC()->payment_gateways()->payment_gateways();
 		if ( isset( $all['cod'] ) ) {
-			$all['cod']->enabled = 'yes';
-			$gateways['cod']     = $all['cod'];
+			$all['cod']->enabled            = 'yes';
+			$all['cod']->settings['enabled'] = 'yes';
+			$gateways['cod']                = $all['cod'];
 		}
 		return $gateways;
 	},
 	100
+);
+
+add_filter(
+	'woocommerce_gateway_cod_is_available',
+	static function ( bool $available ): bool {
+		return cttel_is_staging_site() ? true : $available;
+	}
 );
 
 /**
