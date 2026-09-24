@@ -139,23 +139,7 @@ function cttel_ms_category_hub_products( WP_Term $term, int $limit = 12 ): array
 }
 
 function cttel_ms_category_hub_product_card_image( WC_Product $product ): string {
-	$thumb_id = $product->get_image_id();
-	if ( $thumb_id > 0 ) {
-		$img = wp_get_attachment_image(
-			$thumb_id,
-			'woocommerce_thumbnail',
-			false,
-			array(
-				'class'   => 'cttel-ms-cat-card__img',
-				'loading' => 'lazy',
-				'alt'     => $product->get_name(),
-			)
-		);
-		if ( $img ) {
-			return $img;
-		}
-	}
-	return cttel_ms_product_placeholder_visual( $product );
+	return cttel_ms_product_card_image_html( $product, 'cttel-ms-cat-card__img' );
 }
 
 function cttel_ms_categories_hub_render(): void {

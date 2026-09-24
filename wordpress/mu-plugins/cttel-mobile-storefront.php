@@ -13,7 +13,7 @@ if ( defined( 'CTTEL_MOBILE_STOREFRONT_BOOTSTRAPPED' ) ) {
 	return;
 }
 define( 'CTTEL_MOBILE_STOREFRONT_BOOTSTRAPPED', true );
-define( 'CTTEL_MOBILE_STOREFRONT_VERSION', '1.1.0-icons' );
+define( 'CTTEL_MOBILE_STOREFRONT_VERSION', '1.2.0-product-photos' );
 
 require_once __DIR__ . '/cttel-mobile-storefront-assets.php';
 require_once __DIR__ . '/cttel-mobile-storefront-shell.php';

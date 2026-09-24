@@ -38,6 +38,16 @@ The script **fails closed** if `STAGING_WP_CONTAINER` is not `wp_staging_app` or
    `wp rewrite flush --allow-root`
 3. Visual QA at 390px width: home search, bottom nav, category split panel.
 
+## Optional: sideload product photos into Woo media (staging)
+
+When products have no featured image, the storefront falls back to local PNGs under `assets/cttel-ms/products/`. To import those as real Woo featured images (editable in admin):
+
+```bash
+docker exec wp_staging_app wp eval-file wp-content/mu-plugins/cttel-ms-seed-product-photos.php --allow-root
+```
+
+Only products without featured image and without gallery are updated. Existing admin uploads are never overwritten.
+
 ## GitHub Actions
 
 Workflow `.github/workflows/deploy-staging-homepage.yml` runs the same script on push to the storefront branch (requires `VPS_PASSWORD` or `STAGING_SSH_PRIVATE_KEY` secret).

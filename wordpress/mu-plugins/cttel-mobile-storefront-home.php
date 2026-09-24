@@ -192,19 +192,7 @@ function cttel_ms_home_render_products(): void {
 }
 
 function cttel_ms_product_card( WC_Product $product ): string {
-	$thumb_id = $product->get_image_id();
-	$image    = $thumb_id
-		? wp_get_attachment_image(
-			$thumb_id,
-			'woocommerce_thumbnail',
-			false,
-			array(
-				'class'   => 'cttel-ms-pcard__img',
-				'loading' => 'lazy',
-				'alt'     => $product->get_name(),
-			)
-		)
-		: cttel_ms_product_placeholder_visual( $product );
+	$image = cttel_ms_product_card_image_html( $product, 'cttel-ms-pcard__img' );
 
 	ob_start();
 	?>

@@ -20,6 +20,7 @@ MU_FILES=(
 	cttel-mobile-storefront-home.php
 	cttel-mobile-storefront-categories.php
 	cttel-mobile-storefront-assets.php
+	cttel-ms-seed-product-photos.php
 	cttel-mobile-storefront.css
 	cttel-design-system.php
 	cttel-quick-categories.php
