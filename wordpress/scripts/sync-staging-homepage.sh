@@ -19,6 +19,8 @@ MU_FILES=(
 	cttel-mobile-storefront-shell.php
 	cttel-mobile-storefront-home.php
 	cttel-mobile-storefront-categories.php
+	cttel-mobile-storefront-archive.php
+	cttel-mobile-storefront-single.php
 	cttel-mobile-storefront-assets.php
 	cttel-ms-seed-product-photos.php
 	cttel-mobile-storefront.css
@@ -33,6 +35,7 @@ MU_FILES=(
 TEMPLATE_FILES=(
 	templates/cttel-mobile-front.php
 	templates/cttel-categories-hub.php
+	templates/content-product-ms.php
 )
 
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 -p "${PORT}")

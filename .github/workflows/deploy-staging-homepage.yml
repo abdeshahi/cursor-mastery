@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - cursor/hamrahtel-mobile-storefront-8598
+      - cursor/shop-listing-pdp-72ff
     paths:
       - 'wordpress/mu-plugins/cttel-homepage.php'
       - 'wordpress/mu-plugins/cttel-mobile-storefront*.php'
@@ -12,6 +13,7 @@ on:
       - 'wordpress/mu-plugins/assets/cttel-ms/**'
       - 'wordpress/mu-plugins/templates/cttel-mobile-front.php'
       - 'wordpress/mu-plugins/templates/cttel-categories-hub.php'
+      - 'wordpress/mu-plugins/templates/content-product-ms.php'
       - 'wordpress/scripts/sync-staging-homepage.sh'
 
 jobs:

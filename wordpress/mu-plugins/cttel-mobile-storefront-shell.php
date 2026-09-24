@@ -19,6 +19,12 @@ add_filter(
 		if ( cttel_mobile_storefront_is_categories_hub() ) {
 			$classes[] = 'cttel-ms-categories';
 		}
+		if ( function_exists( 'cttel_ms_is_product_archive' ) && cttel_ms_is_product_archive() ) {
+			$classes[] = 'cttel-ms-archive';
+		}
+		if ( function_exists( 'cttel_ms_is_single_product' ) && cttel_ms_is_single_product() ) {
+			$classes[] = 'cttel-ms-single';
+		}
 		return $classes;
 	}
 );
@@ -79,6 +85,10 @@ add_action(
 	'wp_body_open',
 	static function (): void {
 		if ( ! cttel_mobile_storefront_uses_shell() ) {
+			return;
+		}
+		if ( ( function_exists( 'cttel_ms_is_product_archive' ) && cttel_ms_is_product_archive() )
+			|| ( function_exists( 'cttel_ms_is_single_product' ) && cttel_ms_is_single_product() ) ) {
 			return;
 		}
 		cttel_mobile_storefront_render_header();

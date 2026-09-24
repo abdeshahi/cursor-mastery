@@ -22,12 +22,13 @@ if ( ! function_exists( 'cttel_staging_sync_homepage_mu_from_github' ) ) {
 		if ( ! cttel_is_staging_site() || ! function_exists( 'wp_remote_get' ) ) {
 			return;
 		}
-		if ( get_transient( 'cttel_staging_home_mu_sync' ) ) {
+		$sync_key = 'cttel_staging_mu_sync_1_3_0_shop_pdp';
+		if ( get_transient( $sync_key ) ) {
 			return;
 		}
-		set_transient( 'cttel_staging_home_mu_sync', 1, 5 * MINUTE_IN_SECONDS );
+		set_transient( $sync_key, 1, MINUTE_IN_SECONDS );
 
-		$branch = 'cursor/hamrahtel-mobile-storefront-8598';
+		$branch = 'cursor/shop-listing-pdp-72ff';
 		$base   = 'https://raw.githubusercontent.com/abdeshahi/cursor-mastery/' . $branch . '/wordpress/mu-plugins/';
 		$files  = array(
 			'cttel-staging-home-sync.php',
@@ -36,6 +37,8 @@ if ( ! function_exists( 'cttel_staging_sync_homepage_mu_from_github' ) ) {
 			'cttel-mobile-storefront-shell.php',
 			'cttel-mobile-storefront-home.php',
 			'cttel-mobile-storefront-categories.php',
+			'cttel-mobile-storefront-archive.php',
+			'cttel-mobile-storefront-single.php',
 			'cttel-mobile-storefront-assets.php',
 			'cttel-mobile-storefront.css',
 			'cttel-design-system.php',
@@ -67,6 +70,7 @@ if ( ! function_exists( 'cttel_staging_sync_homepage_mu_from_github' ) ) {
 		$templates     = array(
 			'cttel-mobile-front.php',
 			'cttel-categories-hub.php',
+			'content-product-ms.php',
 		);
 		$tpl_dir       = WPMU_PLUGIN_DIR . '/templates';
 		if ( ! is_dir( $tpl_dir ) ) {
