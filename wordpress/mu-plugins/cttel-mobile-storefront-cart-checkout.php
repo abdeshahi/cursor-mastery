@@ -70,21 +70,9 @@ add_action(
 		if (!\$form.length || !$('body').hasClass('cttel-ms-cart')) {
 			return;
 		}
-		function syncCartQtyInputs() {
-			\$form.find('tr.cart_item').each(function () {
-				var \$row = $(this);
-				var \$primary = \$row.find('td.product-quantity input.qty').first();
-				var \$dupes = \$row.find('.product-mobile-actions input.qty');
-				if (!\$primary.length) {
-					return;
-				}
-				\$dupes.prop('disabled', true).attr('aria-hidden', 'true');
-				\$primary.prop('disabled', false);
-			});
-		}
+		\$form.find('.product-mobile-actions input.qty').remove();
 		var updateTimer = null;
 		function submitCartUpdate() {
-			syncCartQtyInputs();
 			var qtyOk = true;
 			\$form.find('td.product-quantity input.qty').each(function () {
 				var qty = parseInt($(this).val(), 10);
@@ -96,19 +84,18 @@ add_action(
 				return;
 			}
 			var \$btn = \$form.find('[name=\"update_cart\"]');
-			if (!\$btn.length) {
-				return;
-			}
 			\$btn.prop('disabled', false).removeAttr('aria-disabled');
-			\$btn.trigger('click');
+			if (\$btn.length) {
+				\$btn.trigger('click');
+			} else {
+				\$form.trigger('submit');
+			}
 		}
 		function queueCartUpdate() {
 			window.clearTimeout(updateTimer);
-			updateTimer = window.setTimeout(submitCartUpdate, 400);
+			updateTimer = window.setTimeout(submitCartUpdate, 550);
 		}
-		syncCartQtyInputs();
-		\$form.on('change input', 'td.product-quantity input.qty', queueCartUpdate);
-		\$form.on('click', 'td.product-quantity .quantity .ct-increase, td.product-quantity .quantity .ct-decrease', queueCartUpdate);
+		\$form.on('change', 'td.product-quantity input.qty', queueCartUpdate);
 	});
 })(jQuery);",
 				'after'
