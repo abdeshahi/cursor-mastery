@@ -13,6 +13,9 @@ add_action(
 		if ( function_exists( 'cttel_is_dedicated_homepage' ) && cttel_is_dedicated_homepage() ) {
 			return;
 		}
+		if ( function_exists( 'cttel_mobile_storefront_uses_shell' ) && cttel_mobile_storefront_uses_shell() ) {
+			return;
+		}
 		if ( ! is_front_page() ) {
 			return;
 		}

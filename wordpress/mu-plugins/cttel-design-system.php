@@ -194,7 +194,11 @@ add_action(
 add_filter(
 	'body_class',
 	static function ( array $classes ): array {
-		if ( is_front_page() && ! ( function_exists( 'cttel_is_dedicated_homepage' ) && cttel_is_dedicated_homepage() ) ) {
+		if (
+			is_front_page()
+			&& ! ( function_exists( 'cttel_is_dedicated_homepage' ) && cttel_is_dedicated_homepage() )
+			&& ! ( function_exists( 'cttel_mobile_storefront_uses_shell' ) && cttel_mobile_storefront_uses_shell() )
+		) {
 			$classes[] = 'cttel-v2-home';
 		}
 		return $classes;

@@ -1,15 +1,16 @@
-name: Deploy staging homepage
+name: Deploy staging mobile storefront
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - cursor/cttel-homepage-rebuild-72ff
+      - cursor/hamrahtel-mobile-storefront-8598
     paths:
-      - 'wordpress/mu-plugins/cttel-homepage*.php'
-      - 'wordpress/mu-plugins/cttel-homepage.css'
-      - 'wordpress/mu-plugins/cttel-home-mockup.css'
-      - 'wordpress/mu-plugins/templates/cttel-front-page.php'
+      - 'wordpress/mu-plugins/cttel-homepage.php'
+      - 'wordpress/mu-plugins/cttel-mobile-storefront*.php'
+      - 'wordpress/mu-plugins/cttel-mobile-storefront.css'
+      - 'wordpress/mu-plugins/templates/cttel-mobile-front.php'
+      - 'wordpress/mu-plugins/templates/cttel-categories-hub.php'
       - 'wordpress/scripts/sync-staging-homepage.sh'
 
 jobs:
@@ -30,6 +31,10 @@ jobs:
         run: |
           if [ -z "${VPS_PASSWORD}" ] && [ -z "${STAGING_SSH_PRIVATE_KEY}" ]; then
             echo "::error::Set GitHub secret VPS_PASSWORD or STAGING_SSH_PRIVATE_KEY to deploy staging."
+            exit 1
+          fi
+          if [ "${STAGING_WP_CONTAINER}" != "wp_staging_app" ]; then
+            echo "::error::Refusing deploy: STAGING_WP_CONTAINER must be wp_staging_app."
             exit 1
           fi
           chmod +x wordpress/scripts/sync-staging-homepage.sh

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sync dedicated homepage mu-plugins to staging VPS (staging.cttel.ir). Production-safe: mu-plugins only.
+# Sync CTTEL mobile storefront mu-plugins to STAGING only (wp_staging_app). Never production.
 set -euo pipefail
 
 HOST="${STAGING_SSH_HOST:-root@185.18.214.66}"
@@ -7,16 +7,30 @@ PORT="${STAGING_SSH_PORT:-22}"
 CONTAINER="${STAGING_WP_CONTAINER:-wp_staging_app}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+if [[ "${CONTAINER}" != "wp_staging_app" ]]; then
+	echo "Refusing sync: STAGING_WP_CONTAINER must be wp_staging_app (got: ${CONTAINER})"
+	exit 1
+fi
+
 MU_FILES=(
 	cttel-staging-home-sync.php
 	cttel-homepage.php
-	cttel-homepage-render.php
-	cttel-homepage.css
-	cttel-home-mockup.css
+	cttel-mobile-storefront.php
+	cttel-mobile-storefront-shell.php
+	cttel-mobile-storefront-home.php
+	cttel-mobile-storefront-categories.php
+	cttel-mobile-storefront.css
 	cttel-design-system.php
+	cttel-quick-categories.php
 	cttel-footer-branding.php
 	cttel-blocksy-mobile-offcanvas.php
 	cttel-blocksy-mobile-header.php
+	cttel-store.php
+)
+
+TEMPLATE_FILES=(
+	templates/cttel-mobile-front.php
+	templates/cttel-categories-hub.php
 )
 
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 -p "${PORT}")
@@ -42,7 +56,12 @@ cleanup() {
 trap cleanup EXIT
 
 echo "==> Staging sync to ${HOST} (container ${CONTAINER})..."
-"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} mkdir -p /var/www/html/wp-content/mu-plugins"
+if ! "${SSH[@]}" "${HOST}" "docker ps --format '{{.Names}}' | grep -qx '${CONTAINER}'"; then
+	echo "Staging container ${CONTAINER} not found on ${HOST}. Aborting (fail closed)."
+	exit 1
+fi
+
+"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} mkdir -p /var/www/html/wp-content/mu-plugins/templates"
 
 for f in "${MU_FILES[@]}"; do
 	src="${ROOT}/mu-plugins/${f}"
@@ -54,14 +73,18 @@ for f in "${MU_FILES[@]}"; do
 	"${SSH[@]}" "${HOST}" "docker exec -i ${CONTAINER} tee /var/www/html/wp-content/mu-plugins/${f}" < "${src}" >/dev/null
 done
 
-TEMPLATE="${ROOT}/mu-plugins/templates/cttel-front-page.php"
-if [[ -f "${TEMPLATE}" ]]; then
-	echo "  templates/cttel-front-page.php"
-	"${SSH[@]}" "${HOST}" "docker exec -i ${CONTAINER} mkdir -p /var/www/html/wp-content/mu-plugins/templates"
-	"${SSH[@]}" "${HOST}" "docker exec -i ${CONTAINER} tee /var/www/html/wp-content/mu-plugins/templates/cttel-front-page.php" < "${TEMPLATE}" >/dev/null
-fi
+for rel in "${TEMPLATE_FILES[@]}"; do
+	src="${ROOT}/mu-plugins/${rel}"
+	if [[ ! -f "${src}" ]]; then
+		echo "Skip missing ${rel}"
+		continue
+	fi
+	echo "  ${rel}"
+	"${SSH[@]}" "${HOST}" "docker exec -i ${CONTAINER} tee /var/www/html/wp-content/mu-plugins/${rel}" < "${src}" >/dev/null
+done
 
-echo "==> Flush caches..."
+echo "==> Flush rewrite rules + caches (staging)..."
+"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} wp rewrite flush --allow-root 2>/dev/null || true"
 "${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} wp cache flush --allow-root 2>/dev/null || true"
 
-echo "Staging homepage mu-plugins synced."
+echo "Staging mobile storefront mu-plugins synced."
