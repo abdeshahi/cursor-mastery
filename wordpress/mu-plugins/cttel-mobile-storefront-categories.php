@@ -113,6 +113,51 @@ function cttel_ms_category_card_image( WP_Term $term ): string {
 	return '<span class="cttel-ms-cat-card__img cttel-ms-cat-card__img--fallback" aria-hidden="true">' . cttel_mobile_storefront_category_icon( $term ) . '</span>';
 }
 
+/**
+ * Published products in a category when no child terms exist (max 12).
+ *
+ * @return WP_Post[]
+ */
+function cttel_ms_category_hub_products( WP_Term $term, int $limit = 12 ): array {
+	$query = new WP_Query(
+		array(
+			'post_type'      => 'product',
+			'post_status'    => 'publish',
+			'posts_per_page' => $limit,
+			'no_found_rows'  => true,
+			'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				array(
+					'taxonomy'         => 'product_cat',
+					'field'            => 'term_id',
+					'terms'            => (int) $term->term_id,
+					'include_children' => true,
+				),
+			),
+		)
+	);
+	return $query->posts;
+}
+
+function cttel_ms_category_hub_product_card_image( WC_Product $product ): string {
+	$thumb_id = $product->get_image_id();
+	if ( $thumb_id > 0 ) {
+		$img = wp_get_attachment_image(
+			$thumb_id,
+			'woocommerce_thumbnail',
+			false,
+			array(
+				'class'   => 'cttel-ms-cat-card__img',
+				'loading' => 'lazy',
+				'alt'     => $product->get_name(),
+			)
+		);
+		if ( $img ) {
+			return $img;
+		}
+	}
+	return '<span class="cttel-ms-cat-card__img cttel-ms-cat-card__img--fallback" aria-hidden="true"></span>';
+}
+
 function cttel_ms_categories_hub_render(): void {
 	$parents = cttel_ms_parent_product_categories();
 	if ( empty( $parents ) ) {
@@ -174,9 +219,13 @@ function cttel_ms_categories_hub_render(): void {
 						<span class="cttel-ms-cat-hub__panel-title"><?php echo esc_html( sprintf( 'همه محصولات دسته %s', $term->name ) ); ?></span>
 						<span class="cttel-ms-cat-hub__panel-chev"><?php echo cttel_mobile_storefront_icon( 'chev' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 					</a>
-					<?php if ( empty( $children ) ) : ?>
-						<p class="cttel-ms-cat-hub__empty"><?php esc_html_e( 'زیردسته‌ای ثبت نشده — مشاهده همه محصولات این دسته.', 'cttel-store' ); ?></p>
-					<?php else : ?>
+					<?php
+					$panel_products = array();
+					if ( empty( $children ) && function_exists( 'wc_get_product' ) ) {
+						$panel_products = cttel_ms_category_hub_products( $term );
+					}
+					?>
+					<?php if ( ! empty( $children ) ) : ?>
 						<ul class="cttel-ms-cat-hub__grid">
 							<?php foreach ( $children as $child ) : ?>
 								<?php if ( ! $child instanceof WP_Term ) {
@@ -190,6 +239,25 @@ function cttel_ms_categories_hub_render(): void {
 								</li>
 							<?php endforeach; ?>
 						</ul>
+					<?php elseif ( ! empty( $panel_products ) ) : ?>
+						<ul class="cttel-ms-cat-hub__grid">
+							<?php foreach ( $panel_products as $post ) : ?>
+								<?php
+								$product = wc_get_product( $post );
+								if ( ! $product instanceof WC_Product ) {
+									continue;
+								}
+								?>
+								<li>
+									<a class="cttel-ms-cat-card" href="<?php echo esc_url( $product->get_permalink() ); ?>">
+										<span class="cttel-ms-cat-card__media"><?php echo cttel_ms_category_hub_product_card_image( $product ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+										<span class="cttel-ms-cat-card__name"><?php echo esc_html( $product->get_name() ); ?></span>
+									</a>
+								</li>
+							<?php endforeach; ?>
+						</ul>
+					<?php else : ?>
+						<p class="cttel-ms-cat-hub__empty"><?php esc_html_e( 'محصولی در این دسته یافت نشد.', 'cttel-store' ); ?></p>
 					<?php endif; ?>
 				</section>
 			<?php endforeach; ?>
