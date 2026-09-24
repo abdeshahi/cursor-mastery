@@ -26,7 +26,7 @@ add_action(
 		if ( ! cttel_is_staging_site() || ! function_exists( 'WC' ) ) {
 			return;
 		}
-		$key = 'cttel_staging_cod_bootstrapped';
+		$key = 'cttel_staging_cod_bootstrapped_v2';
 		if ( get_option( $key ) ) {
 			return;
 		}
@@ -52,6 +52,26 @@ add_action(
 		update_option( $key, 1 );
 	},
 	20
+);
+
+/** Ensure COD is offered on staging when no online gateway is configured (no card capture). */
+add_filter(
+	'woocommerce_available_payment_gateways',
+	static function ( array $gateways ): array {
+		if ( ! cttel_is_staging_site() || ! function_exists( 'WC' ) ) {
+			return $gateways;
+		}
+		if ( isset( $gateways['cod'] ) ) {
+			return $gateways;
+		}
+		$all = WC()->payment_gateways()->payment_gateways();
+		if ( isset( $all['cod'] ) ) {
+			$all['cod']->enabled = 'yes';
+			$gateways['cod']     = $all['cod'];
+		}
+		return $gateways;
+	},
+	100
 );
 
 /**
