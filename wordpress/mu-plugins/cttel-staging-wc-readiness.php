@@ -54,32 +54,32 @@ add_action(
 	20
 );
 
-/** Ensure COD is offered on staging when no online gateway is configured (no card capture). */
-add_filter(
-	'woocommerce_available_payment_gateways',
-	static function ( array $gateways ): array {
-		if ( ! cttel_is_staging_site() || ! function_exists( 'WC' ) ) {
-			return $gateways;
+/**
+ * Staging-only JSON audit (no production): ?cttel_staging_wc_audit=snapshot
+ */
+add_action(
+	'init',
+	static function (): void {
+		if ( ! cttel_is_staging_site() || ! isset( $_GET['cttel_staging_wc_audit'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
 		}
-		if ( isset( $gateways['cod'] ) ) {
-			return $gateways;
+		if ( 'snapshot' !== (string) wp_unslash( $_GET['cttel_staging_wc_audit'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
 		}
-		$all = WC()->payment_gateways()->payment_gateways();
-		if ( isset( $all['cod'] ) ) {
-			$all['cod']->enabled            = 'yes';
-			$all['cod']->settings['enabled'] = 'yes';
-			$gateways['cod']                = $all['cod'];
+		if ( ! function_exists( 'WC' ) || ! WC()->payment_gateways() ) {
+			wp_send_json( array( 'error' => 'woocommerce_unavailable' ), 503 );
 		}
-		return $gateways;
+		$snap = cttel_staging_wc_audit_snapshot();
+		if ( WC()->cart && ! WC()->cart->is_empty() ) {
+			$snap['cart'] = array(
+				'needs_payment' => WC()->cart->needs_payment(),
+				'total'         => WC()->cart->get_total( 'edit' ),
+			);
+		}
+		$snap['available_gateway_ids'] = array_keys( WC()->payment_gateways()->get_available_payment_gateways() );
+		wp_send_json( $snap, 200 );
 	},
-	100
-);
-
-add_filter(
-	'woocommerce_gateway_cod_is_available',
-	static function ( bool $available ): bool {
-		return cttel_is_staging_site() ? true : $available;
-	}
+	5
 );
 
 /**

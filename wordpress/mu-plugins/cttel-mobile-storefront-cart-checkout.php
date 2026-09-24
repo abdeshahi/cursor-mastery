@@ -188,53 +188,100 @@ if ( ! function_exists( 'cttel_is_staging_site' ) ) {
 	}
 }
 
-/** Staging-only: enable COD for cash test orders (never production). */
+/**
+ * Staging-only: enable offline gateways for cash/bank test orders (never production).
+ */
+function cttel_ms_staging_bootstrap_offline_gateways(): void {
+	if ( ! cttel_is_staging_site() ) {
+		return;
+	}
+	$key = 'cttel_staging_cod_bootstrapped_v4';
+	if ( get_option( $key ) ) {
+		return;
+	}
+	$cod = get_option( 'woocommerce_cod_settings', array() );
+	if ( ! is_array( $cod ) ) {
+		$cod = array();
+	}
+	$cod['enabled']            = 'yes';
+	$cod['title']              = $cod['title'] ?? 'پرداخت در محل';
+	$cod['description']        = $cod['description'] ?? 'پرداخت نقدی هنگام تحویل (استیجینگ).';
+	$cod['enable_for_virtual'] = 'yes';
+	$cod['enable_for_methods'] = array();
+	update_option( 'woocommerce_cod_settings', $cod );
+
+	foreach ( array( 'bacs', 'cheque' ) as $offline_id ) {
+		$settings = get_option( 'woocommerce_' . $offline_id . '_settings', array() );
+		if ( ! is_array( $settings ) ) {
+			$settings = array();
+		}
+		$settings['enabled'] = 'yes';
+		update_option( 'woocommerce_' . $offline_id . '_settings', $settings );
+	}
+
+	$order = get_option( 'woocommerce_gateway_order', array() );
+	if ( ! is_array( $order ) ) {
+		$order = array();
+	}
+	foreach ( array( 'cod', 'bacs', 'cheque' ) as $gateway_id ) {
+		if ( ! in_array( $gateway_id, $order, true ) ) {
+			array_unshift( $order, $gateway_id );
+		}
+	}
+	update_option( 'woocommerce_gateway_order', $order );
+	update_option( $key, 1 );
+}
+
+add_action( 'init', 'cttel_ms_staging_bootstrap_offline_gateways', 20 );
+
+/**
+ * Relax COD shipping-method restrictions on staging (DB may still list legacy method IDs).
+ */
+function cttel_ms_staging_prepare_offline_gateways( WC_Payment_Gateways $manager ): void {
+	if ( ! cttel_is_staging_site() ) {
+		return;
+	}
+	foreach ( $manager->payment_gateways() as $gateway_id => $gateway ) {
+		if ( ! in_array( $gateway_id, array( 'cod', 'bacs', 'cheque' ), true ) ) {
+			continue;
+		}
+		$gateway->enabled = 'yes';
+		if ( is_array( $gateway->settings ) ) {
+			$gateway->settings['enabled'] = 'yes';
+		}
+		if ( 'cod' === $gateway_id && property_exists( $gateway, 'enable_for_methods' ) ) {
+			$gateway->enable_for_methods = array();
+		}
+	}
+}
+
 add_action(
-	'init',
-	static function (): void {
-		if ( ! cttel_is_staging_site() || ! function_exists( 'WC' ) ) {
-			return;
-		}
-		$key = 'cttel_staging_cod_bootstrapped_v3';
-		if ( get_option( $key ) ) {
-			return;
-		}
-		$cod = get_option( 'woocommerce_cod_settings', array() );
-		if ( ! is_array( $cod ) ) {
-			$cod = array();
-		}
-		$cod['enabled']            = 'yes';
-		$cod['title']              = $cod['title'] ?? 'پرداخت در محل';
-		$cod['description']        = $cod['description'] ?? 'پرداخت نقدی هنگام تحویل (استیجینگ).';
-		$cod['enable_for_virtual'] = 'yes';
-		$cod['enable_for_methods'] = array();
-		update_option( 'woocommerce_cod_settings', $cod );
-		update_option( $key, 1 );
-	},
-	20
+	'wc_payment_gateways_initialized',
+	static function ( WC_Payment_Gateways $manager ): void {
+		cttel_ms_staging_prepare_offline_gateways( $manager );
+	}
 );
 
 add_filter(
 	'woocommerce_available_payment_gateways',
 	static function ( array $gateways ): array {
-		if ( ! cttel_is_staging_site() || ! function_exists( 'WC' ) ) {
+		if ( ! cttel_is_staging_site() || ! function_exists( 'WC' ) || ! WC()->payment_gateways() ) {
 			return $gateways;
 		}
-		if ( isset( $gateways['cod'] ) ) {
+		if ( ! WC()->cart || WC()->cart->is_empty() ) {
 			return $gateways;
 		}
+		cttel_ms_staging_prepare_offline_gateways( WC()->payment_gateways() );
 		$all = WC()->payment_gateways()->payment_gateways();
 		foreach ( array( 'cod', 'bacs', 'cheque' ) as $gateway_id ) {
-			if ( ! isset( $all[ $gateway_id ] ) ) {
+			if ( ! isset( $all[ $gateway_id ] ) || ! is_a( $all[ $gateway_id ], 'WC_Payment_Gateway' ) ) {
 				continue;
 			}
-			$all[ $gateway_id ]->enabled             = 'yes';
-			$all[ $gateway_id ]->settings['enabled'] = 'yes';
-			$gateways[ $gateway_id ]                 = $all[ $gateway_id ];
+			$gateways[ $gateway_id ] = $all[ $gateway_id ];
 		}
 		return $gateways;
 	},
-	100
+	PHP_INT_MAX
 );
 
 add_filter(
@@ -266,6 +313,13 @@ add_filter(
 	}
 );
 
+add_filter(
+	'woocommerce_gateway_cheque_is_available',
+	static function ( bool $available ): bool {
+		return cttel_is_staging_site() ? true : $available;
+	}
+);
+
 add_action(
 	'wp_footer',
 	static function (): void {
@@ -274,7 +328,12 @@ add_action(
 		}
 		$registered = function_exists( 'WC' ) ? array_keys( WC()->payment_gateways()->payment_gateways() ) : array();
 		$available  = function_exists( 'WC' ) ? array_keys( WC()->payment_gateways()->get_available_payment_gateways() ) : array();
-		echo '<!-- cttel-ms-cart-checkout-v1 registered=' . esc_attr( implode( ',', $registered ) ) . ' available=' . esc_attr( implode( ',', $available ) ) . ' -->';
+		$cod_raw    = '';
+		if ( function_exists( 'WC' ) && isset( WC()->payment_gateways()->payment_gateways()['cod'] ) ) {
+			$cod_g   = WC()->payment_gateways()->payment_gateways()['cod'];
+			$cod_raw = ( $cod_g->is_available() ? '1' : '0' ) . '|' . (string) ( $cod_g->enabled ?? '' );
+		}
+		echo '<!-- cttel-ms-cart-checkout-v1 registered=' . esc_attr( implode( ',', $registered ) ) . ' available=' . esc_attr( implode( ',', $available ) ) . ' cod=' . esc_attr( $cod_raw ) . ' -->';
 	},
 	999
 );
