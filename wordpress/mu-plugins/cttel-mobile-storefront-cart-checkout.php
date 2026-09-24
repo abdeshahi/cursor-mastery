@@ -203,9 +203,11 @@ add_action(
 		if ( ! is_array( $cod ) ) {
 			$cod = array();
 		}
-		$cod['enabled']      = 'yes';
-		$cod['title']        = $cod['title'] ?? 'پرداخت در محل';
-		$cod['description']  = $cod['description'] ?? 'پرداخت نقدی هنگام تحویل (استیجینگ).';
+		$cod['enabled']            = 'yes';
+		$cod['title']              = $cod['title'] ?? 'پرداخت در محل';
+		$cod['description']        = $cod['description'] ?? 'پرداخت نقدی هنگام تحویل (استیجینگ).';
+		$cod['enable_for_virtual'] = 'yes';
+		$cod['enable_for_methods'] = array();
 		update_option( 'woocommerce_cod_settings', $cod );
 		update_option( $key, 1 );
 	},
