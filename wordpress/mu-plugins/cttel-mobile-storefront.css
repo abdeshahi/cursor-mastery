@@ -883,6 +883,35 @@ body.cttel-ms-archive .woocommerce-notices-wrapper {
 	padding: 8px 12px 0;
 }
 
+body.cttel-ms-archive .ct-woo-card-actions,
+body.cttel-ms-archive .entry-meta,
+body.cttel-ms-archive .woo-listing-top,
+body.cttel-ms-archive ul.products > li.product > figure:not(.cttel-ms-pcard__media),
+body.cttel-ms-archive ul.products > li.cttel-pcard .button {
+	display: none !important;
+}
+
+body.cttel-ms-archive ul.products > li.cttel-pcard:not(.cttel-ms-pcard) {
+	border: 1px solid var(--cttel-ms-border);
+	border-radius: 12px;
+	overflow: hidden;
+	background: #fff;
+	padding: 0;
+}
+
+body.cttel-ms-archive ul.products > li.cttel-pcard:not(.cttel-ms-pcard) .woocommerce-loop-product__title {
+	font-size: 0.8125rem;
+	padding: 8px 10px 0;
+	margin: 0;
+	font-weight: 700;
+}
+
+body.cttel-ms-archive ul.products > li.cttel-pcard:not(.cttel-ms-pcard) .price {
+	padding: 4px 10px 10px;
+	font-size: 0.875rem;
+	font-weight: 800;
+}
+
 .cttel-ms-products__grid--archive {
 	padding: 10px 12px 0;
 }
