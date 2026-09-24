@@ -82,6 +82,19 @@ add_filter(
 	}
 );
 
+add_action(
+	'wp_footer',
+	static function (): void {
+		if ( ! cttel_is_staging_site() || ! function_exists( 'is_checkout' ) || ! is_checkout() ) {
+			return;
+		}
+		$keys = function_exists( 'WC' ) ? array_keys( WC()->payment_gateways()->payment_gateways() ) : array();
+		$avail = function_exists( 'WC' ) ? array_keys( WC()->payment_gateways()->get_available_payment_gateways() ) : array();
+		echo '<!-- cttel-staging-wc-readiness keys=' . esc_attr( implode( ',', $keys ) ) . ' available=' . esc_attr( implode( ',', $avail ) ) . ' -->';
+	},
+	999
+);
+
 /**
  * @return array<string, mixed>
  */
