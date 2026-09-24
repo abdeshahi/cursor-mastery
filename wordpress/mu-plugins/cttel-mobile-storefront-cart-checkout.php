@@ -224,10 +224,13 @@ add_filter(
 			return $gateways;
 		}
 		$all = WC()->payment_gateways()->payment_gateways();
-		if ( isset( $all['cod'] ) ) {
-			$all['cod']->enabled             = 'yes';
-			$all['cod']->settings['enabled'] = 'yes';
-			$gateways['cod']                 = $all['cod'];
+		foreach ( array( 'cod', 'bacs', 'cheque' ) as $gateway_id ) {
+			if ( ! isset( $all[ $gateway_id ] ) ) {
+				continue;
+			}
+			$all[ $gateway_id ]->enabled             = 'yes';
+			$all[ $gateway_id ]->settings['enabled'] = 'yes';
+			$gateways[ $gateway_id ]                 = $all[ $gateway_id ];
 		}
 		return $gateways;
 	},
@@ -239,4 +242,22 @@ add_filter(
 	static function ( bool $available ): bool {
 		return cttel_is_staging_site() ? true : $available;
 	}
+);
+
+add_filter(
+	'woocommerce_gateway_bacs_is_available',
+	static function ( bool $available ): bool {
+		return cttel_is_staging_site() ? true : $available;
+	}
+);
+
+add_action(
+	'wp_footer',
+	static function (): void {
+		if ( ! cttel_is_staging_site() || ! cttel_ms_is_checkout_page() ) {
+			return;
+		}
+		echo '<!-- cttel-ms-cart-checkout-v1 -->';
+	},
+	999
 );
