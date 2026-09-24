@@ -22,7 +22,7 @@ if ( ! function_exists( 'cttel_staging_sync_homepage_mu_from_github' ) ) {
 		if ( ! cttel_is_staging_site() || ! function_exists( 'wp_remote_get' ) ) {
 			return;
 		}
-		$sync_key = 'cttel_staging_mu_sync_1_3_2_mobile_polish';
+		$sync_key = 'cttel_staging_mu_sync_1_4_0_cart_checkout';
 		if ( get_transient( $sync_key ) ) {
 			return;
 		}
@@ -39,6 +39,8 @@ if ( ! function_exists( 'cttel_staging_sync_homepage_mu_from_github' ) ) {
 			'cttel-mobile-storefront-categories.php',
 			'cttel-mobile-storefront-archive.php',
 			'cttel-mobile-storefront-single.php',
+			'cttel-mobile-storefront-cart-checkout.php',
+			'cttel-staging-wc-readiness.php',
 			'cttel-mobile-storefront-assets.php',
 			'cttel-mobile-storefront.css',
 			'cttel-design-system.php',
