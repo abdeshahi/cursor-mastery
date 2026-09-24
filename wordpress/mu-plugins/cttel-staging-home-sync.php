@@ -43,6 +43,7 @@ if ( ! function_exists( 'cttel_staging_sync_homepage_mu_from_github' ) ) {
 			'cttel-mobile-storefront.css',
 			'cttel-design-system.php',
 			'cttel-quick-categories.php',
+			'cttel-product-cards.php',
 		);
 
 		foreach ( $files as $file ) {

@@ -26,6 +26,7 @@ MU_FILES=(
 	cttel-mobile-storefront.css
 	cttel-design-system.php
 	cttel-quick-categories.php
+	cttel-product-cards.php
 	cttel-footer-branding.php
 	cttel-blocksy-mobile-offcanvas.php
 	cttel-blocksy-mobile-header.php
