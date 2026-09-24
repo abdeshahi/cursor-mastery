@@ -1321,23 +1321,27 @@ body.cttel-ms-single .related.products ul.products {
 
 	body.cttel-ms-archive .hero-section[data-type="type-2"] {
 		position: relative;
+		height: 160px;
+		min-height: 140px;
 		max-height: 168px;
 		overflow: hidden;
 		margin: 0;
 		padding: 0;
 		background: #f2f5f8;
 		border-bottom: 1px solid var(--cttel-ms-border);
+		display: block;
 	}
 
 	body.cttel-ms-archive .hero-section[data-type="type-2"] figure {
 		margin: 0;
-		height: 168px;
-		max-height: 168px;
+		height: 100%;
+		min-height: 140px;
+		width: 100%;
 	}
 
 	body.cttel-ms-archive .hero-section[data-type="type-2"] .ct-media-container {
-		height: 168px;
-		max-height: 168px;
+		height: 100%;
+		min-height: 140px;
 		width: 100%;
 		display: block;
 		overflow: hidden;
@@ -1345,10 +1349,12 @@ body.cttel-ms-single .related.products ul.products {
 
 	body.cttel-ms-archive .hero-section[data-type="type-2"] .ct-media-container img {
 		width: 100%;
-		height: 168px;
+		height: 100%;
+		min-height: 140px;
 		max-height: 168px;
 		object-fit: cover;
 		object-position: center 35%;
+		display: block;
 	}
 
 	body.cttel-ms-archive .hero-section[data-type="type-2"] .entry-header {
