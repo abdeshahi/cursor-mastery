@@ -238,6 +238,21 @@ add_filter(
 );
 
 add_filter(
+	'woocommerce_payment_gateways',
+	static function ( array $methods ): array {
+		if ( ! cttel_is_staging_site() ) {
+			return $methods;
+		}
+		foreach ( array( 'WC_Gateway_COD', 'WC_Gateway_BACS', 'WC_Gateway_Cheque' ) as $class ) {
+			if ( ! in_array( $class, $methods, true ) && class_exists( $class ) ) {
+				$methods[] = $class;
+			}
+		}
+		return $methods;
+	}
+);
+
+add_filter(
 	'woocommerce_gateway_cod_is_available',
 	static function ( bool $available ): bool {
 		return cttel_is_staging_site() ? true : $available;
@@ -257,7 +272,9 @@ add_action(
 		if ( ! cttel_is_staging_site() || ! cttel_ms_is_checkout_page() ) {
 			return;
 		}
-		echo '<!-- cttel-ms-cart-checkout-v1 -->';
+		$registered = function_exists( 'WC' ) ? array_keys( WC()->payment_gateways()->payment_gateways() ) : array();
+		$available  = function_exists( 'WC' ) ? array_keys( WC()->payment_gateways()->get_available_payment_gateways() ) : array();
+		echo '<!-- cttel-ms-cart-checkout-v1 registered=' . esc_attr( implode( ',', $registered ) ) . ' available=' . esc_attr( implode( ',', $available ) ) . ' -->';
 	},
 	999
 );
