@@ -13,14 +13,16 @@ if ( defined( 'CTTEL_MOBILE_STOREFRONT_BOOTSTRAPPED' ) ) {
 	return;
 }
 define( 'CTTEL_MOBILE_STOREFRONT_BOOTSTRAPPED', true );
-define( 'CTTEL_MOBILE_STOREFRONT_VERSION', '1.3.2-mobile-visual-polish-2' );
+define( 'CTTEL_MOBILE_STOREFRONT_VERSION', '1.4.0-cart-checkout' );
 
+require_once __DIR__ . '/cttel-staging-wc-readiness.php';
 require_once __DIR__ . '/cttel-mobile-storefront-assets.php';
 require_once __DIR__ . '/cttel-mobile-storefront-shell.php';
 require_once __DIR__ . '/cttel-mobile-storefront-home.php';
 require_once __DIR__ . '/cttel-mobile-storefront-categories.php';
 require_once __DIR__ . '/cttel-mobile-storefront-archive.php';
 require_once __DIR__ . '/cttel-mobile-storefront-single.php';
+require_once __DIR__ . '/cttel-mobile-storefront-cart-checkout.php';
 
 /**
  * Whether the mobile shell (custom header + bottom nav) applies to this request.
