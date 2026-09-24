@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa-IR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CTTEL 390 layout</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style id="base"></style>
+<style id="mockup"></style>
+</head>
+<body class="cttel-dedicated-home">
+<main id="cttel-home" class="cttel-home" style="max-width:390px;margin:0 auto">
+<section class="cttel-home-hero"><div class="cttel-home-wrap"><div class="cttel-home-hero__card cttel-home-hero__card--has-media"><div class="cttel-home-hero__media"><img class="cttel-home-hero__img" src="https://staging.cttel.ir/wp-content/uploads/2026/03/cttel-hero-approved.webp" alt="" /></div><div class="cttel-home-hero__body"><p class="cttel-home-hero__eyebrow">سری جدید</p><h1 class="cttel-home-hero__title">فراتر از انتظار</h1><p class="cttel-home-hero__lead">تجربه خرید مطمئن، پشتیبانی فروشگاه و امکان خرید اقساطی از CTTEL</p><div class="cttel-home-hero__actions"><a class="cttel-home-btn cttel-home-btn--primary" href="#">مشاهده محصولات</a><a class="cttel-home-btn cttel-home-btn--ghost" href="#">خرید اقساطی</a></div></div><div class="cttel-home-hero__dots"><span></span><span></span><span class="is-active"></span></div></div></div></section>
+<nav class="cttel-home-rail"><div class="cttel-home-wrap"><div class="cttel-home-rail__strip"><a class="cttel-home-rail__cell" href="#"><span class="cttel-home-rail__icon cttel-home-rail__icon--installment"></span><span class="cttel-home-rail__label">خرید اقساطی</span><span class="cttel-home-rail__desc">کار ساده‌تر، زندگی بهتر</span></a><a class="cttel-home-rail__cell" href="#"><span class="cttel-home-rail__icon cttel-home-rail__icon--supply"></span><span class="cttel-home-rail__label">درخواست تأمین</span><span class="cttel-home-rail__desc">هر کالایی که بخواهید</span></a><a class="cttel-home-rail__cell" href="#"><span class="cttel-home-rail__icon cttel-home-rail__icon--used"></span><span class="cttel-home-rail__label">گوشی کارکرده</span><span class="cttel-home-rail__desc">خرید و فروش مطمئن</span></a><a class="cttel-home-rail__cell" href="#"><span class="cttel-home-rail__icon cttel-home-rail__icon--support"></span><span class="cttel-home-rail__label">پشتیبانی</span><span class="cttel-home-rail__desc">همیشه در کنار شما</span></a></div></div></nav>
+</main>
+<script>
+fetch('../mu-plugins/cttel-homepage.css').then(r=>r.text()).then(t=>document.getElementById('base').textContent=t);
+fetch('../mu-plugins/cttel-home-mockup.css').then(r=>r.text()).then(t=>document.getElementById('mockup').textContent=t);
+</script>
+</body>
+</html>
