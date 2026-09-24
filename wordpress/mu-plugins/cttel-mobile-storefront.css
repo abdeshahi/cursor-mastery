@@ -1599,8 +1599,17 @@ body.cttel-ms-cart .product-name a {
 }
 
 body.cttel-ms-cart .product-quantity .qty {
-	max-width: 72px;
-	min-height: 40px;
+	max-width: 88px;
+	min-height: 44px;
+}
+
+body.cttel-ms-cart .quantity .ct-increase,
+body.cttel-ms-cart .quantity .ct-decrease {
+	display: none !important;
+}
+
+body.cttel-ms-cart .quantity[data-type="type-2"] {
+	padding-inline: 0;
 }
 
 /* Single WooCommerce qty control — Blocksy mobile-actions duplicate breaks updates. */

@@ -71,30 +71,6 @@ add_action(
 			return;
 		}
 		\$form.find('.product-mobile-actions input.qty').remove();
-		var updateTimer = null;
-		function submitCartUpdate() {
-			var qtyOk = true;
-			\$form.find('td.product-quantity input.qty').each(function () {
-				var qty = parseInt($(this).val(), 10);
-				if (!qty || qty < 1) {
-					qtyOk = false;
-				}
-			});
-			if (!qtyOk) {
-				return;
-			}
-			var \$btn = \$form.find('[name=\"update_cart\"]');
-			\$btn.prop('disabled', false).removeAttr('aria-disabled');
-			if (\$btn.length) {
-				\$btn.trigger('click');
-			}
-		}
-		function queueCartUpdate() {
-			window.clearTimeout(updateTimer);
-			updateTimer = window.setTimeout(submitCartUpdate, 900);
-		}
-		\$form.on('click', 'td.product-quantity .ct-increase, td.product-quantity .ct-decrease', queueCartUpdate);
-		\$form.on('change', 'td.product-quantity input.qty', queueCartUpdate);
 	});
 })(jQuery);",
 				'after'
