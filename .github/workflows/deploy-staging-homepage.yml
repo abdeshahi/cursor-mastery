@@ -10,6 +10,7 @@ on:
       - 'wordpress/mu-plugins/cttel-homepage.php'
       - 'wordpress/mu-plugins/cttel-mobile-storefront*.php'
       - 'wordpress/mu-plugins/cttel-staging-wc-readiness.php'
+      - 'wordpress/mu-plugins/cttel-staging-shipping-postpaid.php'
       - 'wordpress/mu-plugins/cttel-catalog.php'
       - 'wordpress/mu-plugins/cttel-storefront-*.php'
       - 'wordpress/mu-plugins/cttel-mobile-storefront.css'

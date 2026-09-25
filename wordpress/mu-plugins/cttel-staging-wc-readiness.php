@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+require_once __DIR__ . '/cttel-staging-shipping-postpaid.php';
+
 if ( ! function_exists( 'cttel_is_staging_site' ) ) {
 	function cttel_is_staging_site(): bool {
 		if ( defined( 'CTTEL_STAGING' ) && CTTEL_STAGING ) {
@@ -220,6 +222,11 @@ function cttel_staging_wc_shipping_audit(): array {
 		'shipping_classes'    => array(),
 		'product_classes'     => array(),
 		'free_shipping_risk'  => false,
+		'postpaid_shipping'   => array(
+			'configured'  => false,
+			'instance_id' => (int) get_option( CTTEL_POSTPAID_SHIPPING_INSTANCE_KEY, 0 ),
+			'title'       => function_exists( 'cttel_postpaid_shipping_title' ) ? cttel_postpaid_shipping_title() : '',
+		),
 	);
 
 	if ( ! class_exists( 'WC_Shipping_Zones' ) ) {
@@ -258,6 +265,14 @@ function cttel_staging_wc_shipping_audit(): array {
 				$requires = (string) ( $method['requires'] ?? '' );
 				if ( '' === $requires || 'no' === $requires ) {
 					$audit['free_shipping_risk'] = true;
+				}
+			}
+			if ( 'flat_rate' === ( $method['id'] ?? '' ) && 'yes' === ( $method['enabled'] ?? 'no' ) ) {
+				$title = (string) ( $method['title'] ?? '' );
+				if ( str_contains( $title, 'پس‌کرایه' ) || str_contains( $title, 'تیپاکس' ) ) {
+					$audit['postpaid_shipping']['configured'] = true;
+					$audit['postpaid_shipping']['title']      = $title;
+					$audit['postpaid_shipping']['cost']       = $method['cost'] ?? '';
 				}
 			}
 		}

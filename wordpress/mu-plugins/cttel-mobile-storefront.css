@@ -1970,6 +1970,33 @@ body.cttel-ms-cart .product-remove a {
 	font-size: 0.75rem;
 }
 
+.cttel-ms-postpaid-shipping-notice {
+	margin: 12px 12px 0;
+	padding: 12px;
+	border-radius: 12px;
+	background: #fffbeb;
+	border: 1px solid rgba(180, 83, 9, 0.2);
+	text-align: right;
+}
+
+.cttel-ms-postpaid-shipping-notice__title {
+	margin: 0 0 4px;
+	font-size: 0.8125rem;
+	font-weight: 800;
+	color: var(--cttel-ms-text);
+}
+
+.cttel-ms-postpaid-shipping-notice__text {
+	margin: 0;
+	font-size: 0.75rem;
+	line-height: 1.55;
+	color: #92400e;
+}
+
+body.cttel-ms-checkout .cttel-ms-postpaid-shipping-notice {
+	margin: 0 0 12px;
+}
+
 body.cttel-ms-cart .cart_totals {
 	margin-top: 12px;
 	border: 1px solid var(--cttel-ms-border);
