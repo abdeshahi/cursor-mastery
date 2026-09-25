@@ -128,16 +128,19 @@ function cttel_ms_commerce_totals_use_custom_labels(): bool {
 
 add_filter(
 	'gettext',
-	static function ( string $translated, string $text, string $domain ): string {
+	static function ( $translated, $text, $domain ) {
+		if ( ! is_string( $translated ) || ! is_string( $text ) || ! is_string( $domain ) ) {
+			return $translated;
+		}
 		if ( ! cttel_ms_commerce_totals_use_custom_labels() || 'woocommerce' !== $domain ) {
 			return $translated;
 		}
 		$map = array(
-			'Subtotal'        => 'جمع محصولات',
-			'جمع جزء'         => 'جمع محصولات',
-			'Shipping'        => 'هزینه ارسال',
-			'Total'           => 'مبلغ قابل پرداخت آنلاین',
-			'Order total'     => 'مبلغ قابل پرداخت آنلاین',
+			'Subtotal'    => 'جمع محصولات',
+			'جمع جزء'     => 'جمع محصولات',
+			'Shipping'    => 'هزینه ارسال',
+			'Total'       => 'مبلغ قابل پرداخت آنلاین',
+			'Order total' => 'مبلغ قابل پرداخت آنلاین',
 		);
 		return $map[ $text ] ?? ( $map[ $translated ] ?? $translated );
 	},
