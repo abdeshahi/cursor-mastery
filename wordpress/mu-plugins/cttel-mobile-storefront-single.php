@@ -22,6 +22,76 @@ function cttel_ms_installment_url(): string {
 	return home_url( '/installment/' );
 }
 
+/**
+ * Compact WooCommerce attributes / short description (no invented data).
+ */
+function cttel_ms_render_product_information_block( WC_Product $product ): void {
+	if ( function_exists( 'cttel_product_is_used' ) && cttel_product_is_used( $product ) ) {
+		return;
+	}
+	$rows_html = '';
+	if ( function_exists( 'wc_display_product_attributes' ) ) {
+		ob_start();
+		wc_display_product_attributes( $product );
+		$table = (string) ob_get_clean();
+		if ( '' !== trim( wp_strip_all_tags( $table ) ) ) {
+			$rows_html = $table;
+		}
+	}
+	$short = trim( (string) $product->get_short_description() );
+	if ( '' === $rows_html && '' === $short ) {
+		return;
+	}
+	echo '<section class="cttel-ms-product-info" aria-labelledby="cttel-ms-product-info-title">';
+	echo '<h2 id="cttel-ms-product-info-title" class="cttel-ms-product-info__title">' . esc_html__( 'مشخصات و توضیحات', 'cttel-store' ) . '</h2>';
+	if ( '' !== $short ) {
+		echo '<div class="cttel-ms-product-info__desc">' . wp_kses_post( wpautop( $short ) ) . '</div>';
+	}
+	if ( '' !== $rows_html ) {
+		echo '<div class="cttel-ms-product-info__attrs">' . $rows_html . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+	echo '</section>';
+}
+
+function cttel_ms_render_pdp_shipping_block(): void {
+	?>
+	<section class="cttel-ms-pdp-shipping" aria-labelledby="cttel-ms-pdp-shipping-title">
+		<h2 id="cttel-ms-pdp-shipping-title" class="cttel-ms-pdp-shipping__title"><?php esc_html_e( 'ارسال', 'cttel-store' ); ?></h2>
+		<p class="cttel-ms-pdp-shipping__line"><?php esc_html_e( 'ارسال با تیپاکس یا ماهکس', 'cttel-store' ); ?></p>
+		<p class="cttel-ms-pdp-shipping__line cttel-ms-pdp-shipping__line--muted"><?php esc_html_e( 'هزینه ارسال هنگام تحویل توسط مشتری به شرکت حمل پرداخت می‌شود.', 'cttel-store' ); ?></p>
+		<p class="cttel-ms-pdp-shipping__note"><?php esc_html_e( 'مبلغ کالا در همین صفحه به‌صورت آنلاین پرداخت می‌شود؛ هزینه حمل جداگانه و هنگام تحویل به پیک/شرکت حمل است.', 'cttel-store' ); ?></p>
+	</section>
+	<?php
+}
+
+function cttel_ms_render_pdp_trust_block(): void {
+	$items = array(
+		__( 'پرداخت امن آنلاین مبلغ کالا', 'cttel-store' ),
+		__( 'ضمانت اصالت کالا', 'cttel-store' ),
+		__( 'پشتیبانی فروشگاه CTTEL', 'cttel-store' ),
+	);
+	?>
+	<section class="cttel-ms-pdp-trust" aria-label="<?php esc_attr_e( 'اطمینان خرید', 'cttel-store' ); ?>">
+		<ul class="cttel-ms-pdp-trust__list">
+			<?php foreach ( $items as $item ) : ?>
+				<li><?php echo esc_html( $item ); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</section>
+	<?php
+}
+
+function cttel_ms_render_pdp_installment_block(): void {
+	$url = cttel_ms_installment_url();
+	?>
+	<section class="cttel-ms-pdp-installment" aria-labelledby="cttel-ms-pdp-installment-title">
+		<h2 id="cttel-ms-pdp-installment-title" class="screen-reader-text"><?php esc_html_e( 'خرید اقساطی', 'cttel-store' ); ?></h2>
+		<p class="cttel-ms-pdp-installment__text"><?php esc_html_e( 'خرید اقساطی به‌صورت حضوری و پس از بررسی شرایط انجام می‌شود.', 'cttel-store' ); ?></p>
+		<a class="cttel-ms-btn cttel-ms-btn--outline cttel-ms-pdp-installment__cta" href="<?php echo esc_url( $url ); ?>"><?php esc_html_e( 'مشاهده شرایط خرید اقساطی', 'cttel-store' ); ?></a>
+	</section>
+	<?php
+}
+
 add_filter(
 	'body_class',
 	static function ( array $classes ): array {
@@ -105,19 +175,31 @@ add_action(
 );
 
 add_action(
-	'woocommerce_after_add_to_cart_button',
+	'woocommerce_single_product_summary',
 	static function (): void {
 		if ( ! cttel_ms_is_single_product() || ! cttel_mobile_storefront_uses_shell() ) {
 			return;
 		}
-		$url = cttel_ms_installment_url();
-		printf(
-			'<p class="cttel-ms-single__installment-note"><a class="cttel-ms-single__installment-link" href="%1$s">%2$s</a></p>',
-			esc_url( $url ),
-			esc_html__( 'اطلاعات خرید اقساطی (مشاوره / حضوری)', 'cttel-store' )
-		);
+		global $product;
+		if ( ! $product instanceof WC_Product ) {
+			return;
+		}
+		cttel_ms_render_product_information_block( $product );
 	},
-	15
+	32
+);
+
+add_action(
+	'woocommerce_single_product_summary',
+	static function (): void {
+		if ( ! cttel_ms_is_single_product() || ! cttel_mobile_storefront_uses_shell() ) {
+			return;
+		}
+		cttel_ms_render_pdp_shipping_block();
+		cttel_ms_render_pdp_trust_block();
+		cttel_ms_render_pdp_installment_block();
+	},
+	36
 );
 
 add_action(
@@ -127,12 +209,31 @@ add_action(
 			return;
 		}
 		remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_meta', 40 );
+		remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_excerpt', 20 );
 		remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 10 );
 		remove_action( 'woocommerce_after_single_product_summary', 'comments_template', 50 );
-		add_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 35 );
-		add_action( 'woocommerce_after_single_product_summary', 'comments_template', 45 );
+		add_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 28 );
+		add_action( 'woocommerce_after_single_product_summary', 'comments_template', 42 );
 	},
 	20
+);
+
+add_filter(
+	'woocommerce_product_tabs',
+	static function ( array $tabs ): array {
+		if ( ! cttel_ms_is_single_product() || ! cttel_mobile_storefront_uses_shell() ) {
+			return $tabs;
+		}
+		unset( $tabs['additional_information'] );
+		if ( isset( $tabs['description'] ) ) {
+			global $product;
+			if ( $product instanceof WC_Product && '' === trim( (string) $product->get_description() ) ) {
+				unset( $tabs['description'] );
+			}
+		}
+		return $tabs;
+	},
+	50
 );
 
 add_filter(
@@ -148,12 +249,82 @@ add_filter(
 );
 
 add_action(
+	'woocommerce_before_single_product_summary',
+	static function (): void {
+		if ( ! cttel_ms_is_single_product() || ! cttel_mobile_storefront_uses_shell() ) {
+			return;
+		}
+		global $product;
+		if ( ! $product instanceof WC_Product ) {
+			return;
+		}
+		$count = (int) $product->get_review_count();
+		?>
+		<div id="cttel-ms-reviews-meta" class="screen-reader-text" data-review-count="<?php echo esc_attr( (string) $count ); ?>"></div>
+		<?php
+	},
+	99
+);
+
+add_action(
 	'wp_enqueue_scripts',
 	static function (): void {
 		if ( ! cttel_ms_is_single_product() || ! cttel_mobile_storefront_uses_shell() ) {
 			return;
 		}
 		wp_dequeue_style( 'cttel-storefront' );
+		wp_register_script( 'cttel-ms-single-reviews', false, array(), CTTEL_MOBILE_STOREFRONT_VERSION, true );
+		wp_enqueue_script( 'cttel-ms-single-reviews' );
+		wp_add_inline_script(
+			'cttel-ms-single-reviews',
+			"(function () {
+	function initReviews() {
+		var reviews = document.getElementById('reviews');
+		if (!reviews || reviews.dataset.cttelReviewsInit) return;
+		reviews.dataset.cttelReviewsInit = '1';
+		var meta = document.getElementById('cttel-ms-reviews-meta');
+		var count = meta ? parseInt(meta.getAttribute('data-review-count') || '0', 10) : 0;
+		var defaultHeading = reviews.querySelector(':scope > h2');
+		if (defaultHeading) defaultHeading.classList.add('screen-reader-text');
+		var head = document.createElement('div');
+		head.className = 'cttel-ms-reviews-head';
+		var title = document.createElement('h2');
+		title.className = 'cttel-ms-reviews-head__title';
+		title.textContent = 'نظرات کاربران (' + count + ')';
+		head.appendChild(title);
+		if (!count) {
+			var empty = document.createElement('p');
+			empty.className = 'cttel-ms-reviews-head__empty';
+			empty.textContent = 'هنوز نظری برای این محصول ثبت نشده است.';
+			head.appendChild(empty);
+		}
+		var toggle = document.createElement('button');
+		toggle.type = 'button';
+		toggle.className = 'cttel-ms-btn cttel-ms-btn--outline cttel-ms-reviews-toggle';
+		toggle.setAttribute('aria-expanded', 'false');
+		toggle.textContent = 'ثبت نظر';
+		head.appendChild(toggle);
+		reviews.insertBefore(head, reviews.firstChild);
+		var formWrap = reviews.querySelector('#review_form_wrapper');
+		if (formWrap) {
+			formWrap.hidden = true;
+			toggle.addEventListener('click', function () {
+				var open = formWrap.hidden;
+				formWrap.hidden = !open;
+				toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+				if (open) formWrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+			});
+		} else {
+			toggle.hidden = true;
+		}
+	}
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initReviews);
+	} else {
+		initReviews();
+	}
+})();"
+		);
 	},
 	125
 );

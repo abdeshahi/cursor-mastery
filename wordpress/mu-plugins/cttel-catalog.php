@@ -465,12 +465,15 @@ add_action(
 	}
 );
 
-/** PDP — used spec card (before add to cart). */
+/** PDP — used spec card (after add to cart). */
 add_action(
 	'woocommerce_single_product_summary',
 	static function (): void {
 		global $product;
 		if ( ! $product instanceof WC_Product || ! cttel_product_is_used( $product ) ) {
+			return;
+		}
+		if ( ! function_exists( 'cttel_mobile_storefront_uses_shell' ) || ! cttel_mobile_storefront_uses_shell() ) {
 			return;
 		}
 		$specs = cttel_product_used_specs( $product );
@@ -485,7 +488,7 @@ add_action(
 		}
 		echo '</dl></section>';
 	},
-	22
+	34
 );
 
 /** PDP — accessory model chips near price. */
@@ -514,12 +517,15 @@ add_action(
 	13
 );
 
-/** PDP — related compatibility blocks (below purchase area). */
+/** PDP — related compatibility blocks (after summary, before related products). */
 add_action(
-	'woocommerce_single_product_summary',
+	'woocommerce_after_single_product_summary',
 	static function (): void {
 		global $product;
 		if ( ! $product instanceof WC_Product ) {
+			return;
+		}
+		if ( ! function_exists( 'cttel_mobile_storefront_uses_shell' ) || ! cttel_mobile_storefront_uses_shell() ) {
 			return;
 		}
 		$accessories = cttel_catalog_compatible_accessories( $product, 6 );
@@ -549,7 +555,7 @@ add_action(
 			echo '</ul></section>';
 		}
 	},
-	55
+	18
 );
 
 /**

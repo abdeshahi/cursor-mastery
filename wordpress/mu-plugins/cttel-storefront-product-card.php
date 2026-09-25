@@ -93,7 +93,7 @@ function cttel_ms_render_product_card( WC_Product $product, array $args = array(
 	?>
 	<li <?php wc_product_class( 'cttel-ms-pcard cttel-ms-pcard--' . esc_attr( $variant ), $product ); ?>>
 		<a class="cttel-ms-pcard__link" href="<?php echo esc_url( $product->get_permalink() ); ?>">
-			<div class="cttel-ms-pcard__media">
+			<div class="cttel-ms-pcard__media<?php echo 'solo' === $variant ? ' cttel-ms-pcard__media--solo' : ''; ?>">
 				<div class="cttel-ms-pcard__badges">
 					<?php if ( $is_used ) : ?>
 						<span class="cttel-ms-pcard__badge cttel-ms-pcard__badge--used"><?php esc_html_e( 'کارکرده', 'cttel-store' ); ?></span>

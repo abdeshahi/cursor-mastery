@@ -307,13 +307,20 @@ function cttel_ms_home_render_product_section( string $title, ?string $category_
 				<?php endif; ?>
 			</div>
 		<?php else : ?>
-			<ul class="cttel-ms-products__grid">
+			<?php
+			$product_count = count( $products );
+			$grid_class    = 'cttel-ms-products__grid';
+			if ( 1 === $product_count ) {
+				$grid_class .= ' cttel-ms-products__grid--single';
+			}
+			?>
+			<ul class="<?php echo esc_attr( $grid_class ); ?>">
 				<?php foreach ( $products as $product ) : ?>
 					<?php
 					if ( ! $product instanceof WC_Product ) {
 						continue;
 					}
-					echo cttel_ms_product_card( $product ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					echo cttel_ms_product_card( $product, 1 === $product_count ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					?>
 				<?php endforeach; ?>
 			</ul>
@@ -325,9 +332,15 @@ function cttel_ms_home_render_product_section( string $title, ?string $category_
 /**
  * @return string
  */
-function cttel_ms_product_card( WC_Product $product ): string {
+function cttel_ms_product_card( WC_Product $product, bool $solo = false ): string {
 	if ( function_exists( 'cttel_ms_render_product_card' ) ) {
-		return cttel_ms_render_product_card( $product, array( 'variant' => 'grid', 'show_cta' => true ) );
+		return cttel_ms_render_product_card(
+			$product,
+			array(
+				'variant'   => $solo ? 'solo' : 'grid',
+				'show_cta'  => true,
+			)
+		);
 	}
 	$image = cttel_ms_product_card_image_html( $product, 'cttel-ms-pcard__img' );
 	ob_start();
