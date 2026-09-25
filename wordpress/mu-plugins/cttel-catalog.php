@@ -465,25 +465,62 @@ add_action(
 	}
 );
 
-/** PDP — used specs + compatibility. */
+/** PDP — used spec card (before add to cart). */
+add_action(
+	'woocommerce_single_product_summary',
+	static function (): void {
+		global $product;
+		if ( ! $product instanceof WC_Product || ! cttel_product_is_used( $product ) ) {
+			return;
+		}
+		$specs = cttel_product_used_specs( $product );
+		if ( empty( $specs ) ) {
+			return;
+		}
+		echo '<section class="cttel-ms-used-specs" aria-labelledby="cttel-used-specs-title">';
+		echo '<h2 id="cttel-used-specs-title" class="cttel-ms-used-specs__title">' . esc_html__( 'مشخصات گوشی کارکرده', 'cttel-store' ) . '</h2>';
+		echo '<dl class="cttel-ms-used-specs__list">';
+		foreach ( $specs as $label => $value ) {
+			echo '<div class="cttel-ms-used-specs__row"><dt>' . esc_html( $label ) . '</dt><dd>' . esc_html( $value ) . '</dd></div>';
+		}
+		echo '</dl></section>';
+	},
+	22
+);
+
+/** PDP — accessory model chips near price. */
+add_action(
+	'woocommerce_single_product_summary',
+	static function (): void {
+		global $product;
+		if ( ! $product instanceof WC_Product || ! cttel_catalog_product_in_accessories_tree( $product->get_id() ) ) {
+			return;
+		}
+		$model_terms = wp_get_post_terms( $product->get_id(), CTTEL_DEVICE_MODEL_TAX );
+		if ( is_wp_error( $model_terms ) || empty( $model_terms ) ) {
+			return;
+		}
+		echo '<section class="cttel-ms-compat cttel-ms-compat--models cttel-ms-compat--summary" aria-labelledby="cttel-compat-models-title">';
+		echo '<h2 id="cttel-compat-models-title" class="cttel-ms-compat__title">' . esc_html__( 'مناسب برای', 'cttel-store' ) . '</h2>';
+		echo '<ul class="cttel-ms-compat__chips">';
+		foreach ( $model_terms as $term ) {
+			if ( ! $term instanceof WP_Term ) {
+				continue;
+			}
+			echo '<li class="cttel-ms-compat__chip">' . esc_html( $term->name ) . '</li>';
+		}
+		echo '</ul></section>';
+	},
+	13
+);
+
+/** PDP — related compatibility blocks (below purchase area). */
 add_action(
 	'woocommerce_single_product_summary',
 	static function (): void {
 		global $product;
 		if ( ! $product instanceof WC_Product ) {
 			return;
-		}
-		if ( cttel_product_is_used( $product ) ) {
-			$specs = cttel_product_used_specs( $product );
-			if ( ! empty( $specs ) ) {
-				echo '<section class="cttel-ms-used-specs" aria-labelledby="cttel-used-specs-title">';
-				echo '<h2 id="cttel-used-specs-title" class="cttel-ms-used-specs__title">' . esc_html__( 'مشخصات گوشی کارکرده', 'cttel-store' ) . '</h2>';
-				echo '<dl class="cttel-ms-used-specs__list">';
-				foreach ( $specs as $label => $value ) {
-					echo '<div class="cttel-ms-used-specs__row"><dt>' . esc_html( $label ) . '</dt><dd>' . esc_html( $value ) . '</dd></div>';
-				}
-				echo '</dl></section>';
-			}
 		}
 		$accessories = cttel_catalog_compatible_accessories( $product, 6 );
 		if ( ! empty( $accessories ) ) {
@@ -497,21 +534,6 @@ add_action(
 				echo '<li><a href="' . esc_url( $acc->get_permalink() ) . '">' . esc_html( $acc->get_name() ) . '</a></li>';
 			}
 			echo '</ul></section>';
-		}
-		if ( cttel_catalog_product_in_accessories_tree( $product->get_id() ) ) {
-			$model_terms = wp_get_post_terms( $product->get_id(), CTTEL_DEVICE_MODEL_TAX );
-			if ( ! is_wp_error( $model_terms ) && ! empty( $model_terms ) ) {
-				echo '<section class="cttel-ms-compat cttel-ms-compat--models" aria-labelledby="cttel-compat-models-title">';
-				echo '<h2 id="cttel-compat-models-title" class="cttel-ms-compat__title">' . esc_html__( 'مناسب برای', 'cttel-store' ) . '</h2>';
-				echo '<ul class="cttel-ms-compat__chips">';
-				foreach ( $model_terms as $term ) {
-					if ( ! $term instanceof WP_Term ) {
-						continue;
-					}
-					echo '<li class="cttel-ms-compat__chip">' . esc_html( $term->name ) . '</li>';
-				}
-				echo '</ul></section>';
-			}
 		}
 		$phones = cttel_catalog_compatible_for_accessory( $product, 4 );
 		if ( ! empty( $phones ) ) {
@@ -527,7 +549,7 @@ add_action(
 			echo '</ul></section>';
 		}
 	},
-	28
+	55
 );
 
 /**
@@ -755,6 +777,17 @@ function cttel_installment_consultation_url(): string {
 	return '';
 }
 
+/**
+ * Used-phone supply request page (existing site page).
+ */
+function cttel_used_phone_request_url(): string {
+	$page = get_page_by_path( 'used-phone-request' );
+	if ( $page instanceof WP_Post ) {
+		return (string) get_permalink( $page );
+	}
+	return home_url( '/used-phone-request/' );
+}
+
 function cttel_installment_consultation_label(): string {
 	$label = get_option( CTTEL_OPTION_INSTALLMENT_LEAD_LBL, '' );
 	if ( is_string( $label ) && '' !== trim( $label ) ) {
@@ -772,7 +805,7 @@ function cttel_installment_default_page_html(): string {
 	?>
 	<div class="cttel-installment-page">
 		<h1 class="cttel-installment-page__title"><?php esc_html_e( 'خرید اقساطی CTTEL', 'cttel-store' ); ?></h1>
-		<p class="cttel-installment-page__intro"><?php esc_html_e( 'خرید اقساطی از طریق مشاوره و فرایند حضوری/هماهنگ‌شده با فروشگاه انجام می‌شود — بدون ثبت یا پرداخت اقساط در وب‌سایت.', 'cttel-store' ); ?></p>
+		<p class="cttel-installment-page__intro"><?php esc_html_e( 'خرید اقساطی CTTEL به‌صورت حضوری و پس از بررسی شرایط انجام می‌شود.', 'cttel-store' ); ?></p>
 
 		<h2><?php esc_html_e( 'فرایند درخواست و مشاوره', 'cttel-store' ); ?></h2>
 		<ol class="cttel-installment-page__steps">

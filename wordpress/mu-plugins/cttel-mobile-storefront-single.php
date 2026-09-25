@@ -127,6 +127,10 @@ add_action(
 			return;
 		}
 		remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_meta', 40 );
+		remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 10 );
+		remove_action( 'woocommerce_after_single_product_summary', 'comments_template', 50 );
+		add_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 35 );
+		add_action( 'woocommerce_after_single_product_summary', 'comments_template', 45 );
 	},
 	20
 );

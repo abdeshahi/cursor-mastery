@@ -203,7 +203,7 @@ function cttel_ms_home_render(): void {
 		cttel_ms_home_term_url( 'mobile-used' ),
 		array(
 			'section_class' => 'cttel-ms-home-section--used',
-			'intro'         => __( 'هر گوشی کارکرده موجودی جداگانه است؛ مشخصات و قیمت همان واحد است و پس از فروش از فهرست حذف می‌شود.', 'cttel-store' ),
+			'intro'         => __( 'هر دستگاه موجودی جداگانه، مشخصات و وضعیت واقعی دارد.', 'cttel-store' ),
 			'view_all_label' => __( 'مشاهده همه کارکرده‌ها', 'cttel-store' ),
 		)
 	);
@@ -227,8 +227,8 @@ function cttel_ms_home_render_hero(): void {
 	<section class="cttel-ms-hero cttel-ms-hero--compact" aria-labelledby="cttel-ms-hero-title">
 		<div class="cttel-ms-hero__card cttel-ms-hero__card--compact">
 			<div class="cttel-ms-hero__body">
-				<h1 id="cttel-ms-hero-title" class="cttel-ms-hero__title"><?php esc_html_e( 'CTTEL — فروشگاه موبایل، لوازم جانبی و گجت', 'cttel-store' ); ?></h1>
-				<p class="cttel-ms-hero__lead"><?php esc_html_e( 'خرید نقدی آنلاین با قیمت و موجودی واقعی فروشگاه. لوازم جانبی و گجت را سریع پیدا کنید یا گوشی موردنظر را جستجو کنید.', 'cttel-store' ); ?></p>
+				<h1 id="cttel-ms-hero-title" class="cttel-ms-hero__title"><?php esc_html_e( 'فروشگاه موبایل، لوازم جانبی و گجت CTTEL', 'cttel-store' ); ?></h1>
+				<p class="cttel-ms-hero__lead"><?php esc_html_e( 'خرید آنلاین با موجودی واقعی، قیمت به‌روز و ارسال به سراسر ایران', 'cttel-store' ); ?></p>
 				<div class="cttel-ms-hero__search">
 					<?php cttel_mobile_storefront_product_search_form(); ?>
 				</div>
@@ -295,15 +295,17 @@ function cttel_ms_home_render_product_section( string $title, ?string $category_
 			<p class="cttel-ms-home-section__intro"><?php echo esc_html( (string) $opts['intro'] ); ?></p>
 		<?php endif; ?>
 		<?php if ( empty( $products ) ) : ?>
-			<p class="cttel-ms-empty cttel-ms-empty--section">
-				<?php
-				if ( 'mobile-used' === $category_slug ) {
-					esc_html_e( 'فعلاً گوشی کارکرده‌ای در انبار نیست. برای موجودی جدید با پشتیبانی تماس بگیرید.', 'cttel-store' );
-				} else {
-					esc_html_e( 'محصولی برای نمایش در این بخش یافت نشد.', 'cttel-store' );
-				}
-				?>
-			</p>
+			<div class="cttel-ms-empty cttel-ms-empty--section">
+				<?php if ( 'mobile-used' === $category_slug ) : ?>
+					<p class="cttel-ms-empty__text"><?php esc_html_e( 'فعلاً گوشی کارکرده‌ای در انبار نیست.', 'cttel-store' ); ?></p>
+					<?php
+					$used_req = function_exists( 'cttel_used_phone_request_url' ) ? cttel_used_phone_request_url() : home_url( '/used-phone-request/' );
+					?>
+					<a class="cttel-ms-btn cttel-ms-btn--outline cttel-ms-empty__cta" href="<?php echo esc_url( $used_req ); ?>"><?php esc_html_e( 'درخواست گوشی کارکرده', 'cttel-store' ); ?></a>
+				<?php else : ?>
+					<p class="cttel-ms-empty__text"><?php esc_html_e( 'محصولی برای نمایش در این بخش یافت نشد.', 'cttel-store' ); ?></p>
+				<?php endif; ?>
+			</div>
 		<?php else : ?>
 			<ul class="cttel-ms-products__grid">
 				<?php foreach ( $products as $product ) : ?>
@@ -349,7 +351,7 @@ function cttel_ms_home_render_installment(): void {
 	<section class="cttel-ms-installment cttel-ms-installment--home" aria-labelledby="cttel-ms-installment-home-title">
 		<div class="cttel-ms-installment__inner">
 			<h2 id="cttel-ms-installment-home-title" class="cttel-ms-installment__title"><?php esc_html_e( 'خرید اقساطی موبایل و کالا', 'cttel-store' ); ?></h2>
-			<p class="cttel-ms-installment__desc"><?php esc_html_e( 'شرایط اقساط بر اساس طرح و اعتبار مشتری متفاوت است. برای بررسی شرایط و دریافت مشاوره با CTTEL تماس بگیرید یا حضوری مراجعه کنید.', 'cttel-store' ); ?></p>
+			<p class="cttel-ms-installment__desc"><?php esc_html_e( 'خرید اقساطی CTTEL به‌صورت حضوری و پس از بررسی شرایط انجام می‌شود.', 'cttel-store' ); ?></p>
 			<div class="cttel-ms-installment__actions">
 				<a class="cttel-ms-btn cttel-ms-btn--outline" href="<?php echo esc_url( $page_url ); ?>"><?php esc_html_e( 'مشاهده شرایط خرید اقساطی', 'cttel-store' ); ?></a>
 				<?php if ( '' !== $lead_url ) : ?>
@@ -366,7 +368,7 @@ function cttel_ms_home_render_trust(): void {
 		__( 'پشتیبانی فروشگاه', 'cttel-store' ),
 		__( 'ضمانت اصالت کالا', 'cttel-store' ),
 		__( 'پرداخت امن آنلاین', 'cttel-store' ),
-		__( 'ارسال پس‌کرایه (تیپاکس / ماهکس)', 'cttel-store' ),
+		__( 'ارسال با تیپاکس یا ماهکس — هزینه ارسال هنگام تحویل توسط مشتری به شرکت حمل پرداخت می‌شود.', 'cttel-store' ),
 	);
 	?>
 	<section class="cttel-ms-trust" aria-label="<?php esc_attr_e( 'مزایای خرید', 'cttel-store' ); ?>">

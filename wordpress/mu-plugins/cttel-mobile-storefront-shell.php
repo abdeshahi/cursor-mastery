@@ -165,6 +165,7 @@ function cttel_mobile_storefront_render_header(): void {
 			</a>
 			<a class="cttel-ms-header__brand" href="<?php echo esc_url( cttel_mobile_storefront_home_url() ); ?>">
 				<?php echo cttel_mobile_storefront_logo_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<span class="cttel-ms-header__brand-mark">CTTEL</span>
 			</a>
 		</div>
 		<?php if ( $show_search ) : ?>
