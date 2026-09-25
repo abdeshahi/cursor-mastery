@@ -271,7 +271,10 @@ add_action(
 			return;
 		}
 		wp_dequeue_style( 'cttel-storefront' );
-		wp_register_script( 'cttel-ms-single-reviews', false, array(), CTTEL_MOBILE_STOREFRONT_VERSION, true );
+		if ( function_exists( 'WC' ) ) {
+			wp_enqueue_script( 'wc-single-product' );
+		}
+		wp_register_script( 'cttel-ms-single-reviews', false, array( 'jquery' ), CTTEL_MOBILE_STOREFRONT_VERSION, true );
 		wp_enqueue_script( 'cttel-ms-single-reviews' );
 		wp_add_inline_script(
 			'cttel-ms-single-reviews',

@@ -2974,25 +2974,88 @@ body.cttel-ms-single .cttel-ms-reviews-form-wrap {
 	border-top: 1px solid rgba(11, 31, 58, 0.08);
 }
 
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-reply-title {
+	display: block;
+	margin: 0 0 10px;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	line-height: 1.5;
+	text-align: right;
+}
+
 body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form {
 	font-size: 0.8125rem;
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-rating,
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-comment,
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-author,
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-email,
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-cookies-consent {
+	display: block;
+	margin: 0 0 10px;
+	text-align: right;
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-rating label,
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-comment label,
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-author label,
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-email label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: 600;
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-rating .stars {
+	display: block;
+	margin: 4px 0 0;
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-rating .stars a {
+	color: #f59e0b;
+	text-decoration: none;
+	font-size: 1.125rem;
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-rating select#rating {
+	display: block;
+	width: 100%;
+	min-height: 44px;
+	margin-top: 4px;
+	border-radius: 10px;
+	border: 1px solid var(--cttel-ms-border);
+	background: #fff;
+	font: inherit;
 }
 
 body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form input[type="text"],
 body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form input[type="email"],
 body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form textarea {
+	display: block;
 	width: 100%;
 	box-sizing: border-box;
 	border-radius: 10px;
 	border: 1px solid var(--cttel-ms-border);
+	background: #fff;
 	min-height: 44px;
+	margin-top: 4px;
 }
 
 body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form textarea {
 	min-height: 96px;
 }
 
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form-url {
+	display: none;
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .form-submit {
+	margin: 12px 0 0;
+	text-align: left;
+}
+
 body.cttel-ms-single .cttel-ms-reviews-form-wrap .form-submit .submit {
 	min-height: 44px;
+	min-width: 120px;
 	border-radius: 12px;
 }
