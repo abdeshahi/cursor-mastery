@@ -168,18 +168,6 @@ function cttel_ms_home_render(): void {
 	cttel_ms_home_render_hero();
 	cttel_ms_home_render_quick_nav();
 	cttel_ms_home_render_product_section(
-		__( 'پیشنهادهای ویژه', 'cttel-store' ),
-		null,
-		cttel_ms_home_products( 8 ),
-		function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/shop/' )
-	);
-	cttel_ms_home_render_product_section(
-		__( 'گوشی‌های کارکرده', 'cttel-store' ),
-		'mobile-used',
-		function_exists( 'cttel_catalog_products_in_category' ) ? cttel_catalog_products_in_category( 'mobile-used', 8 ) : array(),
-		cttel_ms_home_term_url( 'mobile-used' )
-	);
-	cttel_ms_home_render_product_section(
 		__( 'لوازم جانبی', 'cttel-store' ),
 		'accessories',
 		cttel_ms_home_products_in_categories(
@@ -194,19 +182,39 @@ function cttel_ms_home_render(): void {
 			),
 			8
 		),
-		cttel_ms_home_term_url( 'accessories' )
+		cttel_ms_home_term_url( 'accessories' ),
+		array(
+			'view_all_label' => __( 'مشاهده همه لوازم جانبی', 'cttel-store' ),
+		)
 	);
 	cttel_ms_home_render_product_section(
 		__( 'گجت‌ها', 'cttel-store' ),
 		'gadget',
 		function_exists( 'cttel_catalog_products_in_category' ) ? cttel_catalog_products_in_category( 'gadget', 8 ) : array(),
-		cttel_ms_home_term_url( 'gadget' )
+		cttel_ms_home_term_url( 'gadget' ),
+		array(
+			'view_all_label' => __( 'مشاهده همه گجت‌ها', 'cttel-store' ),
+		)
+	);
+	cttel_ms_home_render_product_section(
+		__( 'گوشی‌های کارکرده موجود', 'cttel-store' ),
+		'mobile-used',
+		function_exists( 'cttel_catalog_products_in_category' ) ? cttel_catalog_products_in_category( 'mobile-used', 8 ) : array(),
+		cttel_ms_home_term_url( 'mobile-used' ),
+		array(
+			'section_class' => 'cttel-ms-home-section--used',
+			'intro'         => __( 'هر گوشی کارکرده موجودی جداگانه است؛ مشخصات و قیمت همان واحد است و پس از فروش از فهرست حذف می‌شود.', 'cttel-store' ),
+			'view_all_label' => __( 'مشاهده همه کارکرده‌ها', 'cttel-store' ),
+		)
 	);
 	cttel_ms_home_render_product_section(
 		__( 'گوشی نو — خرید نقدی', 'cttel-store' ),
 		'mobile-new',
 		function_exists( 'cttel_catalog_products_in_category' ) ? cttel_catalog_products_in_category( 'mobile-new', 8 ) : array(),
-		cttel_ms_home_term_url( 'mobile-new' )
+		cttel_ms_home_term_url( 'mobile-new' ),
+		array(
+			'view_all_label' => __( 'مشاهده همه گوشی‌های نو', 'cttel-store' ),
+		)
 	);
 	cttel_ms_home_render_installment();
 	cttel_ms_home_render_trust();
@@ -219,8 +227,8 @@ function cttel_ms_home_render_hero(): void {
 	<section class="cttel-ms-hero cttel-ms-hero--compact" aria-labelledby="cttel-ms-hero-title">
 		<div class="cttel-ms-hero__card cttel-ms-hero__card--compact">
 			<div class="cttel-ms-hero__body">
-				<h1 id="cttel-ms-hero-title" class="cttel-ms-hero__title"><?php esc_html_e( 'خرید آنلاین موبایل، لوازم جانبی و گجت', 'cttel-store' ); ?></h1>
-				<p class="cttel-ms-hero__lead"><?php esc_html_e( 'ارسال سریع، قیمت شفاف، موجودی واقعی — همین حالا جستجو کنید یا دسته موردنظر را انتخاب کنید.', 'cttel-store' ); ?></p>
+				<h1 id="cttel-ms-hero-title" class="cttel-ms-hero__title"><?php esc_html_e( 'CTTEL — فروشگاه موبایل، لوازم جانبی و گجت', 'cttel-store' ); ?></h1>
+				<p class="cttel-ms-hero__lead"><?php esc_html_e( 'خرید نقدی آنلاین با قیمت و موجودی واقعی فروشگاه. لوازم جانبی و گجت را سریع پیدا کنید یا گوشی موردنظر را جستجو کنید.', 'cttel-store' ); ?></p>
 				<div class="cttel-ms-hero__search">
 					<?php cttel_mobile_storefront_product_search_form(); ?>
 				</div>
@@ -237,7 +245,9 @@ function cttel_ms_home_render_hero(): void {
 function cttel_ms_home_render_quick_nav(): void {
 	$items = cttel_ms_home_quick_nav_items();
 	?>
-	<nav class="cttel-ms-quick-nav" aria-label="<?php esc_attr_e( 'دسته‌های پرفروش', 'cttel-store' ); ?>">
+	<section class="cttel-ms-cat-cards" aria-labelledby="cttel-ms-cat-cards-title">
+		<h2 id="cttel-ms-cat-cards-title" class="cttel-ms-cat-cards__heading"><?php esc_html_e( 'خرید بر اساس دسته', 'cttel-store' ); ?></h2>
+	<nav class="cttel-ms-quick-nav" aria-label="<?php esc_attr_e( 'دسته‌های فروشگاه', 'cttel-store' ); ?>">
 		<ul class="cttel-ms-quick-nav__list">
 			<?php foreach ( $items as $item ) : ?>
 				<?php
@@ -258,23 +268,32 @@ function cttel_ms_home_render_quick_nav(): void {
 			<?php endforeach; ?>
 		</ul>
 	</nav>
+	</section>
 	<?php
 }
 
 /**
- * @param WC_Product[]|null $products Pre-fetched products; if null uses category slug.
- * @param string            $view_all_url
+ * @param WC_Product[] $products
+ * @param array{section_class?: string, intro?: string, view_all_label?: string} $opts
  */
-function cttel_ms_home_render_product_section( string $title, ?string $category_slug, array $products, string $view_all_url = '' ): void {
+function cttel_ms_home_render_product_section( string $title, ?string $category_slug, array $products, string $view_all_url = '', array $opts = array() ): void {
 	$section_id = 'cttel-ms-home-' . sanitize_title( $title );
+	$section_cl = 'cttel-ms-home-section';
+	if ( ! empty( $opts['section_class'] ) ) {
+		$section_cl .= ' ' . sanitize_html_class( (string) $opts['section_class'] );
+	}
+	$view_label = ! empty( $opts['view_all_label'] ) ? (string) $opts['view_all_label'] : __( 'مشاهده همه', 'cttel-store' );
 	?>
-	<section class="cttel-ms-home-section" aria-labelledby="<?php echo esc_attr( $section_id ); ?>">
+	<section class="<?php echo esc_attr( $section_cl ); ?>" aria-labelledby="<?php echo esc_attr( $section_id ); ?>">
 		<div class="cttel-ms-section-head">
 			<h2 id="<?php echo esc_attr( $section_id ); ?>" class="cttel-ms-section-head__title"><?php echo esc_html( $title ); ?></h2>
 			<?php if ( '' !== $view_all_url ) : ?>
-				<a class="cttel-ms-section-head__link" href="<?php echo esc_url( $view_all_url ); ?>"><?php esc_html_e( 'مشاهده همه', 'cttel-store' ); ?></a>
+				<a class="cttel-ms-section-head__link" href="<?php echo esc_url( $view_all_url ); ?>"><?php echo esc_html( $view_label ); ?></a>
 			<?php endif; ?>
 		</div>
+		<?php if ( ! empty( $opts['intro'] ) ) : ?>
+			<p class="cttel-ms-home-section__intro"><?php echo esc_html( (string) $opts['intro'] ); ?></p>
+		<?php endif; ?>
 		<?php if ( empty( $products ) ) : ?>
 			<p class="cttel-ms-empty cttel-ms-empty--section">
 				<?php
@@ -329,12 +348,12 @@ function cttel_ms_home_render_installment(): void {
 	?>
 	<section class="cttel-ms-installment cttel-ms-installment--home" aria-labelledby="cttel-ms-installment-home-title">
 		<div class="cttel-ms-installment__inner">
-			<h2 id="cttel-ms-installment-home-title" class="cttel-ms-installment__title"><?php esc_html_e( 'خرید اقساطی CTTEL', 'cttel-store' ); ?></h2>
-			<p class="cttel-ms-installment__desc"><?php esc_html_e( 'ثبت و تسویه اقساط در وب‌سایت انجام نمی‌شود. پس از مشاوره و بررسی شرایط، فرایند خرید اقساطی به‌صورت حضوری یا با هماهنگی پشتیبانی ادامه پیدا می‌کند.', 'cttel-store' ); ?></p>
+			<h2 id="cttel-ms-installment-home-title" class="cttel-ms-installment__title"><?php esc_html_e( 'خرید اقساطی موبایل و کالا', 'cttel-store' ); ?></h2>
+			<p class="cttel-ms-installment__desc"><?php esc_html_e( 'شرایط اقساط بر اساس طرح و اعتبار مشتری متفاوت است. برای بررسی شرایط و دریافت مشاوره با CTTEL تماس بگیرید یا حضوری مراجعه کنید.', 'cttel-store' ); ?></p>
 			<div class="cttel-ms-installment__actions">
-				<a class="cttel-ms-btn cttel-ms-btn--primary" href="<?php echo esc_url( $page_url ); ?>"><?php esc_html_e( 'مشاهده شرایط خرید اقساطی', 'cttel-store' ); ?></a>
+				<a class="cttel-ms-btn cttel-ms-btn--outline" href="<?php echo esc_url( $page_url ); ?>"><?php esc_html_e( 'مشاهده شرایط خرید اقساطی', 'cttel-store' ); ?></a>
 				<?php if ( '' !== $lead_url ) : ?>
-					<a class="cttel-ms-btn cttel-ms-btn--outline" href="<?php echo esc_url( $lead_url ); ?>"><?php echo esc_html( $lead_lbl ); ?></a>
+					<a class="cttel-ms-btn cttel-ms-btn--ghost" href="<?php echo esc_url( $lead_url ); ?>"><?php echo esc_html( $lead_lbl ); ?></a>
 				<?php endif; ?>
 			</div>
 		</div>
@@ -346,8 +365,8 @@ function cttel_ms_home_render_trust(): void {
 	$items = array(
 		__( 'پشتیبانی فروشگاه', 'cttel-store' ),
 		__( 'ضمانت اصالت کالا', 'cttel-store' ),
-		__( 'پرداخت امن', 'cttel-store' ),
-		__( 'ارسال به سراسر ایران', 'cttel-store' ),
+		__( 'پرداخت امن آنلاین', 'cttel-store' ),
+		__( 'ارسال پس‌کرایه (تیپاکس / ماهکس)', 'cttel-store' ),
 	);
 	?>
 	<section class="cttel-ms-trust" aria-label="<?php esc_attr_e( 'مزایای خرید', 'cttel-store' ); ?>">

@@ -63,6 +63,8 @@ function cttel_ms_render_product_card( WC_Product $product, array $args = array(
 				<?php
 				if ( function_exists( 'cttel_product_is_used' ) && cttel_product_is_used( $product ) ) {
 					echo '<span class="cttel-ms-pcard__badge cttel-ms-pcard__badge--used">' . esc_html__( 'کارکرده', 'cttel-store' ) . '</span>';
+				} elseif ( function_exists( 'cttel_product_is_new' ) && cttel_product_is_new( $product ) ) {
+					echo '<span class="cttel-ms-pcard__badge cttel-ms-pcard__badge--new">' . esc_html__( 'نو', 'cttel-store' ) . '</span>';
 				} elseif ( $product->is_on_sale() ) {
 					echo '<span class="cttel-ms-pcard__badge cttel-ms-pcard__badge--sale">' . esc_html__( 'حراج', 'cttel-store' ) . '</span>';
 				}

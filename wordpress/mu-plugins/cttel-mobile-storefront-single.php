@@ -88,6 +88,11 @@ add_action(
 		if ( ! $product instanceof WC_Product ) {
 			return;
 		}
+		if ( function_exists( 'cttel_product_is_used' ) && cttel_product_is_used( $product ) ) {
+			echo '<p class="cttel-ms-single__badge cttel-ms-single__badge--used">' . esc_html__( 'کارکرده', 'cttel-store' ) . '</p>';
+		} elseif ( function_exists( 'cttel_product_is_new' ) && cttel_product_is_new( $product ) ) {
+			echo '<p class="cttel-ms-single__badge cttel-ms-single__badge--new">' . esc_html__( 'نو', 'cttel-store' ) . '</p>';
+		}
 		if ( function_exists( 'cttel_product_stock_label' ) ) {
 			printf(
 				'<p class="cttel-ms-single__stock %1$s">%2$s</p>',
@@ -96,7 +101,7 @@ add_action(
 			);
 		}
 	},
-	11
+	6
 );
 
 add_action(
@@ -107,9 +112,9 @@ add_action(
 		}
 		$url = cttel_ms_installment_url();
 		printf(
-			'<a class="cttel-ms-btn cttel-ms-btn--outline cttel-ms-single__installment" href="%1$s">%2$s</a>',
+			'<p class="cttel-ms-single__installment-note"><a class="cttel-ms-single__installment-link" href="%1$s">%2$s</a></p>',
 			esc_url( $url ),
-			esc_html__( 'خرید اقساطی', 'cttel-store' )
+			esc_html__( 'اطلاعات خرید اقساطی (مشاوره / حضوری)', 'cttel-store' )
 		);
 	},
 	15

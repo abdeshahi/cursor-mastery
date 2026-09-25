@@ -342,6 +342,23 @@ function cttel_product_is_used( $product ): bool {
 }
 
 /**
+ * @param int|WC_Product $product
+ */
+function cttel_product_is_new( $product ): bool {
+	if ( cttel_product_is_used( $product ) ) {
+		return false;
+	}
+	$product = is_numeric( $product ) ? wc_get_product( (int) $product ) : $product;
+	if ( ! $product instanceof WC_Product ) {
+		return false;
+	}
+	if ( 'new' === (string) $product->get_meta( CTTEL_META_CONDITION ) ) {
+		return true;
+	}
+	return has_term( 'mobile-new', 'product_cat', $product->get_id() );
+}
+
+/**
  * @return array<string, string>
  */
 function cttel_product_used_specs( WC_Product $product ): array {
@@ -481,10 +498,25 @@ add_action(
 			}
 			echo '</ul></section>';
 		}
+		if ( cttel_catalog_product_in_accessories_tree( $product->get_id() ) ) {
+			$model_terms = wp_get_post_terms( $product->get_id(), CTTEL_DEVICE_MODEL_TAX );
+			if ( ! is_wp_error( $model_terms ) && ! empty( $model_terms ) ) {
+				echo '<section class="cttel-ms-compat cttel-ms-compat--models" aria-labelledby="cttel-compat-models-title">';
+				echo '<h2 id="cttel-compat-models-title" class="cttel-ms-compat__title">' . esc_html__( 'مناسب برای', 'cttel-store' ) . '</h2>';
+				echo '<ul class="cttel-ms-compat__chips">';
+				foreach ( $model_terms as $term ) {
+					if ( ! $term instanceof WP_Term ) {
+						continue;
+					}
+					echo '<li class="cttel-ms-compat__chip">' . esc_html( $term->name ) . '</li>';
+				}
+				echo '</ul></section>';
+			}
+		}
 		$phones = cttel_catalog_compatible_for_accessory( $product, 4 );
 		if ( ! empty( $phones ) ) {
 			echo '<section class="cttel-ms-compat" aria-labelledby="cttel-compat-phones-title">';
-			echo '<h2 id="cttel-compat-phones-title" class="cttel-ms-compat__title">' . esc_html__( 'مناسب برای این گوشی‌ها', 'cttel-store' ) . '</h2>';
+			echo '<h2 id="cttel-compat-phones-title" class="cttel-ms-compat__title">' . esc_html__( 'گوشی‌های مرتبط', 'cttel-store' ) . '</h2>';
 			echo '<ul class="cttel-ms-compat__list">';
 			foreach ( $phones as $phone ) {
 				if ( ! $phone instanceof WC_Product ) {

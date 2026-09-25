@@ -22,7 +22,7 @@ function cttel_postpaid_shipping_title(): string {
  * @return string
  */
 function cttel_postpaid_shipping_description(): string {
-	return 'هزینه ارسال هنگام تحویل مرسوله، بر اساس تعرفه شرکت حمل‌ونقل، توسط مشتری پرداخت می‌شود.';
+	return 'ارسال با تیپاکس / ماهکس به‌صورت پس‌کرایه انجام می‌شود و هزینه ارسال هنگام تحویل توسط مشتری پرداخت می‌شود.';
 }
 
 /**
