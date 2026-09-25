@@ -269,10 +269,15 @@ function cttel_staging_wc_shipping_audit(): array {
 			}
 			if ( 'flat_rate' === ( $method['id'] ?? '' ) && 'yes' === ( $method['enabled'] ?? 'no' ) ) {
 				$title = (string) ( $method['title'] ?? '' );
-				if ( str_contains( $title, 'پس‌کرایه' ) || str_contains( $title, 'تیپاکس' ) ) {
+				$cost  = (string) ( $method['cost'] ?? '' );
+				$inst  = (int) ( $method['instance_id'] ?? 0 );
+				$is_postpaid = str_contains( $title, 'پس‌کرایه' )
+					|| str_contains( $title, 'تیپاکس' )
+					|| ( $inst > 0 && $inst === (int) get_option( CTTEL_POSTPAID_SHIPPING_INSTANCE_KEY, 0 ) && '0' === $cost );
+				if ( $is_postpaid ) {
 					$audit['postpaid_shipping']['configured'] = true;
 					$audit['postpaid_shipping']['title']      = $title;
-					$audit['postpaid_shipping']['cost']       = $method['cost'] ?? '';
+					$audit['postpaid_shipping']['cost']       = $cost;
 				}
 			}
 		}

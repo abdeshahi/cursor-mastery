@@ -7,7 +7,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-const CTTEL_POSTPAID_SHIPPING_VERSION     = '1.0.0';
+const CTTEL_POSTPAID_SHIPPING_VERSION     = '1.0.1';
 const CTTEL_POSTPAID_SHIPPING_BOOT_KEY      = 'cttel_staging_iran_postpaid_shipping_version';
 const CTTEL_POSTPAID_SHIPPING_INSTANCE_KEY  = 'cttel_staging_postpaid_flat_rate_instance_id';
 
@@ -57,6 +57,36 @@ function cttel_staging_get_iran_shipping_zone() {
 }
 
 /**
+ * @param int $instance_id Flat rate instance id.
+ */
+function cttel_staging_save_postpaid_flat_rate_settings( int $instance_id ): void {
+	if ( $instance_id <= 0 ) {
+		return;
+	}
+	$key      = 'woocommerce_flat_rate_' . $instance_id . '_settings';
+	$settings = get_option( $key, array() );
+	if ( ! is_array( $settings ) ) {
+		$settings = array();
+	}
+	$settings['title']      = cttel_postpaid_shipping_title();
+	$settings['cost']       = '0';
+	$settings['tax_status'] = 'none';
+	update_option( $key, $settings );
+
+	if ( class_exists( 'WC_Shipping_Zones' ) ) {
+		$method = WC_Shipping_Zones::get_shipping_method( $instance_id );
+		if ( $method && method_exists( $method, 'update_option' ) ) {
+			$method->update_option( 'title', cttel_postpaid_shipping_title() );
+			$method->update_option( 'cost', '0' );
+			$method->update_option( 'tax_status', 'none' );
+		}
+		if ( $method && property_exists( $method, 'enabled' ) ) {
+			$method->enabled = 'yes';
+		}
+	}
+}
+
+/**
  * Configure Iran zone: remove free_shipping, ensure flat_rate postpaid (cost 0).
  */
 function cttel_staging_bootstrap_iran_postpaid_shipping(): void {
@@ -91,31 +121,22 @@ function cttel_staging_bootstrap_iran_postpaid_shipping(): void {
 		}
 
 		if ( 'flat_rate' === $method_id && ( $instance_id === $postpaid_instance || $postpaid_instance <= 0 ) ) {
-			if ( method_exists( $method, 'update_option' ) ) {
-				$method->update_option( 'title', cttel_postpaid_shipping_title() );
-				$method->update_option( 'cost', '0' );
-				$method->update_option( 'tax_status', 'none' );
-			}
-			if ( property_exists( $method, 'enabled' ) ) {
-				$method->enabled = 'yes';
-			}
+			cttel_staging_save_postpaid_flat_rate_settings( $instance_id );
 			update_option( CTTEL_POSTPAID_SHIPPING_INSTANCE_KEY, $instance_id, false );
-			$found_postpaid = true;
+			$found_postpaid    = true;
 			$postpaid_instance = $instance_id;
+			break;
 		}
 	}
 
 	if ( ! $found_postpaid ) {
 		$new_id = (int) $zone->add_shipping_method( 'flat_rate' );
 		if ( $new_id > 0 ) {
-			$method = WC_Shipping_Zones::get_shipping_method( $new_id );
-			if ( $method && method_exists( $method, 'update_option' ) ) {
-				$method->update_option( 'title', cttel_postpaid_shipping_title() );
-				$method->update_option( 'cost', '0' );
-				$method->update_option( 'tax_status', 'none' );
-			}
+			cttel_staging_save_postpaid_flat_rate_settings( $new_id );
 			update_option( CTTEL_POSTPAID_SHIPPING_INSTANCE_KEY, $new_id, false );
 		}
+	} elseif ( $postpaid_instance > 0 ) {
+		cttel_staging_save_postpaid_flat_rate_settings( $postpaid_instance );
 	}
 
 	update_option( CTTEL_POSTPAID_SHIPPING_BOOT_KEY, CTTEL_POSTPAID_SHIPPING_VERSION, false );
