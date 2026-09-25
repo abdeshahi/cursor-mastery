@@ -71,23 +71,6 @@ $count = (int) $product->get_review_count();
 	$verified = get_option( 'woocommerce_review_rating_verification_required' ) === 'no'
 		|| wc_customer_bought_product( '', get_current_user_id(), $product->get_id() );
 	if ( $verified ) :
-		$commenter = wp_get_current_commenter();
-		$name_req  = (bool) get_option( 'require_name_email', 1 );
-		$fields    = array(
-			'author' => array(
-				'label'    => __( 'Name', 'woocommerce' ),
-				'type'     => 'text',
-				'value'    => $commenter['comment_author'],
-				'required' => $name_req,
-			),
-			'email'  => array(
-				'label'    => __( 'Email', 'woocommerce' ),
-				'type'     => 'email',
-				'value'    => $commenter['comment_author_email'],
-				'required' => $name_req,
-			),
-		);
-
 		$comment_form = array(
 			'title_reply'         => have_comments()
 				? esc_html__( 'Add a review', 'woocommerce' )
@@ -96,7 +79,6 @@ $count = (int) $product->get_review_count();
 			'title_reply_before'  => '<span id="reply-title" class="comment-reply-title screen-reader-text">',
 			'title_reply_after'   => '</span>',
 			'comment_notes_after' => '',
-			'fields'              => $fields,
 			'label_submit'        => esc_html__( 'Submit', 'woocommerce' ),
 			'logged_in_as'        => '',
 			'comment_field'       => '',
