@@ -781,9 +781,6 @@ add_filter(
 		if ( is_string( $custom ) && '' !== trim( $custom ) ) {
 			return wp_kses_post( $custom );
 		}
-		if ( '' !== trim( wp_strip_all_tags( $content ) ) ) {
-			return $content;
-		}
 		return cttel_installment_default_page_html();
 	},
 	12

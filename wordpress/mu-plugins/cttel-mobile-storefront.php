@@ -40,6 +40,9 @@ function cttel_mobile_storefront_uses_shell(): bool {
 	if ( is_front_page() ) {
 		return true;
 	}
+	if ( is_page( 'installment' ) ) {
+		return true;
+	}
 	if ( cttel_mobile_storefront_is_categories_hub() ) {
 		return true;
 	}
