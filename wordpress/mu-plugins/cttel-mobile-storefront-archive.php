@@ -100,6 +100,9 @@ function cttel_ms_use_ms_product_card_template(): bool {
 	if ( cttel_ms_is_product_archive() ) {
 		return true;
 	}
+	if ( function_exists( 'cttel_ms_is_product_search' ) && cttel_ms_is_product_search() ) {
+		return true;
+	}
 	return function_exists( 'cttel_ms_is_single_product' ) && cttel_ms_is_single_product();
 }
 
@@ -316,7 +319,32 @@ function cttel_ms_archive_render_toolbar(): void {
 }
 
 function cttel_ms_archive_has_filters_ui(): bool {
-	return true;
+	if ( ! empty( cttel_ms_archive_filter_groups() ) ) {
+		return true;
+	}
+	if ( function_exists( 'cttel_catalog_has_used_inventory' ) && cttel_catalog_has_used_inventory() ) {
+		return true;
+	}
+	if ( is_product_category() ) {
+		$obj = get_queried_object();
+		if ( $obj instanceof WP_Term ) {
+			$parent = $obj->parent ? get_term( (int) $obj->parent, 'product_cat' ) : $obj;
+			if ( $parent instanceof WP_Term ) {
+				$children = get_terms(
+					array(
+						'taxonomy'   => 'product_cat',
+						'parent'     => (int) $parent->term_id,
+						'hide_empty' => true,
+					)
+				);
+				if ( ! is_wp_error( $children ) && ! empty( $children ) ) {
+					return true;
+				}
+			}
+		}
+	}
+	// Price / availability filters are always meaningful on product archives.
+	return cttel_ms_is_product_archive();
 }
 
 function cttel_ms_archive_filter_reset_url(): string {

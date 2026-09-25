@@ -8,11 +8,13 @@
 defined( 'ABSPATH' ) || exit;
 
 const CTTEL_CATALOG_VERSION     = '1.0.0';
-const CTTEL_CATALOG_BOOT_KEY      = 'cttel_catalog_structure_v1';
+const CTTEL_CATALOG_BOOT_KEY      = 'cttel_catalog_structure_version';
 const CTTEL_DEVICE_MODEL_TAX      = 'cttel_device_model';
 const CTTEL_META_CONDITION        = '_cttel_condition';
 const CTTEL_META_USED_SPECS       = '_cttel_used_specs';
-const CTTEL_OPTION_INSTALLMENT    = 'cttel_installment_page_html';
+const CTTEL_OPTION_INSTALLMENT           = 'cttel_installment_page_html';
+const CTTEL_OPTION_INSTALLMENT_LEAD_URL  = 'cttel_installment_consultation_url';
+const CTTEL_OPTION_INSTALLMENT_LEAD_LBL  = 'cttel_installment_consultation_label';
 
 /**
  * @return array<string, string>
@@ -219,7 +221,8 @@ add_action(
 		if ( ! cttel_is_staging_catalog_site() ) {
 			return;
 		}
-		if ( get_option( CTTEL_CATALOG_BOOT_KEY ) ) {
+		$applied = get_option( CTTEL_CATALOG_BOOT_KEY, '' );
+		if ( CTTEL_CATALOG_VERSION === $applied ) {
 			return;
 		}
 		cttel_catalog_bootstrap_structure();
@@ -663,16 +666,18 @@ add_action(
 function cttel_catalog_render_archive_filters(): void {
 	$condition = isset( $_GET['cttel_condition'] ) ? sanitize_key( wp_unslash( (string) $_GET['cttel_condition'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$subcat    = isset( $_GET['cttel_subcat'] ) ? sanitize_title( wp_unslash( (string) $_GET['cttel_subcat'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	?>
-	<fieldset class="cttel-ms-filter-group">
-		<legend><?php esc_html_e( 'نو / کارکرده', 'cttel-store' ); ?></legend>
-		<select name="cttel_condition" class="cttel-ms-filter-select">
-			<option value=""><?php esc_html_e( 'همه', 'cttel-store' ); ?></option>
-			<option value="new" <?php selected( $condition, 'new' ); ?>><?php esc_html_e( 'نو', 'cttel-store' ); ?></option>
-			<option value="used" <?php selected( $condition, 'used' ); ?>><?php esc_html_e( 'کارکرده', 'cttel-store' ); ?></option>
-		</select>
-	</fieldset>
-	<?php
+	if ( cttel_catalog_has_used_inventory() ) {
+		?>
+		<fieldset class="cttel-ms-filter-group">
+			<legend><?php esc_html_e( 'نو / کارکرده', 'cttel-store' ); ?></legend>
+			<select name="cttel_condition" class="cttel-ms-filter-select">
+				<option value=""><?php esc_html_e( 'همه', 'cttel-store' ); ?></option>
+				<option value="new" <?php selected( $condition, 'new' ); ?>><?php esc_html_e( 'نو', 'cttel-store' ); ?></option>
+				<option value="used" <?php selected( $condition, 'used' ); ?>><?php esc_html_e( 'کارکرده', 'cttel-store' ); ?></option>
+			</select>
+		</fieldset>
+		<?php
+	}
 	$parent = null;
 	if ( is_product_category() ) {
 		$obj = get_queried_object();
@@ -685,7 +690,7 @@ function cttel_catalog_render_archive_filters(): void {
 			array(
 				'taxonomy'   => 'product_cat',
 				'parent'     => (int) $parent->term_id,
-				'hide_empty' => false,
+				'hide_empty' => true,
 			)
 		);
 		if ( ! is_wp_error( $children ) && ! empty( $children ) ) {
@@ -707,24 +712,60 @@ function cttel_catalog_render_archive_filters(): void {
 	}
 }
 
+/**
+ * Admin-configurable consultation / lead URL for installment (not hard-coded /contact/).
+ */
+function cttel_installment_consultation_url(): string {
+	$url = get_option( CTTEL_OPTION_INSTALLMENT_LEAD_URL, '' );
+	if ( is_string( $url ) && '' !== trim( $url ) ) {
+		return esc_url( trim( $url ) );
+	}
+	return '';
+}
+
+function cttel_installment_consultation_label(): string {
+	$label = get_option( CTTEL_OPTION_INSTALLMENT_LEAD_LBL, '' );
+	if ( is_string( $label ) && '' !== trim( $label ) ) {
+		return trim( $label );
+	}
+	return __( 'مشاوره خرید اقساطی', 'cttel-store' );
+}
+
 /** Installment informational page. */
 function cttel_installment_default_page_html(): string {
-	$cta = esc_html__( 'مشاوره خرید اقساطی', 'cttel-store' );
-	$url = function_exists( 'cttel_installment_default_url' ) ? cttel_installment_default_url() : home_url( '/installment/' );
-	$shop = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/shop/' );
+	$shop     = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/shop/' );
+	$lead_url = cttel_installment_consultation_url();
+	$lead_lbl = cttel_installment_consultation_label();
 	ob_start();
 	?>
 	<div class="cttel-installment-page">
-		<h2><?php esc_html_e( 'خرید اقساطی CTTEL', 'cttel-store' ); ?></h2>
+		<h1 class="cttel-installment-page__title"><?php esc_html_e( 'خرید اقساطی CTTEL', 'cttel-store' ); ?></h1>
+		<p class="cttel-installment-page__intro"><?php esc_html_e( 'خرید اقساطی از طریق مشاوره و فرایند حضوری/هماهنگ‌شده با فروشگاه انجام می‌شود — بدون ثبت یا پرداخت اقساط در وب‌سایت.', 'cttel-store' ); ?></p>
+
+		<h2><?php esc_html_e( 'فرایند درخواست و مشاوره', 'cttel-store' ); ?></h2>
+		<ol class="cttel-installment-page__steps">
+			<li><?php esc_html_e( 'با تیم فروش تماس بگیرید یا درخواست مشاوره ثبت کنید.', 'cttel-store' ); ?></li>
+			<li><?php esc_html_e( 'شرایط فعلی طرح‌ها و مدارک موردنیاز را از پشتیبانی دریافت کنید.', 'cttel-store' ); ?></li>
+			<li><?php esc_html_e( 'پس از تأیید اولیه، مراحل بعدی (حضوری یا هماهنگ‌شده) را طی کنید.', 'cttel-store' ); ?></li>
+		</ol>
+
+		<h2><?php esc_html_e( 'نکات مهم', 'cttel-store' ); ?></h2>
 		<ul class="cttel-installment-page__list">
-			<li><?php esc_html_e( 'خرید اقساطی CTTEL فعلاً به‌صورت حضوری انجام می‌شود.', 'cttel-store' ); ?></li>
-			<li><?php esc_html_e( 'شرایط بسته به طرح اعتباری متفاوت است.', 'cttel-store' ); ?></li>
-			<li><?php esc_html_e( 'مشتری ابتدا شرایط و مدارک موردنیاز را بررسی می‌کند.', 'cttel-store' ); ?></li>
-			<li><?php esc_html_e( 'سپس برای بررسی اعتبار / ادامه فرایند با فروشگاه ارتباط می‌گیرد یا حضوری مراجعه می‌کند.', 'cttel-store' ); ?></li>
+			<li><?php esc_html_e( 'طرح‌ها، سقف اعتبار و الزامات ممکن است متفاوت باشد و فقط پس از بررسی CTTEL اعلام می‌شود.', 'cttel-store' ); ?></li>
+			<li><?php esc_html_e( 'تأیید نهایی و زمان‌بندی اقساط در فروشگاه تعیین می‌شود — نه به‌صورت خودکار آنلاین.', 'cttel-store' ); ?></li>
+			<li><?php esc_html_e( 'برای خرید نقدی و پرداخت آنلاین، از فهرست محصولات و سبد خرید استفاده کنید.', 'cttel-store' ); ?></li>
 		</ul>
-		<p class="cttel-installment-page__note"><?php esc_html_e( 'ثبت سفارش اقساطی در وب‌سایت انجام نمی‌شود. برای خرید نقدی/آنلاین از فروشگاه استفاده کنید.', 'cttel-store' ); ?></p>
-		<p><a class="cttel-ms-btn cttel-ms-btn--primary" href="<?php echo esc_url( $shop ); ?>"><?php esc_html_e( 'مشاهده فروشگاه', 'cttel-store' ); ?></a></p>
-		<p><a class="cttel-ms-btn cttel-ms-btn--outline" href="<?php echo esc_url( home_url( '/contact/' ) ); ?>"><?php echo esc_html( $cta ); ?></a></p>
+
+		<p class="cttel-installment-page__note"><?php esc_html_e( 'CTTEL هیچ نرخ، بانک، یا وعده تأیید فوری آنلاین در این صفحه اعلام نمی‌کند. برای شرایط به‌روز با ما در ارتباط باشید.', 'cttel-store' ); ?></p>
+
+		<div class="cttel-installment-page__actions">
+			<a class="cttel-ms-btn cttel-ms-btn--primary" href="<?php echo esc_url( $shop ); ?>"><?php esc_html_e( 'مشاهده محصولات (خرید نقدی)', 'cttel-store' ); ?></a>
+			<?php if ( '' !== $lead_url ) : ?>
+				<a class="cttel-ms-btn cttel-ms-btn--outline" href="<?php echo esc_url( $lead_url ); ?>"><?php echo esc_html( $lead_lbl ); ?></a>
+			<?php else : ?>
+				<p class="cttel-installment-page__admin-hint"><?php esc_html_e( 'مدیر سایت: لینک «مشاوره خرید اقساطی» را در تنظیمات → عمومی تنظیم کنید.', 'cttel-store' ); ?></p>
+			<?php endif; ?>
+		</div>
 	</div>
 	<?php
 	return (string) ob_get_clean();
@@ -760,6 +801,24 @@ add_action(
 				'default'           => '',
 			)
 		);
+		register_setting(
+			'general',
+			CTTEL_OPTION_INSTALLMENT_LEAD_URL,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'esc_url_raw',
+				'default'           => '',
+			)
+		);
+		register_setting(
+			'general',
+			CTTEL_OPTION_INSTALLMENT_LEAD_LBL,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => '',
+			)
+		);
 		add_settings_field(
 			CTTEL_OPTION_INSTALLMENT,
 			__( 'متن صفحه خرید اقساطی (HTML)', 'cttel-store' ),
@@ -774,8 +833,55 @@ add_action(
 			},
 			'general'
 		);
+		add_settings_field(
+			CTTEL_OPTION_INSTALLMENT_LEAD_URL,
+			__( 'لینک CTA مشاوره اقساطی', 'cttel-store' ),
+			static function (): void {
+				$value = get_option( CTTEL_OPTION_INSTALLMENT_LEAD_URL, '' );
+				printf(
+					'<input type="url" name="%1$s" value="%2$s" class="regular-text" placeholder="https://..." /><p class="description">%3$s</p>',
+					esc_attr( CTTEL_OPTION_INSTALLMENT_LEAD_URL ),
+					esc_attr( is_string( $value ) ? $value : '' ),
+					esc_html__( 'صفحه تماس، واتساپ، فرم یا هر URL معتبر — در صفحه اقساط و بخش اقساطی خانه نمایش داده می‌شود.', 'cttel-store' )
+				);
+			},
+			'general'
+		);
+		add_settings_field(
+			CTTEL_OPTION_INSTALLMENT_LEAD_LBL,
+			__( 'عنوان دکمه مشاوره اقساطی', 'cttel-store' ),
+			static function (): void {
+				$value = get_option( CTTEL_OPTION_INSTALLMENT_LEAD_LBL, '' );
+				printf(
+					'<input type="text" name="%1$s" value="%2$s" class="regular-text" placeholder="%3$s" />',
+					esc_attr( CTTEL_OPTION_INSTALLMENT_LEAD_LBL ),
+					esc_attr( is_string( $value ) ? $value : '' ),
+					esc_attr__( 'مشاوره خرید اقساطی', 'cttel-store' )
+				);
+			},
+			'general'
+		);
 	}
 );
+
+/**
+ * Whether any published used-phone products exist (for filter UI).
+ */
+function cttel_catalog_has_used_inventory(): bool {
+	if ( ! function_exists( 'wc_get_products' ) ) {
+		return false;
+	}
+	$found = wc_get_products(
+		array(
+			'limit'      => 1,
+			'status'     => 'publish',
+			'meta_key'   => CTTEL_META_CONDITION,
+			'meta_value' => 'used',
+			'return'     => 'ids',
+		)
+	);
+	return ! empty( $found );
+}
 
 /**
  * Homepage section readiness report (no redesign).

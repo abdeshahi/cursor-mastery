@@ -34,6 +34,8 @@ MU_FILES=(
 	cttel-blocksy-mobile-header.php
 	cttel-store.php
 	cttel-catalog.php
+	cttel-storefront-product-card.php
+	cttel-storefront-search.php
 )
 
 TEMPLATE_FILES=(

@@ -152,7 +152,7 @@ function cttel_mobile_storefront_logo_html(): string {
 }
 
 function cttel_mobile_storefront_render_header(): void {
-	$show_search = is_front_page() && ! is_home();
+	$show_search = false;
 	$cart_count  = cttel_mobile_storefront_cart_count();
 	?>
 	<header class="cttel-ms-header" role="banner">
@@ -184,7 +184,7 @@ function cttel_mobile_storefront_product_search_form(): void {
 	?>
 	<form role="search" method="get" class="cttel-ms-search" action="<?php echo esc_url( home_url( '/' ) ); ?>">
 		<label class="screen-reader-text" for="cttel-ms-search-field"><?php esc_html_e( 'جستجو', 'cttel-store' ); ?></label>
-		<input type="search" id="cttel-ms-search-field" class="cttel-ms-search__input" placeholder="<?php esc_attr_e( 'جستجو', 'cttel-store' ); ?>" value="<?php echo esc_attr( get_search_query() ); ?>" name="s" />
+		<input type="search" id="cttel-ms-search-field" class="cttel-ms-search__input" placeholder="<?php esc_attr_e( 'جستجوی محصول، مدل یا SKU…', 'cttel-store' ); ?>" value="<?php echo esc_attr( get_search_query() ); ?>" name="s" />
 		<input type="hidden" name="post_type" value="product" />
 		<button type="submit" class="cttel-ms-search__btn" aria-label="<?php esc_attr_e( 'جستجو', 'cttel-store' ); ?>">
 			<?php echo cttel_mobile_storefront_icon( 'search', 22 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

@@ -166,6 +166,20 @@ add_filter(
 );
 
 add_filter(
+	'woocommerce_quantity_input_args',
+	static function ( array $args, $product ): array {
+		if ( ! cttel_ms_is_cart_page() ) {
+			return $args;
+		}
+		$args['min_value']   = max( 1, (int) ( $args['min_value'] ?? 1 ) );
+		$args['input_value'] = max( 1, (int) ( $args['input_value'] ?? 1 ) );
+		return $args;
+	},
+	20,
+	2
+);
+
+add_filter(
 	'woocommerce_proceed_to_checkout_button_text',
 	static function (): string {
 		return __( 'ادامه جهت تسویه حساب', 'cttel-store' );

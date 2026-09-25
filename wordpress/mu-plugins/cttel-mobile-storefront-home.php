@@ -1,6 +1,6 @@
 <?php
 /**
- * Mobile storefront homepage — simplified ecommerce-first layout.
+ * Mobile storefront homepage — sales-first, real WooCommerce inventory only.
  *
  * @package CTTEL
  */
@@ -31,27 +31,29 @@ add_filter(
 );
 
 /**
- * Top-level product categories for homepage rail.
+ * Quick nav targets (catalog slugs).
  *
- * @return WP_Term[]
+ * @return array<int, array{slug: string, label: string}>
  */
-function cttel_ms_home_parent_categories(): array {
-	if ( ! function_exists( 'cttel_get_quick_category_terms' ) ) {
-		$exclude = array_filter( array( (int) get_option( 'default_product_cat', 0 ) ) );
-		$terms   = get_terms(
-			array(
-				'taxonomy'   => 'product_cat',
-				'hide_empty' => false,
-				'parent'     => 0,
-				'exclude'    => $exclude,
-			)
-		);
-		if ( is_wp_error( $terms ) || empty( $terms ) ) {
-			return array();
-		}
-		return $terms;
-	}
-	return cttel_get_quick_category_terms();
+function cttel_ms_home_quick_nav_items(): array {
+	return array(
+		array(
+			'slug'  => 'mobile-new',
+			'label' => __( 'گوشی نو', 'cttel-store' ),
+		),
+		array(
+			'slug'  => 'mobile-used',
+			'label' => __( 'گوشی کارکرده', 'cttel-store' ),
+		),
+		array(
+			'slug'  => 'accessories',
+			'label' => __( 'لوازم جانبی', 'cttel-store' ),
+		),
+		array(
+			'slug'  => 'gadget',
+			'label' => __( 'گجت', 'cttel-store' ),
+		),
+	);
 }
 
 /**
@@ -65,14 +67,14 @@ function cttel_ms_home_products( int $limit = 8 ): array {
 		array(
 			'limit'    => $limit * 3,
 			'status'   => 'publish',
-			'on_sale'  => true,
+			'featured' => true,
 			'orderby'  => 'date',
 			'order'    => 'DESC',
 		),
 		array(
 			'limit'    => $limit * 3,
 			'status'   => 'publish',
-			'featured' => true,
+			'on_sale'  => true,
 			'orderby'  => 'date',
 			'order'    => 'DESC',
 		),
@@ -102,65 +104,155 @@ function cttel_ms_home_products( int $limit = 8 ): array {
 	return array();
 }
 
+/**
+ * Products from multiple category slugs (deduped, newest first).
+ *
+ * @param string[] $slugs
+ * @return WC_Product[]
+ */
+function cttel_ms_home_products_in_categories( array $slugs, int $limit = 8 ): array {
+	if ( ! function_exists( 'wc_get_products' ) || empty( $slugs ) ) {
+		return array();
+	}
+	$valid = array();
+	foreach ( $slugs as $slug ) {
+		$term = get_term_by( 'slug', sanitize_title( $slug ), 'product_cat' );
+		if ( $term instanceof WP_Term ) {
+			$valid[] = $slug;
+		}
+	}
+	if ( empty( $valid ) ) {
+		return array();
+	}
+	$found = wc_get_products(
+		array(
+			'limit'    => $limit * 4,
+			'status'   => 'publish',
+			'category' => $valid,
+			'orderby'  => 'date',
+			'order'    => 'DESC',
+		)
+	);
+	$seen = array();
+	$out  = array();
+	foreach ( $found as $product ) {
+		if ( ! $product instanceof WC_Product ) {
+			continue;
+		}
+		$id = $product->get_id();
+		if ( isset( $seen[ $id ] ) ) {
+			continue;
+		}
+		$seen[ $id ] = true;
+		$out[]       = $product;
+		if ( count( $out ) >= $limit ) {
+			break;
+		}
+	}
+	return $out;
+}
+
+/**
+ * @return string
+ */
+function cttel_ms_home_term_url( string $slug ): string {
+	$term = get_term_by( 'slug', $slug, 'product_cat' );
+	if ( $term instanceof WP_Term ) {
+		$link = get_term_link( $term );
+		return is_wp_error( $link ) ? '' : (string) $link;
+	}
+	return '';
+}
+
 function cttel_ms_home_render(): void {
 	cttel_ms_home_render_hero();
-	cttel_ms_home_render_category_rail();
-	cttel_ms_home_render_products();
+	cttel_ms_home_render_quick_nav();
+	cttel_ms_home_render_product_section(
+		__( 'پیشنهادهای ویژه', 'cttel-store' ),
+		null,
+		cttel_ms_home_products( 8 ),
+		function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/shop/' )
+	);
+	cttel_ms_home_render_product_section(
+		__( 'گوشی‌های کارکرده', 'cttel-store' ),
+		'mobile-used',
+		function_exists( 'cttel_catalog_products_in_category' ) ? cttel_catalog_products_in_category( 'mobile-used', 8 ) : array(),
+		cttel_ms_home_term_url( 'mobile-used' )
+	);
+	cttel_ms_home_render_product_section(
+		__( 'لوازم جانبی', 'cttel-store' ),
+		'accessories',
+		cttel_ms_home_products_in_categories(
+			array(
+				'acc-case',
+				'acc-glass',
+				'acc-charger',
+				'acc-cable',
+				'acc-powerbank',
+				'acc-headphone',
+				'accessories',
+			),
+			8
+		),
+		cttel_ms_home_term_url( 'accessories' )
+	);
+	cttel_ms_home_render_product_section(
+		__( 'گجت‌ها', 'cttel-store' ),
+		'gadget',
+		function_exists( 'cttel_catalog_products_in_category' ) ? cttel_catalog_products_in_category( 'gadget', 8 ) : array(),
+		cttel_ms_home_term_url( 'gadget' )
+	);
+	cttel_ms_home_render_product_section(
+		__( 'گوشی نو — خرید نقدی', 'cttel-store' ),
+		'mobile-new',
+		function_exists( 'cttel_catalog_products_in_category' ) ? cttel_catalog_products_in_category( 'mobile-new', 8 ) : array(),
+		cttel_ms_home_term_url( 'mobile-new' )
+	);
 	cttel_ms_home_render_installment();
 	cttel_ms_home_render_trust();
 }
 
 function cttel_ms_home_render_hero(): void {
-	$hero_id = absint( get_option( 'cttel_hero_media_id', 0 ) );
-	$hero    = '';
-	if ( $hero_id > 0 ) {
-		$hero = wp_get_attachment_image(
-			$hero_id,
-			'large',
-			false,
-			array(
-				'class'   => 'cttel-ms-hero__img',
-				'loading' => 'eager',
-				'alt'     => '',
-			)
-		);
-	}
 	$shop = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/shop/' );
+	$inst = function_exists( 'cttel_installment_default_url' ) ? cttel_installment_default_url() : home_url( '/installment/' );
 	?>
-	<section class="cttel-ms-hero" aria-labelledby="cttel-ms-hero-title">
-		<div class="cttel-ms-hero__card">
-			<?php if ( $hero ) : ?>
-				<div class="cttel-ms-hero__media"><?php echo $hero; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
-			<?php else : ?>
-				<div class="cttel-ms-hero__media cttel-ms-hero__media--brand" aria-hidden="true"></div>
-			<?php endif; ?>
+	<section class="cttel-ms-hero cttel-ms-hero--compact" aria-labelledby="cttel-ms-hero-title">
+		<div class="cttel-ms-hero__card cttel-ms-hero__card--compact">
 			<div class="cttel-ms-hero__body">
-				<h1 id="cttel-ms-hero-title" class="cttel-ms-hero__title">فروشگاه CTTEL</h1>
-				<p class="cttel-ms-hero__lead">موبایل، لوازم جانبی و کالای دیجیتال با ارسال سریع و پشتیبانی فروشگاه</p>
-				<a class="cttel-ms-btn cttel-ms-btn--primary" href="<?php echo esc_url( $shop ); ?>">مشاهده فروشگاه</a>
+				<h1 id="cttel-ms-hero-title" class="cttel-ms-hero__title"><?php esc_html_e( 'خرید آنلاین موبایل، لوازم جانبی و گجت', 'cttel-store' ); ?></h1>
+				<p class="cttel-ms-hero__lead"><?php esc_html_e( 'ارسال سریع، قیمت شفاف، موجودی واقعی — همین حالا جستجو کنید یا دسته موردنظر را انتخاب کنید.', 'cttel-store' ); ?></p>
+				<div class="cttel-ms-hero__search">
+					<?php cttel_mobile_storefront_product_search_form(); ?>
+				</div>
+				<div class="cttel-ms-hero__actions">
+					<a class="cttel-ms-btn cttel-ms-btn--primary" href="<?php echo esc_url( $shop ); ?>"><?php esc_html_e( 'مشاهده محصولات', 'cttel-store' ); ?></a>
+					<a class="cttel-ms-btn cttel-ms-btn--outline" href="<?php echo esc_url( $inst ); ?>"><?php esc_html_e( 'شرایط خرید اقساطی', 'cttel-store' ); ?></a>
+				</div>
 			</div>
 		</div>
 	</section>
 	<?php
 }
 
-function cttel_ms_home_render_category_rail(): void {
-	$terms = cttel_ms_home_parent_categories();
-	if ( empty( $terms ) ) {
-		return;
-	}
-	$terms = array_slice( $terms, 0, 8 );
+function cttel_ms_home_render_quick_nav(): void {
+	$items = cttel_ms_home_quick_nav_items();
 	?>
-	<nav class="cttel-ms-cat-rail" aria-label="<?php esc_attr_e( 'دسته‌بندی محصولات', 'cttel-store' ); ?>">
-		<ul class="cttel-ms-cat-rail__list">
-			<?php foreach ( $terms as $term ) : ?>
-				<?php if ( ! $term instanceof WP_Term ) {
+	<nav class="cttel-ms-quick-nav" aria-label="<?php esc_attr_e( 'دسته‌های پرفروش', 'cttel-store' ); ?>">
+		<ul class="cttel-ms-quick-nav__list">
+			<?php foreach ( $items as $item ) : ?>
+				<?php
+				$url = cttel_ms_home_term_url( $item['slug'] );
+				if ( '' === $url ) {
 					continue;
-				} ?>
+				}
+				$term = get_term_by( 'slug', $item['slug'], 'product_cat' );
+				?>
 				<li>
-					<a class="cttel-ms-cat-rail__item" href="<?php echo esc_url( get_term_link( $term ) ); ?>">
-						<span class="cttel-ms-cat-rail__icon"><?php echo cttel_mobile_storefront_category_icon( $term ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-						<span class="cttel-ms-cat-rail__label"><?php echo esc_html( $term->name ); ?></span>
+					<a class="cttel-ms-quick-nav__item" href="<?php echo esc_url( $url ); ?>">
+						<?php if ( $term instanceof WP_Term ) : ?>
+							<span class="cttel-ms-quick-nav__icon"><?php echo cttel_mobile_storefront_category_icon( $term ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<?php endif; ?>
+						<span class="cttel-ms-quick-nav__label"><?php echo esc_html( $item['label'] ); ?></span>
 					</a>
 				</li>
 			<?php endforeach; ?>
@@ -169,21 +261,39 @@ function cttel_ms_home_render_category_rail(): void {
 	<?php
 }
 
-function cttel_ms_home_render_products(): void {
-	$products = cttel_ms_home_products( 8 );
-	$shop     = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/shop/' );
+/**
+ * @param WC_Product[]|null $products Pre-fetched products; if null uses category slug.
+ * @param string            $view_all_url
+ */
+function cttel_ms_home_render_product_section( string $title, ?string $category_slug, array $products, string $view_all_url = '' ): void {
+	$section_id = 'cttel-ms-home-' . sanitize_title( $title );
 	?>
-	<section class="cttel-ms-products" aria-labelledby="cttel-ms-products-title">
+	<section class="cttel-ms-home-section" aria-labelledby="<?php echo esc_attr( $section_id ); ?>">
 		<div class="cttel-ms-section-head">
-			<h2 id="cttel-ms-products-title" class="cttel-ms-section-head__title">جدیدترین محصولات</h2>
-			<a class="cttel-ms-section-head__link" href="<?php echo esc_url( $shop ); ?>">مشاهده همه</a>
+			<h2 id="<?php echo esc_attr( $section_id ); ?>" class="cttel-ms-section-head__title"><?php echo esc_html( $title ); ?></h2>
+			<?php if ( '' !== $view_all_url ) : ?>
+				<a class="cttel-ms-section-head__link" href="<?php echo esc_url( $view_all_url ); ?>"><?php esc_html_e( 'مشاهده همه', 'cttel-store' ); ?></a>
+			<?php endif; ?>
 		</div>
 		<?php if ( empty( $products ) ) : ?>
-			<p class="cttel-ms-empty"><?php esc_html_e( 'محصولی برای نمایش یافت نشد.', 'cttel-store' ); ?></p>
+			<p class="cttel-ms-empty cttel-ms-empty--section">
+				<?php
+				if ( 'mobile-used' === $category_slug ) {
+					esc_html_e( 'فعلاً گوشی کارکرده‌ای در انبار نیست. برای موجودی جدید با پشتیبانی تماس بگیرید.', 'cttel-store' );
+				} else {
+					esc_html_e( 'محصولی برای نمایش در این بخش یافت نشد.', 'cttel-store' );
+				}
+				?>
+			</p>
 		<?php else : ?>
 			<ul class="cttel-ms-products__grid">
 				<?php foreach ( $products as $product ) : ?>
-					<?php echo cttel_ms_product_card( $product ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php
+					if ( ! $product instanceof WC_Product ) {
+						continue;
+					}
+					echo cttel_ms_product_card( $product ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					?>
 				<?php endforeach; ?>
 			</ul>
 		<?php endif; ?>
@@ -191,9 +301,14 @@ function cttel_ms_home_render_products(): void {
 	<?php
 }
 
+/**
+ * @return string
+ */
 function cttel_ms_product_card( WC_Product $product ): string {
+	if ( function_exists( 'cttel_ms_render_product_card' ) ) {
+		return cttel_ms_render_product_card( $product, array( 'variant' => 'grid', 'show_cta' => true ) );
+	}
 	$image = cttel_ms_product_card_image_html( $product, 'cttel-ms-pcard__img' );
-
 	ob_start();
 	?>
 	<li class="cttel-ms-pcard">
@@ -208,26 +323,31 @@ function cttel_ms_product_card( WC_Product $product ): string {
 }
 
 function cttel_ms_home_render_installment(): void {
-	$url = home_url( '/installment/' );
-	if ( function_exists( 'cttel_installment_default_url' ) ) {
-		$url = cttel_installment_default_url();
-	}
+	$page_url = function_exists( 'cttel_installment_default_url' ) ? cttel_installment_default_url() : home_url( '/installment/' );
+	$lead_url = function_exists( 'cttel_installment_consultation_url' ) ? cttel_installment_consultation_url() : '';
+	$lead_lbl = function_exists( 'cttel_installment_consultation_label' ) ? cttel_installment_consultation_label() : __( 'مشاوره خرید اقساطی', 'cttel-store' );
 	?>
-	<section class="cttel-ms-installment">
-		<a class="cttel-ms-installment__banner" href="<?php echo esc_url( $url ); ?>">
-			<span class="cttel-ms-installment__title">خرید اقساطی</span>
-			<span class="cttel-ms-installment__desc">شرایط و ثبت درخواست در صفحه اختصاصی</span>
-		</a>
+	<section class="cttel-ms-installment cttel-ms-installment--home" aria-labelledby="cttel-ms-installment-home-title">
+		<div class="cttel-ms-installment__inner">
+			<h2 id="cttel-ms-installment-home-title" class="cttel-ms-installment__title"><?php esc_html_e( 'خرید اقساطی CTTEL', 'cttel-store' ); ?></h2>
+			<p class="cttel-ms-installment__desc"><?php esc_html_e( 'ثبت و تسویه اقساط در وب‌سایت انجام نمی‌شود. پس از مشاوره و بررسی شرایط، فرایند خرید اقساطی به‌صورت حضوری یا با هماهنگی پشتیبانی ادامه پیدا می‌کند.', 'cttel-store' ); ?></p>
+			<div class="cttel-ms-installment__actions">
+				<a class="cttel-ms-btn cttel-ms-btn--primary" href="<?php echo esc_url( $page_url ); ?>"><?php esc_html_e( 'مشاهده شرایط خرید اقساطی', 'cttel-store' ); ?></a>
+				<?php if ( '' !== $lead_url ) : ?>
+					<a class="cttel-ms-btn cttel-ms-btn--outline" href="<?php echo esc_url( $lead_url ); ?>"><?php echo esc_html( $lead_lbl ); ?></a>
+				<?php endif; ?>
+			</div>
+		</div>
 	</section>
 	<?php
 }
 
 function cttel_ms_home_render_trust(): void {
 	$items = array(
-		'پشتیبانی فروشگاه',
-		'ضمانت اصالت کالا',
-		'پرداخت امن',
-		'ارسال به سراسر ایران',
+		__( 'پشتیبانی فروشگاه', 'cttel-store' ),
+		__( 'ضمانت اصالت کالا', 'cttel-store' ),
+		__( 'پرداخت امن', 'cttel-store' ),
+		__( 'ارسال به سراسر ایران', 'cttel-store' ),
 	);
 	?>
 	<section class="cttel-ms-trust" aria-label="<?php esc_attr_e( 'مزایای خرید', 'cttel-store' ); ?>">

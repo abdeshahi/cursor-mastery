@@ -239,6 +239,127 @@ body.cttel-mobile-storefront {
 	padding: 12px 12px 4px;
 }
 
+.cttel-ms-hero--compact .cttel-ms-hero__card--compact {
+	border-radius: var(--cttel-ms-radius);
+	box-shadow: 0 1px 3px rgba(11, 31, 58, 0.06);
+}
+
+.cttel-ms-hero--compact .cttel-ms-hero__body {
+	padding: 12px 14px 14px;
+}
+
+.cttel-ms-hero--compact .cttel-ms-hero__title {
+	font-size: 1.0625rem;
+	margin-bottom: 4px;
+}
+
+.cttel-ms-hero--compact .cttel-ms-hero__lead {
+	margin-bottom: 10px;
+	font-size: 0.75rem;
+}
+
+.cttel-ms-hero__search {
+	margin-bottom: 12px;
+}
+
+.cttel-ms-hero__search .cttel-ms-search,
+.cttel-ms-hero__search form {
+	width: 100%;
+}
+
+.cttel-ms-hero__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	justify-content: flex-start;
+}
+
+.cttel-ms-btn--outline {
+	background: #fff;
+	color: var(--cttel-ms-accent);
+	border: 1px solid rgba(37, 99, 235, 0.35);
+}
+
+/* Quick category nav (home) */
+.cttel-ms-quick-nav {
+	padding: 6px 0 2px;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+}
+
+.cttel-ms-quick-nav::-webkit-scrollbar {
+	display: none;
+}
+
+.cttel-ms-quick-nav__list {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(72px, 1fr));
+	gap: 6px;
+	padding: 0 12px;
+	margin: 0;
+	list-style: none;
+}
+
+.cttel-ms-quick-nav__item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	min-height: 88px;
+	padding: 8px 4px;
+	text-decoration: none;
+	color: var(--cttel-ms-text);
+	border-radius: 10px;
+	background: var(--cttel-ms-surface);
+	border: 1px solid var(--cttel-ms-border);
+	font-size: 0.6875rem;
+	font-weight: 700;
+	text-align: center;
+	line-height: 1.35;
+}
+
+.cttel-ms-quick-nav__icon {
+	margin-bottom: 4px;
+}
+
+.cttel-ms-home-section {
+	padding: 4px 0 8px;
+}
+
+.cttel-ms-empty--section {
+	padding: 8px 12px 4px;
+	font-size: 0.8125rem;
+	text-align: right;
+}
+
+.cttel-ms-pcard__spec {
+	margin: 0;
+	font-size: 0.625rem;
+	color: var(--cttel-ms-muted);
+	text-align: right;
+	line-height: 1.45;
+}
+
+.cttel-ms-pcard__cta {
+	display: flex;
+	width: 100%;
+	margin-top: 8px;
+	min-height: 40px;
+	font-size: 0.75rem;
+}
+
+@media (min-width: 900px) {
+	.cttel-ms-quick-nav__list {
+		max-width: 720px;
+		margin-inline: auto;
+	}
+	.cttel-ms-hero--compact .cttel-ms-hero__card--compact {
+		max-width: 720px;
+		margin-inline: auto;
+	}
+}
+
 .cttel-ms-hero__card {
 	background: var(--cttel-ms-surface);
 	border: 1px solid var(--cttel-ms-border);
@@ -495,6 +616,90 @@ body.cttel-mobile-storefront {
 /* Installment + trust */
 .cttel-ms-installment {
 	padding: 4px 12px 12px;
+}
+
+.cttel-ms-installment--home .cttel-ms-installment__inner {
+	padding: 14px;
+	border-radius: var(--cttel-ms-radius);
+	background: var(--cttel-ms-accent-soft);
+	border: 1px solid rgba(37, 99, 235, 0.12);
+	text-align: right;
+}
+
+.cttel-ms-installment__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 10px;
+}
+
+/* Product search results */
+body.cttel-ms-search-results .woocommerce-products-header {
+	display: none;
+}
+
+.cttel-ms-search-head {
+	padding: 12px 12px 4px;
+	text-align: right;
+}
+
+.cttel-ms-search-head__title {
+	margin: 0 0 4px;
+	font-size: 1.0625rem;
+	font-weight: 800;
+}
+
+.cttel-ms-search-head__query {
+	margin: 0 0 10px;
+	font-size: 0.8125rem;
+	color: var(--cttel-ms-muted);
+}
+
+.cttel-ms-products__grid--search {
+	padding: 8px 12px 16px;
+}
+
+/* Installment page */
+.cttel-installment-page {
+	max-width: 640px;
+	margin: 0 auto;
+	padding: 16px 12px 24px;
+	text-align: right;
+	line-height: 1.7;
+}
+
+.cttel-installment-page__title {
+	font-size: 1.25rem;
+	margin: 0 0 8px;
+}
+
+.cttel-installment-page__intro {
+	color: var(--cttel-ms-muted, #64748b);
+	font-size: 0.9375rem;
+}
+
+.cttel-installment-page__steps,
+.cttel-installment-page__list {
+	padding-right: 1.2rem;
+}
+
+.cttel-installment-page__note {
+	font-size: 0.8125rem;
+	color: var(--cttel-ms-muted, #64748b);
+	margin-top: 1rem;
+}
+
+.cttel-installment-page__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+.cttel-installment-page__admin-hint {
+	font-size: 0.75rem;
+	color: var(--cttel-ms-muted, #64748b);
+	margin: 0;
 }
 
 .cttel-ms-installment__banner {

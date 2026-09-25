@@ -13,10 +13,12 @@ if ( defined( 'CTTEL_MOBILE_STOREFRONT_BOOTSTRAPPED' ) ) {
 	return;
 }
 define( 'CTTEL_MOBILE_STOREFRONT_BOOTSTRAPPED', true );
-define( 'CTTEL_MOBILE_STOREFRONT_VERSION', '1.6.0-catalog-architecture' );
+define( 'CTTEL_MOBILE_STOREFRONT_VERSION', '1.7.0-sales-storefront' );
 
 require_once __DIR__ . '/cttel-staging-wc-readiness.php';
 require_once __DIR__ . '/cttel-mobile-storefront-assets.php';
+require_once __DIR__ . '/cttel-storefront-product-card.php';
+require_once __DIR__ . '/cttel-storefront-search.php';
 require_once __DIR__ . '/cttel-mobile-storefront-shell.php';
 require_once __DIR__ . '/cttel-mobile-storefront-home.php';
 require_once __DIR__ . '/cttel-mobile-storefront-categories.php';
@@ -42,6 +44,9 @@ function cttel_mobile_storefront_uses_shell(): bool {
 		return true;
 	}
 	if ( function_exists( 'is_shop' ) && ( is_shop() || is_product_category() || is_product_tag() || is_product() ) ) {
+		return true;
+	}
+	if ( function_exists( 'cttel_ms_is_product_search' ) && cttel_ms_is_product_search() ) {
 		return true;
 	}
 	return false;
