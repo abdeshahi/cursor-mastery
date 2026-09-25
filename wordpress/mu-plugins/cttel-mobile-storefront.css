@@ -1187,6 +1187,79 @@ body.cttel-ms-single .cttel-ms-single__stock {
 	text-align: right;
 }
 
+body.cttel-ms-single .cttel-ms-used-specs {
+	margin: 12px 0 16px;
+	padding: 12px;
+	border: 1px solid var(--cttel-ms-border, rgba(11, 31, 58, 0.1));
+	border-radius: 12px;
+	background: #fff;
+}
+
+body.cttel-ms-single .cttel-ms-used-specs__title {
+	margin: 0 0 8px;
+	font-size: 0.9375rem;
+	font-weight: 800;
+	color: var(--cttel-ms-text, #0b1f3a);
+}
+
+body.cttel-ms-single .cttel-ms-used-specs__list {
+	margin: 0;
+	display: grid;
+	gap: 6px;
+}
+
+body.cttel-ms-single .cttel-ms-used-specs__row {
+	display: grid;
+	grid-template-columns: minmax(0, 38%) 1fr;
+	gap: 8px;
+	font-size: 0.75rem;
+	border-bottom: 1px solid rgba(11, 31, 58, 0.06);
+	padding-bottom: 4px;
+}
+
+body.cttel-ms-single .cttel-ms-used-specs__row dt {
+	margin: 0;
+	font-weight: 700;
+	color: var(--cttel-ms-muted, #5c6b7a);
+}
+
+body.cttel-ms-single .cttel-ms-used-specs__row dd {
+	margin: 0;
+	color: var(--cttel-ms-text, #0b1f3a);
+}
+
+body.cttel-ms-single .cttel-ms-compat {
+	margin: 0 0 16px;
+}
+
+body.cttel-ms-single .cttel-ms-compat__title {
+	margin: 0 0 8px;
+	font-size: 0.875rem;
+	font-weight: 800;
+}
+
+body.cttel-ms-single .cttel-ms-compat__list {
+	margin: 0;
+	padding-inline-start: 1rem;
+	font-size: 0.8125rem;
+}
+
+.cttel-ms-pcard__badge--used {
+	background: #fff7ed;
+	color: #c2410c;
+	border: 1px solid rgba(194, 65, 12, 0.15);
+}
+
+.cttel-installment-page__list {
+	padding-inline-start: 1.1rem;
+	line-height: 1.7;
+}
+
+.cttel-installment-page__note {
+	font-size: 0.875rem;
+	color: var(--cttel-ms-muted, #5c6b7a);
+}
+
 body.cttel-ms-single form.cart {
 	display: grid;
 	gap: 10px;

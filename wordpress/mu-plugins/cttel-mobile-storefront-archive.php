@@ -320,7 +320,7 @@ function cttel_ms_archive_has_filters_ui(): bool {
 }
 
 function cttel_ms_archive_filter_reset_url(): string {
-	$remove = array( 'cttel_filter', 'cttel_in_stock', 'cttel_on_sale', 'cttel_min_price', 'cttel_max_price', 'paged' );
+	$remove = array( 'cttel_filter', 'cttel_in_stock', 'cttel_on_sale', 'cttel_min_price', 'cttel_max_price', 'cttel_condition', 'cttel_subcat', 'paged' );
 	foreach ( cttel_ms_archive_filter_groups() as $group ) {
 		$remove[] = 'cttel_attr_' . sanitize_key( $group['taxonomy'] );
 	}
@@ -328,7 +328,7 @@ function cttel_ms_archive_filter_reset_url(): string {
 }
 
 function cttel_ms_archive_preserve_filter_fields(): void {
-	$keys = array( 'cttel_filter', 'cttel_in_stock', 'cttel_on_sale', 'cttel_min_price', 'cttel_max_price' );
+	$keys = array( 'cttel_filter', 'cttel_in_stock', 'cttel_on_sale', 'cttel_min_price', 'cttel_max_price', 'cttel_condition', 'cttel_subcat' );
 	foreach ( $keys as $key ) {
 		if ( ! isset( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			continue;
@@ -389,6 +389,12 @@ function cttel_ms_archive_render_filter_drawer(): void {
 						<?php esc_html_e( 'فقط حراج', 'cttel-store' ); ?>
 					</label>
 				</fieldset>
+
+				<?php
+				if ( function_exists( 'cttel_catalog_render_archive_filters' ) ) {
+					cttel_catalog_render_archive_filters();
+				}
+				?>
 
 				<?php foreach ( $groups as $group ) : ?>
 					<?php

@@ -33,6 +33,7 @@ MU_FILES=(
 	cttel-blocksy-mobile-offcanvas.php
 	cttel-blocksy-mobile-header.php
 	cttel-store.php
+	cttel-catalog.php
 )
 
 TEMPLATE_FILES=(

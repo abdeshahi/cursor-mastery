@@ -13,7 +13,7 @@ if ( defined( 'CTTEL_MOBILE_STOREFRONT_BOOTSTRAPPED' ) ) {
 	return;
 }
 define( 'CTTEL_MOBILE_STOREFRONT_BOOTSTRAPPED', true );
-define( 'CTTEL_MOBILE_STOREFRONT_VERSION', '1.5.1-cart-qty-native' );
+define( 'CTTEL_MOBILE_STOREFRONT_VERSION', '1.6.0-catalog-architecture' );
 
 require_once __DIR__ . '/cttel-staging-wc-readiness.php';
 require_once __DIR__ . '/cttel-mobile-storefront-assets.php';
@@ -23,6 +23,7 @@ require_once __DIR__ . '/cttel-mobile-storefront-categories.php';
 require_once __DIR__ . '/cttel-mobile-storefront-archive.php';
 require_once __DIR__ . '/cttel-mobile-storefront-single.php';
 require_once __DIR__ . '/cttel-mobile-storefront-cart-checkout.php';
+require_once __DIR__ . '/cttel-catalog.php';
 
 /**
  * Whether the mobile shell (custom header + bottom nav) applies to this request.

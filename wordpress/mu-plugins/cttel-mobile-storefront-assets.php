@@ -296,8 +296,9 @@ function cttel_ms_product_card_image_html( WC_Product $product, string $img_clas
 			return $html;
 		}
 	}
-	$local_rel = cttel_ms_product_local_photo_relative_path( $product );
-	if ( cttel_ms_product_local_photo_is_readable( $local_rel ) ) {
+	$skip_local = apply_filters( 'cttel_ms_skip_local_product_photo', false, $product );
+	$local_rel  = cttel_ms_product_local_photo_relative_path( $product );
+	if ( ! $skip_local && cttel_ms_product_local_photo_is_readable( $local_rel ) ) {
 		return sprintf(
 			'<img src="%1$s" class="%2$s" loading="lazy" decoding="async" alt="%3$s" width="400" height="400" />',
 			esc_url( cttel_ms_asset_url( $local_rel ) ),
