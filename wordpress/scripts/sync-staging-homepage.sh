@@ -44,6 +44,7 @@ TEMPLATE_FILES=(
 	templates/cttel-mobile-front.php
 	templates/cttel-categories-hub.php
 	templates/content-product-ms.php
+	templates/cttel-ms-single-product-reviews.php
 )
 
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 -p "${PORT}")

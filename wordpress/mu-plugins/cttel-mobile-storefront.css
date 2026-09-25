@@ -2789,9 +2789,23 @@ body.cttel-ms-single .woocommerce-tabs {
 	margin-top: 4px;
 }
 
-.cttel-ms-main--single,
 .cttel-ms-main--home {
-	padding-bottom: calc(var(--cttel-ms-nav-h) + 12px + env(safe-area-inset-bottom, 0px));
+	padding-bottom: calc(var(--cttel-ms-nav-h) + 12px);
+}
+
+@media (max-width: 1023.98px) {
+	body.cttel-mobile-storefront.cttel-ms-single {
+		padding-bottom: calc(var(--cttel-ms-nav-h) + 20px);
+	}
+
+	body.cttel-mobile-storefront.cttel-ms-single .cttel-ms-main--single {
+		padding-bottom: calc(var(--cttel-ms-nav-h) + 16px);
+	}
+
+	body.cttel-mobile-storefront.cttel-ms-single #main-container,
+	body.cttel-mobile-storefront.cttel-ms-single .site-main {
+		padding-bottom: calc(var(--cttel-ms-nav-h) + 8px);
+	}
 }
 
 .cttel-ms-pdp-shipping,
@@ -2883,17 +2897,31 @@ body.cttel-ms-single .related.products {
 
 body.cttel-ms-single #reviews {
 	order: 20;
-	margin-top: 16px;
-	padding-bottom: 8px;
+	margin-top: 12px;
+	padding-bottom: 0;
+}
+
+body.cttel-ms-single #reviews[hidden],
+body.cttel-ms-single .woocommerce-Tabs-panel--reviews,
+body.cttel-ms-single #tab-reviews {
+	display: none !important;
+}
+
+body.cttel-ms-single #reviews:not(.is-review-form-open) #review_form_wrapper {
+	display: none !important;
+}
+
+body.cttel-ms-single:not(.cttel-ms-pdp-has-reviews) #reviews:not(.is-review-form-open) #comments {
+	display: none !important;
+}
+
+body.cttel-ms-single #reviews .woocommerce-Reviews-title,
+body.cttel-ms-single #reviews .woocommerce-noreviews {
+	display: none !important;
 }
 
 body.cttel-ms-single .woocommerce-tabs {
 	order: 15;
-}
-
-body.cttel-ms-single div.product {
-	display: flex;
-	flex-direction: column;
 }
 
 body.cttel-ms-single .cttel-ms-reviews-head {
@@ -2923,7 +2951,48 @@ body.cttel-ms-single #review_form_wrapper[hidden] {
 	display: none !important;
 }
 
-body.cttel-ms-single .ct-footer,
-body.cttel-ms-single #footer {
-	padding-bottom: calc(var(--cttel-ms-nav-h) + env(safe-area-inset-bottom, 0px));
+@media (max-width: 1023.98px) {
+	body.cttel-mobile-storefront.cttel-ms-single .ct-footer,
+	body.cttel-mobile-storefront.cttel-ms-single #footer,
+	body.cttel-mobile-storefront.cttel-ms-single footer.site-footer,
+	body.cttel-mobile-storefront.cttel-ms-single #colophon {
+		padding-bottom: calc(var(--cttel-ms-nav-h) + 12px);
+		margin-bottom: 0;
+	}
+}
+
+body.cttel-ms-single .cttel-ms-reviews-root {
+	padding: 12px;
+	border: 1px solid var(--cttel-ms-border);
+	border-radius: 12px;
+	background: #fff;
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap {
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px solid rgba(11, 31, 58, 0.08);
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form {
+	font-size: 0.8125rem;
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form input[type="text"],
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form input[type="email"],
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form textarea {
+	width: 100%;
+	box-sizing: border-box;
+	border-radius: 10px;
+	border: 1px solid var(--cttel-ms-border);
+	min-height: 44px;
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .comment-form textarea {
+	min-height: 96px;
+}
+
+body.cttel-ms-single .cttel-ms-reviews-form-wrap .form-submit .submit {
+	min-height: 44px;
+	border-radius: 12px;
 }

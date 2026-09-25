@@ -97,9 +97,25 @@ add_filter(
 	static function ( array $classes ): array {
 		if ( cttel_ms_is_single_product() && cttel_mobile_storefront_uses_shell() ) {
 			$classes[] = 'cttel-ms-single';
+			global $product;
+			if ( $product instanceof WC_Product && $product->get_review_count() > 0 ) {
+				$classes[] = 'cttel-ms-pdp-has-reviews';
+			}
 		}
 		return $classes;
 	}
+);
+
+add_filter(
+	'comments_template',
+	static function ( string $template ): string {
+		if ( ! cttel_ms_is_single_product() || ! cttel_mobile_storefront_uses_shell() ) {
+			return $template;
+		}
+		$custom = __DIR__ . '/templates/cttel-ms-single-product-reviews.php';
+		return is_readable( $custom ) ? $custom : $template;
+	},
+	20
 );
 
 add_action(
@@ -224,7 +240,7 @@ add_filter(
 		if ( ! cttel_ms_is_single_product() || ! cttel_mobile_storefront_uses_shell() ) {
 			return $tabs;
 		}
-		unset( $tabs['additional_information'] );
+		unset( $tabs['additional_information'], $tabs['reviews'] );
 		if ( isset( $tabs['description'] ) ) {
 			global $product;
 			if ( $product instanceof WC_Product && '' === trim( (string) $product->get_description() ) ) {
@@ -249,24 +265,6 @@ add_filter(
 );
 
 add_action(
-	'woocommerce_before_single_product_summary',
-	static function (): void {
-		if ( ! cttel_ms_is_single_product() || ! cttel_mobile_storefront_uses_shell() ) {
-			return;
-		}
-		global $product;
-		if ( ! $product instanceof WC_Product ) {
-			return;
-		}
-		$count = (int) $product->get_review_count();
-		?>
-		<div id="cttel-ms-reviews-meta" class="screen-reader-text" data-review-count="<?php echo esc_attr( (string) $count ); ?>"></div>
-		<?php
-	},
-	99
-);
-
-add_action(
 	'wp_enqueue_scripts',
 	static function (): void {
 		if ( ! cttel_ms_is_single_product() || ! cttel_mobile_storefront_uses_shell() ) {
@@ -278,45 +276,34 @@ add_action(
 		wp_add_inline_script(
 			'cttel-ms-single-reviews',
 			"(function () {
+	function bindReviews(root) {
+		if (!root || root.dataset.cttelReviewsBound) return;
+		root.dataset.cttelReviewsBound = '1';
+		var toggle = root.querySelector('.cttel-ms-reviews-toggle');
+		var formWrap = root.querySelector('#review_form_wrapper');
+		if (!toggle || !formWrap) return;
+		formWrap.hidden = true;
+		root.classList.remove('is-review-form-open');
+		toggle.addEventListener('click', function () {
+			var open = formWrap.hidden;
+			formWrap.hidden = !open;
+			root.classList.toggle('is-review-form-open', open);
+			toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+			if (open) formWrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+		});
+	}
 	function initReviews() {
-		var reviews = document.getElementById('reviews');
-		if (!reviews || reviews.dataset.cttelReviewsInit) return;
-		reviews.dataset.cttelReviewsInit = '1';
-		var meta = document.getElementById('cttel-ms-reviews-meta');
-		var count = meta ? parseInt(meta.getAttribute('data-review-count') || '0', 10) : 0;
-		var defaultHeading = reviews.querySelector(':scope > h2');
-		if (defaultHeading) defaultHeading.classList.add('screen-reader-text');
-		var head = document.createElement('div');
-		head.className = 'cttel-ms-reviews-head';
-		var title = document.createElement('h2');
-		title.className = 'cttel-ms-reviews-head__title';
-		title.textContent = 'نظرات کاربران (' + count + ')';
-		head.appendChild(title);
-		if (!count) {
-			var empty = document.createElement('p');
-			empty.className = 'cttel-ms-reviews-head__empty';
-			empty.textContent = 'هنوز نظری برای این محصول ثبت نشده است.';
-			head.appendChild(empty);
-		}
-		var toggle = document.createElement('button');
-		toggle.type = 'button';
-		toggle.className = 'cttel-ms-btn cttel-ms-btn--outline cttel-ms-reviews-toggle';
-		toggle.setAttribute('aria-expanded', 'false');
-		toggle.textContent = 'ثبت نظر';
-		head.appendChild(toggle);
-		reviews.insertBefore(head, reviews.firstChild);
-		var formWrap = reviews.querySelector('#review_form_wrapper');
-		if (formWrap) {
-			formWrap.hidden = true;
-			toggle.addEventListener('click', function () {
-				var open = formWrap.hidden;
-				formWrap.hidden = !open;
-				toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-				if (open) formWrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-			});
-		} else {
-			toggle.hidden = true;
-		}
+		document.querySelectorAll('#reviews').forEach(function (node, index) {
+			if (index > 0) {
+				node.setAttribute('hidden', 'hidden');
+				node.setAttribute('aria-hidden', 'true');
+				return;
+			}
+			bindReviews(node);
+		});
+		document.querySelectorAll('.woocommerce-Tabs-panel--reviews').forEach(function (panel) {
+			panel.setAttribute('hidden', 'hidden');
+		});
 	}
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', initReviews);

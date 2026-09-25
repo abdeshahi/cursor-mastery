@@ -19,6 +19,7 @@ on:
       - 'wordpress/mu-plugins/templates/cttel-mobile-front.php'
       - 'wordpress/mu-plugins/templates/cttel-categories-hub.php'
       - 'wordpress/mu-plugins/templates/content-product-ms.php'
+      - 'wordpress/mu-plugins/templates/cttel-ms-single-product-reviews.php'
       - 'wordpress/scripts/sync-staging-homepage.sh'
 
 jobs:
