@@ -24,6 +24,7 @@ MU_FILES=(
 	cttel-mobile-storefront-cart-checkout.php
 	cttel-staging-wc-readiness.php
 	cttel-staging-shipping-postpaid.php
+	cttel-staging-online-payment.php
 	cttel-mobile-storefront-assets.php
 	cttel-ms-seed-product-photos.php
 	cttel-mobile-storefront.css

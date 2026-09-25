@@ -7,8 +7,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-const CTTEL_OFFLINE_GATEWAY_IDS           = array( 'cod', 'bacs', 'cheque' );
-const CTTEL_DISABLE_OFFLINE_BOOT_KEY      = 'cttel_staging_offline_gateways_disabled_v1';
+define( 'CTTEL_DISABLE_OFFLINE_BOOT_KEY', 'cttel_staging_offline_gateways_disabled_v1' );
 
 /**
  * Gateways that count as a real online product payment (excludes offline defaults).
@@ -16,18 +15,22 @@ const CTTEL_DISABLE_OFFLINE_BOOT_KEY      = 'cttel_staging_offline_gateways_disa
  * @return string[]
  */
 function cttel_wc_offline_gateway_ids(): array {
-	return CTTEL_OFFLINE_GATEWAY_IDS;
+	return array( 'cod', 'bacs', 'cheque' );
 }
 
 /**
  * @return bool
  */
 function cttel_wc_online_gateway_configured(): bool {
-	if ( ! function_exists( 'WC' ) || ! WC()->payment_gateways() ) {
+	if ( ! function_exists( 'WC' ) ) {
+		return false;
+	}
+	$wc = WC();
+	if ( ! $wc || ! $wc->payment_gateways() ) {
 		return false;
 	}
 	$offline = cttel_wc_offline_gateway_ids();
-	foreach ( WC()->payment_gateways()->payment_gateways() as $id => $gateway ) {
+	foreach ( $wc->payment_gateways()->payment_gateways() as $id => $gateway ) {
 		if ( in_array( $id, $offline, true ) ) {
 			continue;
 		}
@@ -172,7 +175,10 @@ add_filter(
 
 add_filter(
 	'woocommerce_order_button_text',
-	static function ( string $text ): string {
+	static function ( $text ) {
+		if ( ! is_string( $text ) ) {
+			$text = '';
+		}
 		if ( cttel_ms_commerce_totals_use_custom_labels() ) {
 			return __( 'پرداخت آنلاین', 'cttel-store' );
 		}
