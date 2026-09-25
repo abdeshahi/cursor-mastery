@@ -2102,6 +2102,25 @@ body.cttel-ms-checkout .cttel-ms-postpaid-shipping-notice {
 	margin: 0 0 12px;
 }
 
+.cttel-ms-order-paid-notice {
+	margin: 12px 0 16px;
+	padding: 12px;
+	border-radius: 12px;
+	background: #ecfdf5;
+	border: 1px solid rgba(4, 120, 87, 0.2);
+	text-align: right;
+	font-size: 0.8125rem;
+	line-height: 1.6;
+}
+
+.cttel-ms-order-paid-notice p {
+	margin: 0 0 6px;
+}
+
+.cttel-ms-order-paid-notice p:last-child {
+	margin-bottom: 0;
+}
+
 body.cttel-ms-cart .cart_totals {
 	margin-top: 12px;
 	border: 1px solid var(--cttel-ms-border);

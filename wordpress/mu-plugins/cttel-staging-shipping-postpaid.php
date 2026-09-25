@@ -22,14 +22,14 @@ function cttel_postpaid_shipping_title(): string {
  * @return string
  */
 function cttel_postpaid_shipping_description(): string {
-	return 'ارسال با تیپاکس / ماهکس به‌صورت پس‌کرایه انجام می‌شود و هزینه ارسال هنگام تحویل توسط مشتری پرداخت می‌شود.';
+	return 'مبلغ کالا به‌صورت آنلاین هنگام ثبت سفارش پرداخت می‌شود. هزینه ارسال در مبلغ سفارش محاسبه نمی‌شود و هنگام تحویل مرسوله، توسط مشتری به شرکت حمل‌ونقل پرداخت خواهد شد.';
 }
 
 /**
  * @return string
  */
 function cttel_postpaid_shipping_cost_display(): string {
-	return '۰ تومان (پس‌کرایه — پرداخت هنگام تحویل)';
+	return 'پس‌کرایه';
 }
 
 /**
@@ -204,7 +204,7 @@ add_filter(
 		if ( ! cttel_shipping_rate_is_postpaid( $method ) ) {
 			return $label;
 		}
-		return cttel_postpaid_shipping_title() . ': ' . cttel_postpaid_shipping_cost_display();
+		return cttel_postpaid_shipping_cost_display();
 	},
 	20,
 	2

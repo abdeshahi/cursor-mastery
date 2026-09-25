@@ -8,6 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 require_once __DIR__ . '/cttel-staging-shipping-postpaid.php';
+require_once __DIR__ . '/cttel-staging-online-payment.php';
 
 if ( ! function_exists( 'cttel_is_staging_site' ) ) {
 	function cttel_is_staging_site(): bool {
@@ -18,43 +19,6 @@ if ( ! function_exists( 'cttel_is_staging_site' ) ) {
 		return str_contains( $host, 'staging.' ) || str_contains( $host, 'staging.cttel' );
 	}
 }
-
-/**
- * Enable cash-on-delivery on staging when no online gateway is configured (no card charge).
- */
-add_action(
-	'init',
-	static function (): void {
-		if ( ! cttel_is_staging_site() || ! function_exists( 'WC' ) ) {
-			return;
-		}
-		$key = 'cttel_staging_cod_bootstrapped_v2';
-		if ( get_option( $key ) ) {
-			return;
-		}
-
-		$cod = get_option( 'woocommerce_cod_settings', array() );
-		if ( ! is_array( $cod ) ) {
-			$cod = array();
-		}
-		$cod['enabled']  = 'yes';
-		$cod['title']    = $cod['title'] ?? 'پرداخت در محل';
-		$cod['description'] = $cod['description'] ?? 'پرداخت نقدی هنگام تحویل (تست استیجینگ).';
-		update_option( 'woocommerce_cod_settings', $cod );
-
-		$order = get_option( 'woocommerce_gateway_order', array() );
-		if ( ! is_array( $order ) ) {
-			$order = array();
-		}
-		if ( ! in_array( 'cod', $order, true ) ) {
-			array_unshift( $order, 'cod' );
-			update_option( 'woocommerce_gateway_order', $order );
-		}
-
-		update_option( $key, 1 );
-	},
-	20
-);
 
 /**
  * Staging-only JSON audit (no production): ?cttel_staging_wc_audit=snapshot
@@ -77,7 +41,9 @@ add_action(
 					'total'         => WC()->cart->get_total( 'edit' ),
 				);
 			}
-			$snap['available_gateway_ids'] = array_keys( WC()->payment_gateways()->get_available_payment_gateways() );
+			$snap['available_gateway_ids']      = array_keys( WC()->payment_gateways()->get_available_payment_gateways() );
+			$snap['online_gateway_configured']  = function_exists( 'cttel_wc_online_gateway_configured' ) && cttel_wc_online_gateway_configured();
+			$snap['offline_gateways_blocked']   = function_exists( 'cttel_wc_offline_gateway_ids' ) ? cttel_wc_offline_gateway_ids() : array();
 			wp_send_json( $snap, 200 );
 		}
 		if ( 'full' === $mode ) {
