@@ -86,7 +86,12 @@ $count = (int) $product->get_review_count();
 		?>
 		<div id="review_form_wrapper" class="cttel-ms-reviews-form-wrap" hidden>
 			<div id="review_form">
-				<?php comment_form( apply_filters( 'woocommerce_product_review_comment_form_args', $comment_form ) ); ?>
+				<?php
+				if ( function_exists( 'wc_get_template' ) && 'yes' === get_option( 'woocommerce_enable_review_rating' ) ) {
+					wc_get_template( 'single-product/review-rating.php' );
+				}
+				comment_form( apply_filters( 'woocommerce_product_review_comment_form_args', $comment_form ) );
+				?>
 			</div>
 		</div>
 	<?php else : ?>
