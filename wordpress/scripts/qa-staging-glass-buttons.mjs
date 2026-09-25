@@ -11,9 +11,12 @@ function ok(k, v) {
 async function glassOnButton(page, selector) {
   return page.$eval(selector, (el) => {
     const s = getComputedStyle(el);
+    const backdrop = s.backdropFilter || s.webkitBackdropFilter || '';
     return {
-      backdrop: s.backdropFilter || s.webkitBackdropFilter,
-      bg: s.backgroundColor,
+      backdrop,
+      hasSaturate: /saturate/i.test(backdrop),
+      hasGradient: /gradient/i.test(s.background || s.backgroundImage),
+      boxShadow: s.boxShadow,
       minH: parseFloat(s.minHeight) || el.offsetHeight,
     };
   });
