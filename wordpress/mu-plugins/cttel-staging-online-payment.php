@@ -126,7 +126,48 @@ function cttel_ms_commerce_totals_use_custom_labels(): bool {
 	if ( ! function_exists( 'cttel_is_staging_site' ) || ! cttel_is_staging_site() ) {
 		return false;
 	}
+	if ( function_exists( 'is_cart' ) && is_cart() ) {
+		return true;
+	}
+	if ( function_exists( 'is_checkout' ) && is_checkout() ) {
+		return true;
+	}
+	if ( wp_doing_ajax() && isset( $_POST['wc-ajax'] ) && 'update_order_review' === (string) wp_unslash( $_POST['wc-ajax'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		return true;
+	}
+	$uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+	if ( str_contains( $uri, '/checkout' ) || str_contains( $uri, '/cart' ) ) {
+		return true;
+	}
 	return function_exists( 'cttel_ms_is_commerce_flow_page' ) && cttel_ms_is_commerce_flow_page();
+}
+
+/**
+ * @return string[]
+ */
+function cttel_ms_commerce_total_label_map(): array {
+	return array(
+		'Subtotal'              => 'جمع محصولات',
+		'جمع جزء'               => 'جمع محصولات',
+		'Cart subtotal'         => 'جمع محصولات',
+		'Shipping'              => 'هزینه ارسال',
+		'هزینه حمل و نقل'       => 'هزینه ارسال',
+		'Total'                 => 'مبلغ قابل پرداخت آنلاین',
+		'Order total'           => 'مبلغ قابل پرداخت آنلاین',
+		'جمع کل'                => 'مبلغ قابل پرداخت آنلاین',
+	);
+}
+
+/**
+ * @param string $label
+ * @return string
+ */
+function cttel_ms_apply_commerce_total_label( $label ): string {
+	if ( ! is_string( $label ) || ! cttel_ms_commerce_totals_use_custom_labels() ) {
+		return is_string( $label ) ? $label : '';
+	}
+	$map = cttel_ms_commerce_total_label_map();
+	return $map[ $label ] ?? $label;
 }
 
 add_filter(
@@ -135,21 +176,35 @@ add_filter(
 		if ( ! is_string( $translated ) || ! is_string( $text ) || ! is_string( $domain ) ) {
 			return $translated;
 		}
-		if ( ! cttel_ms_commerce_totals_use_custom_labels() || 'woocommerce' !== $domain ) {
+		if ( ! function_exists( 'cttel_is_staging_site' ) || ! cttel_is_staging_site() || 'woocommerce' !== $domain ) {
 			return $translated;
 		}
-		$map = array(
-			'Subtotal'    => 'جمع محصولات',
-			'جمع جزء'     => 'جمع محصولات',
-			'Shipping'    => 'هزینه ارسال',
-			'Total'       => 'مبلغ قابل پرداخت آنلاین',
-			'Order total' => 'مبلغ قابل پرداخت آنلاین',
-		);
+		if ( ! cttel_ms_commerce_totals_use_custom_labels() ) {
+			return $translated;
+		}
+		$map = cttel_ms_commerce_total_label_map();
 		return $map[ $text ] ?? ( $map[ $translated ] ?? $translated );
 	},
-	20,
+	999,
 	3
 );
+
+foreach (
+	array(
+		'woocommerce_cart_subtotal_label',
+		'woocommerce_cart_shipping_label',
+		'woocommerce_cart_total_label',
+		'woocommerce_order_subtotal_to_display',
+	) as $cttel_total_label_hook
+) {
+	add_filter(
+		$cttel_total_label_hook,
+		static function ( $label ) {
+			return cttel_ms_apply_commerce_total_label( $label );
+		},
+		20
+	);
+}
 
 add_filter(
 	'woocommerce_get_order_item_totals',
