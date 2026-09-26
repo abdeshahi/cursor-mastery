@@ -2,6 +2,12 @@ name: Audit production WooCommerce (read-only)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - cursor/shop-listing-pdp-72ff
+    paths:
+      - '.github/workflows/audit-production-readonly.yml'
+      - 'wordpress/scripts/production-wc-audit.php'
 
 jobs:
   audit:
