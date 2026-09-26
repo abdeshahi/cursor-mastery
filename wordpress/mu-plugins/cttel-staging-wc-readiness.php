@@ -227,9 +227,12 @@ function cttel_staging_wc_zarinpal_audit(): array {
 		$audit['gateway_registered'] = isset( $all['WC_ZPal'] );
 		$available                     = WC()->payment_gateways()->get_available_payment_gateways();
 		$audit['available_at_checkout'] = isset( $available['WC_ZPal'] );
-		if ( WC()->api_request_url ) {
+		if ( is_callable( array( WC(), 'api_request_url' ) ) ) {
 			$audit['callback_base_url'] = WC()->api_request_url( 'WC_ZPal' );
 		}
+	}
+	if ( empty( $audit['callback_base_url'] ) && function_exists( 'home_url' ) ) {
+		$audit['callback_base_url'] = home_url( '/?wc-api=WC_ZPal' );
 	}
 
 	return $audit;
