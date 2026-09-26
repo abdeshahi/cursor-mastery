@@ -1,0 +1,39 @@
+name: Staging ZarinPal gateway setup
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - cursor/shop-listing-pdp-72ff
+    paths:
+      - '.github/workflows/staging-zarinpal-setup.yml'
+      - 'wordpress/scripts/staging-install-zarinpal.sh'
+      - 'wordpress/scripts/configure-staging-zarinpal-nonsecrets.php'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Install ZarinPal on staging (no credentials in repo or logs)
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          STAGING_SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          STAGING_WP_CONTAINER: wp_staging_app
+          ZARINPAL_PLUGIN_VERSION: "5.1.1"
+        run: |
+          if [ -z "${VPS_PASSWORD}" ] && [ -z "${STAGING_SSH_PRIVATE_KEY}" ]; then
+            echo "::error::Set GitHub secret VPS_PASSWORD or STAGING_SSH_PRIVATE_KEY."
+            exit 1
+          fi
+          if [ "${STAGING_WP_CONTAINER}" != "wp_staging_app" ]; then
+            echo "::error::Refusing: must target wp_staging_app only."
+            exit 1
+          fi
+          chmod +x wordpress/scripts/staging-install-zarinpal.sh
+          cd wordpress && ./scripts/staging-install-zarinpal.sh

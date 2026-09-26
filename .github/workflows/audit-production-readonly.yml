@@ -1,0 +1,47 @@
+name: Audit production WooCommerce (read-only)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - cursor/shop-listing-pdp-72ff
+    paths:
+      - '.github/workflows/audit-production-readonly.yml'
+      - 'wordpress/scripts/production-wc-audit.php'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Production read-only WP-CLI audit (wp_app)
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          STAGING_SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          HOST="${STAGING_SSH_HOST:-root@185.18.214.66}"
+          CONTAINER="wp_app"
+          PORT="${STAGING_SSH_PORT:-22}"
+          SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o ConnectTimeout=25 -p "${PORT}")
+          if [ -n "${STAGING_SSH_PRIVATE_KEY:-}" ]; then
+            KEY_FILE="$(mktemp)"
+            printf '%s\n' "${STAGING_SSH_PRIVATE_KEY}" > "${KEY_FILE}"
+            chmod 600 "${KEY_FILE}"
+            SSH=(ssh -i "${KEY_FILE}" "${SSH_OPTS[@]}")
+          elif [ -n "${VPS_PASSWORD:-}" ]; then
+            SSH=(sshpass -p "${VPS_PASSWORD}" ssh "${SSH_OPTS[@]}")
+          else
+            echo "::error::Missing VPS credentials"
+            exit 1
+          fi
+          "${SSH[@]}" "${HOST}" "docker ps --format '{{.Names}}' | grep -qx '${CONTAINER}'"
+          echo "=== PRODUCTION AUDIT JSON ==="
+          "${SSH[@]}" "${HOST}" "docker exec -i ${CONTAINER} wp eval-file - --allow-root --path=/var/www/html" \
+            < wordpress/scripts/production-wc-audit.php
+          echo "=== END AUDIT ==="
