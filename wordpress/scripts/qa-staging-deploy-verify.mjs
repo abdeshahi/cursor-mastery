@@ -3,7 +3,7 @@ import fs from 'fs';
 
 const BASE = 'https://staging.cttel.ir';
 const OUT = '/opt/cursor/artifacts/screenshots/staging-1438fa8';
-const R = { deployedCommit: '1438fa8' };
+const R = { deployedCommit: '1438fa8 (+ staging hotfix 123f2c9 empty-cart template)' };
 
 async function emptyCartCheck(page, label) {
   await page.goto(`${BASE}/cart/?empty-cart=1`, { waitUntil: 'networkidle', timeout: 120000 }).catch(() => {});
