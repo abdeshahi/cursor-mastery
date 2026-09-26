@@ -12,6 +12,7 @@ on:
       - 'wordpress/mu-plugins/cttel-staging-wc-readiness.php'
       - 'wordpress/mu-plugins/cttel-staging-shipping-postpaid.php'
       - 'wordpress/mu-plugins/cttel-staging-online-payment.php'
+      - 'wordpress/mu-plugins/cttel-staging-checkout-fields.php'
       - 'wordpress/mu-plugins/cttel-catalog.php'
       - 'wordpress/mu-plugins/cttel-storefront-*.php'
       - 'wordpress/mu-plugins/cttel-mobile-storefront.css'
@@ -20,6 +21,7 @@ on:
       - 'wordpress/mu-plugins/templates/cttel-categories-hub.php'
       - 'wordpress/mu-plugins/templates/content-product-ms.php'
       - 'wordpress/mu-plugins/templates/cttel-ms-single-product-reviews.php'
+      - 'wordpress/mu-plugins/templates/cttel-ms-cart-empty.php'
       - 'wordpress/scripts/sync-staging-homepage.sh'
 
 jobs:

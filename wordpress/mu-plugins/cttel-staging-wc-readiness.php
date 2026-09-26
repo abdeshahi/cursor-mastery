@@ -9,6 +9,7 @@ defined( 'ABSPATH' ) || exit;
 
 require_once __DIR__ . '/cttel-staging-shipping-postpaid.php';
 require_once __DIR__ . '/cttel-staging-online-payment.php';
+require_once __DIR__ . '/cttel-staging-checkout-fields.php';
 
 if ( ! function_exists( 'cttel_is_staging_site' ) ) {
 	function cttel_is_staging_site(): bool {
