@@ -65,13 +65,23 @@ add_action(
 			wp_add_inline_script(
 				'wc-cart',
 				"(function ($) {
-	$(function () {
+	function cttelMsPruneDuplicateCartQty() {
 		var \$form = $('.woocommerce-cart-form');
 		if (!\$form.length || !$('body').hasClass('cttel-ms-cart')) {
 			return;
 		}
 		\$form.find('.product-mobile-actions input.qty').remove();
+		\$form.find('tr.cart_item').each(function () {
+			var \$qty = $(this).find('td.product-quantity input.qty');
+			if (\$qty.length > 1) {
+				\$qty.slice(1).remove();
+			}
+		});
+	}
+	$(function () {
+		cttelMsPruneDuplicateCartQty();
 	});
+	$(document.body).on('updated_wc_div updated_cart_totals', cttelMsPruneDuplicateCartQty);
 })(jQuery);",
 				'after'
 			);
