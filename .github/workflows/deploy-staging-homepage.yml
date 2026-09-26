@@ -13,6 +13,7 @@ on:
       - 'wordpress/mu-plugins/cttel-staging-shipping-postpaid.php'
       - 'wordpress/mu-plugins/cttel-staging-online-payment.php'
       - 'wordpress/mu-plugins/cttel-staging-checkout-fields.php'
+      - 'wordpress/mu-plugins/cttel-ms-seed-product-photos.php'
       - 'wordpress/mu-plugins/cttel-catalog.php'
       - 'wordpress/mu-plugins/cttel-storefront-*.php'
       - 'wordpress/mu-plugins/cttel-mobile-storefront.css'

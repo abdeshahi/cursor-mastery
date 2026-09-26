@@ -39,6 +39,13 @@ trap cleanup EXIT
 echo "==> Staging ZarinPal install (${PLUGIN_SLUG} ${PLUGIN_VERSION}) on ${CONTAINER}..."
 "${SSH[@]}" "${HOST}" "docker ps --format '{{.Names}}' | grep -qx '${CONTAINER}'"
 
+# WP-CLI-safe mu-plugin (seed script must not run on every CLI bootstrap).
+if [[ -f "${ROOT}/mu-plugins/cttel-ms-seed-product-photos.php" ]]; then
+	echo "==> Sync WP-CLI-safe seed mu-plugin..."
+	"${SSH[@]}" "${HOST}" "docker exec -i ${CONTAINER} tee /var/www/html/wp-content/mu-plugins/cttel-ms-seed-product-photos.php" \
+		< "${ROOT}/mu-plugins/cttel-ms-seed-product-photos.php" >/dev/null
+fi
+
 ensure_wp_cli() {
 	"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} sh -c '\
 		if command -v wp >/dev/null 2>&1; then exit 0; fi; \

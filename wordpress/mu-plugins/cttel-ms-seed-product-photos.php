@@ -13,7 +13,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
-if ( ! class_exists( 'WP_CLI' ) ) {
+if ( ! class_exists( 'WP_CLI' ) || ! ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+	return;
+}
+
+/**
+ * Run only when explicitly invoked via `wp eval-file …/cttel-ms-seed-product-photos.php`.
+ */
+function cttel_ms_seed_photos_cli_invoked(): bool {
+	if ( ! isset( $GLOBALS['argv'] ) || ! is_array( $GLOBALS['argv'] ) ) {
+		return false;
+	}
+	foreach ( $GLOBALS['argv'] as $part ) {
+		if ( is_string( $part ) && str_contains( $part, 'cttel-ms-seed-product-photos.php' ) ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+if ( ! cttel_ms_seed_photos_cli_invoked() ) {
 	return;
 }
 
