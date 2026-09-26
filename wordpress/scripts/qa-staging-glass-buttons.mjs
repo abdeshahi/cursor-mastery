@@ -36,7 +36,11 @@ async function glassOnCard(page) {
     await page.goto(BASE, { waitUntil: 'networkidle', timeout: 90000 });
     const primary = await glassOnButton(page, '.cttel-ms-hero__actions .cttel-ms-btn--primary');
     const cardBlur = await glassOnCard(page);
-    ok(`GLASS_PRIMARY_${width}`, primary.backdrop && primary.backdrop !== 'none' ? 'blur' : 'solid-fallback');
+    ok(
+      `GLASS_PRIMARY_${width}`,
+      primary.backdrop && primary.backdrop !== 'none' ? (primary.hasSaturate ? 'blur+saturate' : 'blur') : 'solid-fallback'
+    );
+    ok(`GRADIENT_PRIMARY_${width}`, primary.hasGradient ? 'YES' : 'NO');
     ok(`NO_CARD_BLUR_${width}`, !cardBlur || cardBlur === 'none' ? 'YES' : 'NO');
     ok(`MIN_TOUCH_${width}`, primary.minH >= 44 ? 'YES' : 'NO');
     const t0 = Date.now();

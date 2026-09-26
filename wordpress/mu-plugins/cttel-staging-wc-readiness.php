@@ -167,13 +167,72 @@ function cttel_staging_wc_audit_snapshot(): array {
  */
 function cttel_staging_wc_full_audit(): array {
 	$out = array(
+		'environment'      => array(
+			'wordpress'   => get_bloginfo( 'version' ),
+			'woocommerce' => defined( 'WC_VERSION' ) ? WC_VERSION : null,
+			'php'         => PHP_VERSION,
+		),
 		'shipping'         => cttel_staging_wc_shipping_audit(),
 		'payment_plugins'  => cttel_staging_wc_payment_plugin_audit(),
+		'zarinpal'         => cttel_staging_wc_zarinpal_audit(),
 		'core_gateways'    => cttel_staging_wc_audit_snapshot()['gateways'] ?? array(),
 		'test_order_cleanup' => get_option( 'cttel_staging_orders_136_137_trashed', array() ),
 	);
 
 	return $out;
+}
+
+/**
+ * ZarinPal gateway audit (no secrets, no merchant values).
+ *
+ * @return array<string, mixed>
+ */
+function cttel_staging_wc_zarinpal_audit(): array {
+	$audit = array(
+		'plugin_slug'          => 'zarinpal-woocommerce-payment-gateway',
+		'plugin_installed'     => file_exists( WP_PLUGIN_DIR . '/zarinpal-woocommerce-payment-gateway/index.php' ),
+		'plugin_active'        => false,
+		'plugin_version'       => null,
+		'gateway_id'           => 'WC_ZPal',
+		'gateway_registered'   => false,
+		'gateway_enabled'      => 'no',
+		'sandbox'              => 'no',
+		'merchant_configured'  => false,
+		'access_token_present' => false,
+		'available_at_checkout' => false,
+		'callback_base_url'    => null,
+		'return_handler'       => 'woocommerce_api_WC_ZPal',
+	);
+
+	if ( ! function_exists( 'is_plugin_active' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+	$plugin_file = 'zarinpal-woocommerce-payment-gateway/index.php';
+	$audit['plugin_active'] = is_plugin_active( $plugin_file );
+	if ( $audit['plugin_installed'] && function_exists( 'get_plugin_data' ) ) {
+		$data = get_plugin_data( WP_PLUGIN_DIR . '/zarinpal-woocommerce-payment-gateway/index.php', false, false );
+		$audit['plugin_version'] = $data['Version'] ?? null;
+	}
+
+	$settings = get_option( 'woocommerce_WC_ZPal_settings', array() );
+	if ( is_array( $settings ) ) {
+		$audit['gateway_enabled']     = (string) ( $settings['enabled'] ?? 'no' );
+		$audit['sandbox']             = (string) ( $settings['sandbox'] ?? 'no' );
+		$audit['merchant_configured'] = '' !== trim( (string) ( $settings['merchantcode'] ?? '' ) );
+		$audit['access_token_present'] = '' !== trim( (string) ( $settings['access_token'] ?? '' ) );
+	}
+
+	if ( function_exists( 'WC' ) && WC()->payment_gateways() ) {
+		$all = WC()->payment_gateways()->payment_gateways();
+		$audit['gateway_registered'] = isset( $all['WC_ZPal'] );
+		$available                     = WC()->payment_gateways()->get_available_payment_gateways();
+		$audit['available_at_checkout'] = isset( $available['WC_ZPal'] );
+		if ( WC()->api_request_url ) {
+			$audit['callback_base_url'] = WC()->api_request_url( 'WC_ZPal' );
+		}
+	}
+
+	return $audit;
 }
 
 /**
@@ -453,6 +512,9 @@ function cttel_staging_wc_enrich_payment_plugin_entry( array &$entry, string $pl
 		$slug . '_settings',
 		'woocommerce_ir_gateway_settings',
 	);
+	if ( str_contains( $plugin_file, 'zarinpal' ) ) {
+		array_unshift( $option_keys, 'woocommerce_WC_ZPal_settings' );
+	}
 	foreach ( $option_keys as $key ) {
 		$settings = get_option( $key );
 		if ( ! is_array( $settings ) ) {
