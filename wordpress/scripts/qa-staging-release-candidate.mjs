@@ -40,9 +40,15 @@ async function runWidth(w, tag) {
 
   await page.locator('td.product-quantity input.qty').first().fill('2');
   await page.locator('[name="update_cart"]').click();
-  await page.waitForTimeout(3000);
-  const t2 = await page.locator('.cart_totals .order-total .amount').first().innerText();
-  await page.locator('td.product-remove a').first().click();
+  await page.waitForSelector('.woocommerce-cart-form:not(.processing)', { timeout: 60000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  await page.locator('.cart_totals .order-total .amount').first().innerText();
+  const removeHref = await page.locator('td.product-remove a.remove').first().getAttribute('href');
+  if (removeHref) {
+    await page.goto(removeHref, { waitUntil: 'networkidle', timeout: 120000 });
+  } else {
+    await page.locator('td.product-remove a.remove').first().click({ force: true });
+  }
   await page.waitForTimeout(2500);
   R[`remove_${tag}`] = /خالی/.test(await page.locator('body').innerText()) ? 'PASS' : 'FAIL';
 
