@@ -39,13 +39,32 @@ trap cleanup EXIT
 echo "==> Staging ZarinPal install (${PLUGIN_SLUG} ${PLUGIN_VERSION}) on ${CONTAINER}..."
 "${SSH[@]}" "${HOST}" "docker ps --format '{{.Names}}' | grep -qx '${CONTAINER}'"
 
-"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} wp plugin install ${PLUGIN_SLUG} --version=${PLUGIN_VERSION} --activate --force --allow-root --path=/var/www/html"
+ensure_wp_cli() {
+	"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} sh -c '\
+		if command -v wp >/dev/null 2>&1; then exit 0; fi; \
+		if [ -x /usr/local/bin/wp ]; then exit 0; fi; \
+		curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
+		chmod +x /usr/local/bin/wp'"
+}
+
+run_wp() {
+	ensure_wp_cli
+	local quoted=""
+	for arg in "$@"; do
+		quoted+=" $(printf '%q' "$arg")"
+	done
+	# shellcheck disable=SC2086
+	"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} wp${quoted} --allow-root --path=/var/www/html"
+}
+
+run_wp plugin install "${PLUGIN_SLUG}" --version="${PLUGIN_VERSION}" --activate --force
 
 echo "==> Non-secret gateway configuration..."
+ensure_wp_cli
 "${SSH[@]}" "${HOST}" "docker exec -i ${CONTAINER} wp eval-file - --allow-root --path=/var/www/html" \
 	< "${ROOT}/scripts/configure-staging-zarinpal-nonsecrets.php"
 
 echo "==> Flush caches (staging)..."
-"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} wp cache flush --allow-root --path=/var/www/html 2>/dev/null || true"
+run_wp cache flush 2>/dev/null || true
 
 echo "Staging ZarinPal setup complete."
