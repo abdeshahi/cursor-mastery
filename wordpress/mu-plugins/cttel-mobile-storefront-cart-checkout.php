@@ -41,6 +41,21 @@ add_filter(
  * Prefer classic WooCommerce cart/checkout shortcodes over block templates (native totals, coupons, gateways).
  */
 add_filter(
+	'woocommerce_locate_template',
+	static function ( string $template, string $template_name, string $template_path ): string {
+		if ( 'cart/cart-empty.php' === $template_name && cttel_ms_is_cart_page() ) {
+			$custom = __DIR__ . '/templates/cttel-ms-cart-empty.php';
+			if ( is_readable( $custom ) ) {
+				return $custom;
+			}
+		}
+		return $template;
+	},
+	20,
+	3
+);
+
+add_filter(
 	'the_content',
 	static function ( string $content ): string {
 		if ( ! cttel_ms_is_commerce_flow_page() ) {
@@ -179,32 +194,64 @@ add_action(
 	5
 );
 
+/**
+ * Persian checkout privacy blurb (staging classic checkout).
+ *
+ * @return string
+ */
+function cttel_ms_checkout_privacy_policy_text(): string {
+	$link = function_exists( 'wc_privacy_policy_page_link' ) ? wc_privacy_policy_page_link() : '';
+	if ( ! $link ) {
+		return __(
+			'اطلاعات شخصی شما برای پردازش سفارش، بهبود تجربه خرید شما در این فروشگاه و سایر موارد مرتبط با خدمات فروشگاه استفاده می‌شود.',
+			'cttel-store'
+		);
+	}
+	return wp_kses_post(
+		sprintf(
+			/* translators: %s: privacy policy page link */
+			__( 'اطلاعات شخصی شما برای پردازش سفارش، بهبود تجربه خرید شما در این فروشگاه و سایر موارد توضیح‌داده‌شده در %s استفاده می‌شود.', 'cttel-store' ),
+			$link
+		)
+	);
+}
+
 add_filter(
 	'woocommerce_get_privacy_policy_text',
 	static function ( string $text, string $type ): string {
 		if ( ! function_exists( 'cttel_is_staging_site' ) || ! cttel_is_staging_site() || 'checkout' !== $type ) {
 			return $text;
 		}
-		if ( ! str_contains( $text, 'personal data' ) && ! str_contains( $text, 'Your personal data' ) ) {
-			return $text;
-		}
-		$link = function_exists( 'wc_privacy_policy_page_link' ) ? wc_privacy_policy_page_link() : '';
-		if ( ! $link ) {
-			return __(
-				'اطلاعات شخصی شما برای پردازش سفارش، بهبود تجربه خرید شما در این فروشگاه و سایر موارد مرتبط با خدمات فروشگاه استفاده می‌شود.',
-				'cttel-store'
-			);
-		}
-		return wp_kses_post(
-			sprintf(
-				/* translators: %s: privacy policy page link */
-				__( 'اطلاعات شخصی شما برای پردازش سفارش، بهبود تجربه خرید شما در این فروشگاه و سایر موارد توضیح‌داده‌شده در %s استفاده می‌شود.', 'cttel-store' ),
-				$link
-			)
-		);
+		return cttel_ms_checkout_privacy_policy_text();
 	},
 	20,
 	2
+);
+
+add_filter(
+	'woocommerce_checkout_privacy_policy_text',
+	static function ( string $text ): string {
+		if ( ! function_exists( 'cttel_is_staging_site' ) || ! cttel_is_staging_site() || ! cttel_ms_is_checkout_page() ) {
+			return $text;
+		}
+		return cttel_ms_checkout_privacy_policy_text();
+	},
+	20
+);
+
+add_filter(
+	'gettext',
+	static function ( $translated, $text, $domain ) {
+		if ( ! function_exists( 'cttel_is_staging_site' ) || ! cttel_is_staging_site() || 'woocommerce' !== $domain || ! cttel_ms_is_checkout_page() ) {
+			return $translated;
+		}
+		if ( 'Your personal data will be used to process your order, support your experience throughout this website, and for other purposes described in our %s.' === $text ) {
+			return 'اطلاعات شخصی شما برای پردازش سفارش، بهبود تجربه خرید شما در این فروشگاه و سایر موارد توضیح‌داده‌شده در %s استفاده می‌شود.';
+		}
+		return $translated;
+	},
+	999,
+	3
 );
 
 add_filter(

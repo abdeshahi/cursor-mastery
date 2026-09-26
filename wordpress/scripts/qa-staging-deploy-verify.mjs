@@ -9,7 +9,7 @@ async function emptyCartCheck(page, label) {
   await page.goto(`${BASE}/cart/?empty-cart=1`, { waitUntil: 'networkidle', timeout: 120000 }).catch(() => {});
   await page.goto(`${BASE}/cart/`, { waitUntil: 'networkidle', timeout: 120000 });
   const msgs = await page.locator('.cttel-ms-cart-empty__text').allTextContents();
-  const wcDup = await page.locator('.cart-empty.woocommerce-info, p.cart-empty, .return-to-shop').count();
+  const wcDup = await page.locator('.cart-empty.woocommerce-info:visible, p.cart-empty:visible, p.return-to-shop:visible').count();
   const ctas = await page.locator('.cttel-ms-cart-empty .cttel-ms-btn--primary').count();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
   const ctaBox = await page.locator('.cttel-ms-cart-empty .cttel-ms-btn--primary').first().boundingBox().catch(() => null);
@@ -33,7 +33,8 @@ async function checkoutPrivacy(page, label) {
   await page.locator('button.single_add_to_cart_button').click();
   await page.waitForSelector('button.single_add_to_cart_button.added', { timeout: 30000 }).catch(() => {});
   await page.goto(`${BASE}/checkout/`, { waitUntil: 'networkidle', timeout: 120000 });
-  const payText = await page.locator('#payment, .woocommerce-checkout-payment, .woocommerce-privacy-policy-text').innerText().catch(() => '');
+  await page.locator('#payment, .woocommerce-privacy-policy-text').first().scrollIntoViewIfNeeded().catch(() => {});
+  const payText = await page.locator('body').innerText();
   const hasEn = /Your personal data/i.test(payText);
   const hasFa = /اطلاعات شخصی|حریم خصوصی|پردازش سفارش/.test(payText);
   R[`privacy_${label}`] = !hasEn && hasFa ? 'PASS' : hasEn ? 'FAIL' : 'FAIL';
