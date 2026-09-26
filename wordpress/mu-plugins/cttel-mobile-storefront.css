@@ -2455,22 +2455,31 @@ body.cttel-ms-cart .coupon input[type="text"] {
 	box-sizing: border-box;
 }
 
-body.cttel-ms-cart-empty {
+body.cttel-ms-cart-is-empty .woocommerce-cart-form,
+body.cttel-ms-cart-is-empty .cart_totals,
+body.cttel-ms-cart-is-empty .return-to-shop,
+body.cttel-ms-cart-is-empty .cart-empty.woocommerce-info,
+body.cttel-ms-cart-is-empty p.cart-empty {
+	display: none !important;
+}
+
+body.cttel-ms-cart-is-empty .cttel-ms-cart-empty {
 	text-align: center;
-	padding: 24px 12px 16px;
+	padding: 32px 16px 24px;
+	margin: 12px 0 0;
 }
 
 .cttel-ms-cart-empty__text {
-	margin: 0 0 12px;
-	font-size: 0.875rem;
-	color: var(--cttel-ms-muted);
+	margin: 0 0 16px;
+	font-size: 0.9375rem;
+	line-height: 1.55;
+	color: var(--cttel-ms-text);
 }
 
-.cttel-ms-cart-empty__secondary {
-	display: inline-block;
-	margin-top: 10px;
-	font-size: 0.8125rem;
-	color: var(--cttel-ms-accent);
+body.cttel-ms-cart-is-empty .cttel-ms-cart-empty .cttel-ms-btn--primary {
+	display: inline-flex;
+	min-width: min(100%, 280px);
+	justify-content: center;
 }
 
 body.cttel-ms-checkout form.checkout {

@@ -25,6 +25,9 @@ add_filter(
 		if ( cttel_ms_is_cart_page() ) {
 			$classes[] = 'cttel-mobile-storefront';
 			$classes[] = 'cttel-ms-cart';
+			if ( function_exists( 'WC' ) && WC()->cart && WC()->cart->is_empty() ) {
+				$classes[] = 'cttel-ms-cart-is-empty';
+			}
 		}
 		if ( cttel_ms_is_checkout_page() ) {
 			$classes[] = 'cttel-mobile-storefront';
@@ -140,6 +143,17 @@ function cttel_ms_commerce_render_toolbar( string $title ): void {
 	<?php
 }
 
+add_action(
+	'wp',
+	static function (): void {
+		if ( ! cttel_ms_is_cart_page() ) {
+			return;
+		}
+		remove_action( 'woocommerce_cart_is_empty', 'wc_empty_cart_message', 10 );
+	},
+	5
+);
+
 add_filter(
 	'woocommerce_cart_empty_message',
 	static function (): string {
@@ -153,15 +167,12 @@ add_action(
 		if ( ! cttel_ms_is_cart_page() ) {
 			return;
 		}
-		$shop = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/shop/' );
 		?>
 		<div class="cttel-ms-cart-empty">
 			<p class="cttel-ms-cart-empty__text"><?php esc_html_e( 'سبد خرید شما خالی است.', 'cttel-store' ); ?></p>
 			<a class="cttel-ms-btn cttel-ms-btn--primary" href="<?php echo esc_url( cttel_mobile_storefront_categories_url() ); ?>">
-				<?php esc_html_e( 'مشاهده محصولات', 'cttel-store' );
-				?>
+				<?php esc_html_e( 'مشاهده محصولات', 'cttel-store' ); ?>
 			</a>
-			<a class="cttel-ms-cart-empty__secondary" href="<?php echo esc_url( $shop ); ?>"><?php esc_html_e( 'ادامه خرید', 'cttel-store' ); ?></a>
 		</div>
 		<?php
 	},
@@ -169,10 +180,31 @@ add_action(
 );
 
 add_filter(
-	'woocommerce_return_to_shop_text',
-	static function (): string {
-		return __( 'ادامه خرید', 'cttel-store' );
-	}
+	'woocommerce_get_privacy_policy_text',
+	static function ( string $text, string $type ): string {
+		if ( ! function_exists( 'cttel_is_staging_site' ) || ! cttel_is_staging_site() || 'checkout' !== $type ) {
+			return $text;
+		}
+		if ( ! str_contains( $text, 'personal data' ) && ! str_contains( $text, 'Your personal data' ) ) {
+			return $text;
+		}
+		$link = function_exists( 'wc_privacy_policy_page_link' ) ? wc_privacy_policy_page_link() : '';
+		if ( ! $link ) {
+			return __(
+				'اطلاعات شخصی شما برای پردازش سفارش، بهبود تجربه خرید شما در این فروشگاه و سایر موارد مرتبط با خدمات فروشگاه استفاده می‌شود.',
+				'cttel-store'
+			);
+		}
+		return wp_kses_post(
+			sprintf(
+				/* translators: %s: privacy policy page link */
+				__( 'اطلاعات شخصی شما برای پردازش سفارش، بهبود تجربه خرید شما در این فروشگاه و سایر موارد توضیح‌داده‌شده در %s استفاده می‌شود.', 'cttel-store' ),
+				$link
+			)
+		);
+	},
+	20,
+	2
 );
 
 add_filter(
