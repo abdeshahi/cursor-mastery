@@ -182,7 +182,23 @@ if ( is_dir( $plugin_dir ) ) {
 		}
 	}
 	$report['diagnostics']['plugin_redirect_flow'] = array_slice( $report['diagnostics']['plugin_redirect_flow'], 0, 80 );
+
+	// Source of the receipt-page handler that should send the customer to ZarinPal.
+	$gateway_file = $plugin_dir . '/class-wc-gateway-zarinpal.php';
+	if ( is_readable( $gateway_file ) ) {
+		$lines = file( $gateway_file );
+		foreach ( $lines as $n => $line ) {
+			if ( false !== strpos( $line, 'function Send_to_ZarinPal_Gateway' ) ) {
+				$report['diagnostics']['send_to_gateway_source'] = array();
+				foreach ( array_slice( $lines, $n, 110, true ) as $m => $src ) {
+					$report['diagnostics']['send_to_gateway_source'][] = ( $m + 1 ) . ': ' . substr( rtrim( $src ), 0, 220 );
+				}
+				break;
+			}
+		}
+	}
 }
+$report['diagnostics']['php_output_buffering'] = ini_get( 'output_buffering' );
 
 // Latest ZarinPal orders: status and plugin notes only (no customer data).
 $report['diagnostics']['recent_zarinpal_orders'] = array();
