@@ -57,6 +57,22 @@ $settings['fee_payer']    = 'merchant';
 $settings['success_message'] = $settings['success_message'] ?? 'با تشکر از شما. سفارش شما با موفقیت پرداخت شد.';
 $settings['failed_message']  = $settings['failed_message'] ?? 'پرداخت شما ناموفق بوده است. لطفاً مجدداً تلاش نمایید.';
 // Merchant ID and access_token intentionally not set here (owner via WP Admin only).
+// Only normalize the owner-entered merchant ID: strip whitespace and invisible marks
+// (e.g. RTL marks from mobile paste). Saved only if the result is a 36-char UUID; never printed.
+$report['gateway']['merchant_format'] = 'missing';
+$raw_merchant = (string) ( $settings['merchantcode'] ?? '' );
+if ( '' !== $raw_merchant ) {
+	$clean_merchant = (string) preg_replace( '/[\s\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}\x{FEFF}\x{00A0}]+/u', '', $raw_merchant );
+	$is_uuid        = 1 === preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $clean_merchant );
+	if ( $is_uuid && $clean_merchant !== $raw_merchant ) {
+		$settings['merchantcode']              = $clean_merchant;
+		$report['gateway']['merchant_format'] = 'cleaned_valid_uuid';
+	} elseif ( $is_uuid ) {
+		$report['gateway']['merchant_format'] = 'valid_uuid';
+	} else {
+		$report['gateway']['merchant_format'] = 'invalid_after_cleanup_length_' . strlen( $clean_merchant );
+	}
+}
 
 if ( empty( trim( (string) ( $settings['merchantcode'] ?? '' ) ) ) ) {
 	$settings['enabled'] = 'no';
