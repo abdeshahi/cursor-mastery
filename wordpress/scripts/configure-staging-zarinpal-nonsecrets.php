@@ -200,6 +200,55 @@ if ( is_dir( $plugin_dir ) ) {
 }
 $report['diagnostics']['php_output_buffering'] = ini_get( 'output_buffering' );
 
+// Helper's requestPayment() source (how the API call is built and when it throws).
+$helper_file = WP_PLUGIN_DIR . '/zarinpal-woocommerce-payment-gateway/ZarinpalHelperClass.php';
+if ( is_readable( $helper_file ) ) {
+	$lines = file( $helper_file );
+	foreach ( $lines as $n => $line ) {
+		if ( false !== strpos( $line, 'function requestPayment' ) ) {
+			$report['diagnostics']['request_payment_source'] = array();
+			foreach ( array_slice( $lines, $n, 70, true ) as $m => $src ) {
+				$report['diagnostics']['request_payment_source'][] = ( $m + 1 ) . ': ' . substr( rtrim( $src ), 0, 220 );
+			}
+			break;
+		}
+	}
+}
+
+// Sandbox-only test request (no money moves): capture ZarinPal's answer or error message.
+$report['diagnostics']['sandbox_request_test'] = 'skipped';
+if ( function_exists( 'WC' ) && WC()->payment_gateways() ) {
+	$gws = WC()->payment_gateways()->payment_gateways();
+	$gw  = $gws['WC_ZPal'] ?? null;
+	if ( $gw && 'yes' === $gw->get_option( 'sandbox', 'no' ) ) {
+		try {
+			$prop = new ReflectionProperty( $gw, 'zarinpal' );
+			$prop->setAccessible( true );
+			$helper    = $prop->getValue( $gw );
+			$authority = $helper->requestPayment(
+				10000,
+				add_query_arg( 'wc_order', 0, WC()->api_request_url( 'WC_ZPal' ) ),
+				'CTTEL staging diagnostic',
+				array( 'mobile' => '09120000000', 'email' => 'staging@cttel.invalid' ),
+				wp_json_encode( array( 'items' => array(), 'discount' => 0, 'total' => 1000 ) ),
+				null
+			);
+			$report['diagnostics']['sandbox_request_test'] = array(
+				'ok'               => true,
+				'authority_length' => is_string( $authority ) ? strlen( $authority ) : gettype( $authority ),
+			);
+		} catch ( Throwable $e ) {
+			$report['diagnostics']['sandbox_request_test'] = array(
+				'ok'    => false,
+				'class' => get_class( $e ),
+				'error' => substr( $e->getMessage(), 0, 500 ),
+			);
+		}
+	} else {
+		$report['diagnostics']['sandbox_request_test'] = 'skipped: sandbox is not on';
+	}
+}
+
 // Latest ZarinPal orders: status and plugin notes only (no customer data).
 $report['diagnostics']['recent_zarinpal_orders'] = array();
 if ( function_exists( 'wc_get_orders' ) ) {
