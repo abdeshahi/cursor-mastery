@@ -168,6 +168,44 @@ if ( is_dir( $plugin_dir ) ) {
 		}
 	}
 	$report['diagnostics']['plugin_conditions'] = array_slice( $report['diagnostics']['plugin_conditions'], 0, 60 );
+
+	// How the plugin sends the customer to ZarinPal (endpoints / redirect / receipt page).
+	$report['diagnostics']['plugin_redirect_flow'] = array();
+	foreach ( $iterator as $file ) {
+		if ( 'php' !== $file->getExtension() ) {
+			continue;
+		}
+		foreach ( file( $file->getPathname() ) as $n => $line ) {
+			if ( preg_match( '/receipt_page|woocommerce_receipt_|zarinpal\.com|StartPay|wp_redirect|window\.location|sandbox|process_payment|redirect\'\s*=>/i', $line ) ) {
+				$report['diagnostics']['plugin_redirect_flow'][] = substr( $file->getPathname(), strlen( $plugin_dir ) + 1 ) . ':' . ( $n + 1 ) . ': ' . substr( trim( $line ), 0, 200 );
+			}
+		}
+	}
+	$report['diagnostics']['plugin_redirect_flow'] = array_slice( $report['diagnostics']['plugin_redirect_flow'], 0, 80 );
+}
+
+// Latest ZarinPal orders: status and plugin notes only (no customer data).
+$report['diagnostics']['recent_zarinpal_orders'] = array();
+if ( function_exists( 'wc_get_orders' ) ) {
+	foreach ( wc_get_orders( array( 'payment_method' => 'WC_ZPal', 'limit' => 3, 'orderby' => 'date', 'order' => 'DESC' ) ) as $order ) {
+		$notes = array();
+		foreach ( wc_get_order_notes( array( 'order_id' => $order->get_id(), 'limit' => 10 ) ) as $note ) {
+			$notes[] = substr( wp_strip_all_tags( (string) $note->content ), 0, 300 );
+		}
+		$report['diagnostics']['recent_zarinpal_orders'][] = array(
+			'id'     => $order->get_id(),
+			'status' => $order->get_status(),
+			'total'  => $order->get_total(),
+			'notes'  => $notes,
+		);
+	}
+}
+
+// Can the server reach ZarinPal sandbox? (HTTP status only.)
+$report['diagnostics']['sandbox_reachability'] = array();
+foreach ( array( 'https://sandbox.zarinpal.com/', 'https://payment.zarinpal.com/' ) as $probe ) {
+	$res = wp_remote_get( $probe, array( 'timeout' => 15, 'redirection' => 0 ) );
+	$report['diagnostics']['sandbox_reachability'][ $probe ] = is_wp_error( $res ) ? 'error: ' . $res->get_error_message() : (int) wp_remote_retrieve_response_code( $res );
 }
 
 echo wp_json_encode( $report, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT );
