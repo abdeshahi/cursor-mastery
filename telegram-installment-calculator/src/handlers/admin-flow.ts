@@ -51,6 +51,16 @@ async function showAdminPlans(ctx: BotContext, dependencies: HandlerDependencies
   await ctx.reply('طرح موردنظر برای مدیریت را انتخاب کنید:', adminMainKeyboard(plans));
 }
 
+export async function openAdminMenu(ctx: BotContext, dependencies: HandlerDependencies): Promise<void> {
+  if (!isAdmin(ctx, dependencies.adminId)) {
+    await ctx.reply('دسترسی به این بخش مجاز نیست.');
+    return;
+  }
+
+  ctx.session = { step: 'idle' };
+  await showAdminPlans(ctx, dependencies);
+}
+
 async function showAdminSettings(ctx: BotContext, dependencies: HandlerDependencies): Promise<void> {
   const storeName = await dependencies.admin.getStoreName();
   await ctx.reply(

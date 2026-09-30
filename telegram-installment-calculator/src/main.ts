@@ -2,21 +2,15 @@ import { PrismaClient } from '@prisma/client';
 
 import { registerBotCommands } from './bot/commands.js';
 import { createBot, createBotDependencies } from './bot/create-bot.js';
-import { STORE_NAME_SETTING_KEY } from './services/admin-service.js';
+import { ensureDefaultSettings, syncDatabaseSchema } from './database/bootstrap.js';
 import { loadEnvironment } from './config/env.js';
 import { createLogger } from './config/logger.js';
-
-async function ensureDefaultSettings(db: PrismaClient): Promise<void> {
-  await db.setting.upsert({
-    where: { key: STORE_NAME_SETTING_KEY },
-    create: { key: STORE_NAME_SETTING_KEY, value: 'CTTEL' },
-    update: {},
-  });
-}
 
 async function main(): Promise<void> {
   const env = loadEnvironment();
   const logger = createLogger(env);
+  syncDatabaseSchema(logger);
+
   const db = new PrismaClient();
   await ensureDefaultSettings(db);
   const dependencies = createBotDependencies(db, env.ADMIN_TELEGRAM_ID, logger);

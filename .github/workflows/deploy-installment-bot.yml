@@ -1,0 +1,45 @@
+name: Deploy CTTEL Installment Bot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upload bot to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          source: "telegram-installment-calculator/*,telegram-installment-calculator/**/*"
+          target: /opt/cttel-installment-bot
+          strip_components: 1
+          rm: false
+
+      - name: Build and restart on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          script: |
+            set -euo pipefail
+            test -f /opt/cttel-installment-bot/.env
+            cd /opt/cttel-installment-bot
+            corepack enable || true
+            pnpm install
+            pnpm exec prisma generate
+            pnpm build
+            pnpm test
+            pnpm exec prisma db push
+            install -m 644 deploy/cttel-installment-bot.service /etc/systemd/system/cttel-installment-bot.service
+            systemctl daemon-reload
+            systemctl enable cttel-installment-bot
+            systemctl restart cttel-installment-bot
+            systemctl is-active cttel-installment-bot

@@ -5,8 +5,17 @@ import { cashPriceTomanFromStoreDepositToman, MAX_STORE_DEPOSIT_TOMAN } from '..
 import { tomanToRial } from '../utils/persian.js';
 import type { FundingSource } from '../types/result.js';
 
-export function isAdmin(ctx: Context, adminId: string): boolean {
-  return ctx.from !== undefined && String(ctx.from.id) === adminId;
+export function isAdmin(ctx: Context, adminIds: string): boolean {
+  if (ctx.from === undefined) {
+    return false;
+  }
+
+  const userId = String(ctx.from.id);
+  return adminIds
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+    .includes(userId);
 }
 
 export interface StoreDepositInput {

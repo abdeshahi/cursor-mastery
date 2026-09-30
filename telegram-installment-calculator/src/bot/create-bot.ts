@@ -13,7 +13,7 @@ import {
 import { handleAdminText, registerAdminFlow } from '../handlers/admin-flow.js';
 import type { BotDependencies } from '../handlers/dependencies.js';
 import { registerResultActions } from '../handlers/result-actions.js';
-import { handleUserText, registerUserFlow } from '../handlers/user-flow.js';
+import { handleReplyMenuText, handleUserText, registerUserFlow } from '../handlers/user-flow.js';
 import { AdminService } from '../services/admin-service.js';
 import { CalculatorService } from '../services/calculator-service.js';
 import { MemoryExportService } from '../services/export-service.js';
@@ -64,6 +64,10 @@ export function createBot(env: Environment, dependencies: BotDependencies, logge
     }
 
     if (await handleAdminText(ctx, text, dependencies)) {
+      return;
+    }
+
+    if (await handleReplyMenuText(ctx, text, dependencies)) {
       return;
     }
 

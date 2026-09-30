@@ -1,5 +1,21 @@
 import { Markup } from 'telegraf';
-import type { InlineKeyboardMarkup } from 'telegraf/types';
+import type { InlineKeyboardMarkup, ReplyKeyboardMarkup } from 'telegraf/types';
+
+export const REPLY_START_CALC = '🧮 شروع محاسبه';
+export const REPLY_HELP = 'ℹ️ راهنما';
+export const REPLY_ADMIN = '⚙️ تنظیمات مدیر';
+
+export function mainReplyKeyboard(showAdmin: boolean): Markup.Markup<ReplyKeyboardMarkup> {
+  const rows: ReturnType<typeof Markup.button.text>[][] = [
+    [Markup.button.text(REPLY_START_CALC), Markup.button.text(REPLY_HELP)],
+  ];
+
+  if (showAdmin) {
+    rows.push([Markup.button.text(REPLY_ADMIN)]);
+  }
+
+  return Markup.keyboard(rows).resize();
+}
 import type { PlanTerms } from '../types/calculator.js';
 import type { CalculationResult } from '../types/result.js';
 import { toPersianDigits } from '../utils/persian.js';
