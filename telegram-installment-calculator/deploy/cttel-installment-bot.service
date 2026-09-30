@@ -1,0 +1,14 @@
+[Unit]
+Description=CTTEL Installment Calculator Telegram Bot (@CTTELInstallmentBot)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/cttel-installment-bot
+EnvironmentFile=/opt/cttel-installment-bot/.env
+ExecStart=/usr/bin/env bash -lc 'cd /opt/cttel-installment-bot && corepack enable && pnpm start'
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
