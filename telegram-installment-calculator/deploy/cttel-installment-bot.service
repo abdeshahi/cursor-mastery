@@ -1,0 +1,14 @@
+[Unit]
+Description=CTTEL Installment Calculator Telegram Bot (@CTTELInstallmentBot)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/cttel-installment-bot
+EnvironmentFile=/opt/cttel-installment-bot/.env
+ExecStart=/usr/bin/node /opt/cttel-installment-bot/dist/main.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
