@@ -141,6 +141,18 @@ if ( isset( $wp_filter['woocommerce_available_payment_gateways'] ) ) {
 $report['diagnostics']['mu_plugins']     = array_map( 'basename', glob( WPMU_PLUGIN_DIR . '/*.php' ) ?: array() );
 $report['diagnostics']['active_plugins'] = array_values( (array) get_option( 'active_plugins', array() ) );
 
+// Server-only staging guard (not in the repo): show its source, masking anything secret-looking.
+$guard_file = WPMU_PLUGIN_DIR . '/zz-cttel-staging-guard.php';
+if ( is_readable( $guard_file ) ) {
+	$report['diagnostics']['staging_guard_source'] = array();
+	foreach ( array_slice( file( $guard_file ), 0, 150 ) as $n => $line ) {
+		if ( preg_match( '/pass|secret|token|merchant|api[_-]?key|auth/i', $line ) && preg_match( '/[\'"][^\'"]{12,}[\'"]/', $line ) ) {
+			$line = '[masked: possible secret]';
+		}
+		$report['diagnostics']['staging_guard_source'][] = ( $n + 1 ) . ': ' . rtrim( $line );
+	}
+}
+
 $plugin_dir = WP_PLUGIN_DIR . '/zarinpal-woocommerce-payment-gateway';
 if ( is_dir( $plugin_dir ) ) {
 	$iterator = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $plugin_dir, FilesystemIterator::SKIP_DOTS ) );
