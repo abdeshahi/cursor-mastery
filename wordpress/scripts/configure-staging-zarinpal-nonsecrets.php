@@ -111,6 +111,36 @@ if ( function_exists( 'WC' ) && WC()->payment_gateways() ) {
 	}
 	$report['diagnostics']['available_gateway_ids'] = array_keys( WC()->payment_gateways()->get_available_payment_gateways() );
 }
+// Every callback on the availability filter, with its source file (names only).
+$report['diagnostics']['available_gateways_filters'] = array();
+global $wp_filter;
+if ( isset( $wp_filter['woocommerce_available_payment_gateways'] ) ) {
+	foreach ( $wp_filter['woocommerce_available_payment_gateways']->callbacks as $priority => $callbacks ) {
+		foreach ( $callbacks as $cb ) {
+			$fn   = $cb['function'];
+			$desc = 'unknown';
+			try {
+				if ( is_string( $fn ) && function_exists( $fn ) ) {
+					$ref = new ReflectionFunction( $fn );
+				} elseif ( $fn instanceof Closure ) {
+					$ref = new ReflectionFunction( $fn );
+				} elseif ( is_array( $fn ) ) {
+					$ref = new ReflectionMethod( $fn[0], $fn[1] );
+				}
+				if ( isset( $ref ) ) {
+					$desc = str_replace( ABSPATH, '', (string) $ref->getFileName() ) . ':' . $ref->getStartLine();
+					unset( $ref );
+				}
+			} catch ( ReflectionException $e ) {
+				$desc = 'reflection_failed';
+			}
+			$report['diagnostics']['available_gateways_filters'][] = $priority . ' ' . $desc;
+		}
+	}
+}
+$report['diagnostics']['mu_plugins']     = array_map( 'basename', glob( WPMU_PLUGIN_DIR . '/*.php' ) ?: array() );
+$report['diagnostics']['active_plugins'] = array_values( (array) get_option( 'active_plugins', array() ) );
+
 $plugin_dir = WP_PLUGIN_DIR . '/zarinpal-woocommerce-payment-gateway';
 if ( is_dir( $plugin_dir ) ) {
 	$iterator = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $plugin_dir, FilesystemIterator::SKIP_DOTS ) );
