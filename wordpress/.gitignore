@@ -1,0 +1,8 @@
+.env
+CREDENTIALS.md
+backups/*
+!backups/.gitkeep
+certbot/conf/*
+!certbot/conf/.gitkeep
+certbot/www/*
+!certbot/www/.gitkeep
