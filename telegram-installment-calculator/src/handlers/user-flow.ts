@@ -1,16 +1,8 @@
-import type { Telegraf } from 'telegraf';
+import { Markup, type Telegraf } from 'telegraf';
 import { initialSession } from '../bot/context.js';
 import type { BotContext } from '../bot/types.js';
 import { RialStorageError } from '../calculator/installment-calculator.js';
-import {
-  REPLY_ADMIN,
-  REPLY_HELP,
-  REPLY_START_CALC,
-  fundingKeyboard,
-  mainReplyKeyboard,
-  modeKeyboard,
-  resultKeyboard,
-} from '../keyboards/keyboards.js';
+import { fundingKeyboard, modeKeyboard, resultKeyboard } from '../keyboards/keyboards.js';
 import { openAdminMenu } from './admin-flow.js';
 import { UserInputError } from '../utils/input-validation.js';
 import {
@@ -21,21 +13,27 @@ import { TELEGRAM_HTML_PARSE_MODE } from '../utils/telegram-format.js';
 import type { HandlerDependencies } from './helpers.js';
 import {
   fundingSourceFromCode,
-  isAdmin,
   parseStoreDepositInput,
   parseInstallmentCapacityInput,
 } from './helpers.js';
 
 const HELP_TEXT = [
   'راهنما:',
-  '۱. «شروع محاسبه» یا /start',
-  '۲. نوع محاسبه را انتخاب کنید (مبلغ واریز یا توان پرداخت قسط)',
-  '۳. مبلغ را وارد کنید و منبع تأمین را انتخاب کنید.',
+  '۱. نوع محاسبه را انتخاب کنید:',
+  '   • مبلغ واریز فروشگاه → محاسبه قسط از روی مبلغ واریزی فروشگاه',
+  '   • توان پرداخت قسط → محاسبه حداکثر واریز فروشگاه از روی قسط ماهانه',
+  '۲. مبلغ را وارد کنید.',
+  '۳. منبع تأمین را انتخاب کنید.',
   '۴. نتیجه همه طرح‌های فعال نمایش داده می‌شود.',
   '',
   '/cancel لغو عملیات',
-  '/admin یا «تنظیمات مدیر» (فقط مدیر)',
+  '/admin مدیریت طرح‌ها (ویژه مدیر)',
 ].join('\n');
+
+/** Legacy reply-keyboard labels (removed UI); still accept taps until clients refresh. */
+const LEGACY_REPLY_START = '🧮 شروع محاسبه';
+const LEGACY_REPLY_HELP = 'ℹ️ راهنما';
+const LEGACY_REPLY_ADMIN = '⚙️ تنظیمات مدیر';
 
 export async function askForMode(ctx: BotContext): Promise<void> {
   ctx.session = { step: 'mode' };
@@ -77,22 +75,22 @@ async function deliverResult(ctx: BotContext, dependencies: HandlerDependencies)
   }
 }
 
-export async function handleReplyMenuText(
+export async function handleLegacyReplyMenuText(
   ctx: BotContext,
   text: string,
   dependencies: HandlerDependencies,
 ): Promise<boolean> {
-  if (text === REPLY_START_CALC) {
+  if (text === LEGACY_REPLY_START) {
     await askForMode(ctx);
     return true;
   }
 
-  if (text === REPLY_HELP) {
+  if (text === LEGACY_REPLY_HELP) {
     await ctx.reply(HELP_TEXT);
     return true;
   }
 
-  if (text === REPLY_ADMIN) {
+  if (text === LEGACY_REPLY_ADMIN) {
     await openAdminMenu(ctx, dependencies);
     return true;
   }
@@ -103,11 +101,7 @@ export async function handleReplyMenuText(
 export function registerUserFlow(bot: Telegraf<BotContext>, dependencies: HandlerDependencies): void {
   bot.start(async (ctx) => {
     const storeName = await dependencies.admin.getStoreName();
-    const showAdminButton = isAdmin(ctx, dependencies.adminId);
-    await ctx.reply(
-      `به محاسبه‌گر اقساط ${storeName} خوش آمدید.`,
-      mainReplyKeyboard(showAdminButton),
-    );
+    await ctx.reply(`به محاسبه‌گر اقساط ${storeName} خوش آمدید.`, Markup.removeKeyboard());
     await askForMode(ctx);
   });
 
@@ -117,7 +111,7 @@ export function registerUserFlow(bot: Telegraf<BotContext>, dependencies: Handle
 
   bot.command('cancel', async (ctx) => {
     ctx.session = initialSession();
-    await ctx.reply('عملیات لغو شد. برای شروع دوباره /start را بزنید.');
+    await ctx.reply('عملیات لغو شد. برای شروع دوباره /start را بزنید.', Markup.removeKeyboard());
   });
 
   bot.action(/^mode:(cash|installment)$/, async (ctx) => {
@@ -243,4 +237,3 @@ export async function handleUserText(ctx: BotContext, text: string): Promise<voi
 
   await ctx.reply('برای شروع محاسبه /start را بزنید.');
 }
-
