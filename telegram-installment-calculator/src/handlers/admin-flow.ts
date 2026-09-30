@@ -1,5 +1,8 @@
-import type { Context, Telegraf } from 'telegraf';
+import { Markup } from 'telegraf';
 import { initialSession, type AdminField } from '../bot/context.js';
+import type { BotContext } from '../bot/types.js';
+import type { Telegraf } from 'telegraf';
+import type { PlanTerms } from '../types/calculator.js';
 import { adminFieldsKeyboard, adminPlansKeyboard } from '../keyboards/keyboards.js';
 import { formatRialAsToman, toPersianDigits } from '../utils/persian.js';
 import { UserInputError } from '../utils/input-validation.js';
@@ -27,12 +30,45 @@ function parsePlanId(value: string | undefined): number | null {
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
-async function showAdminPlans(ctx: Context, dependencies: HandlerDependencies): Promise<void> {
-  const plans = await dependencies.admin.listPlans();
-  await ctx.reply('طرح موردنظر برای مدیریت را انتخاب کنید:', adminPlansKeyboard(plans));
+function formatPlanSummary(plan: PlanTerms): string {
+  return [
+    `طرح ${toPersianDigits(plan.months)} ماهه`,
+    `اعتبار: ${String(plan.creditPercent)}٪`,
+    `خدمات: ${String(plan.servicePercent)}٪`,
+    `ضریب: ${String(plan.monthlyInstallmentFactor)}`,
+    `حداقل: ${formatRialAsToman(plan.minimumLoan)}`,
+    `حداکثر: ${plan.maximumLoan === null ? 'نامحدود' : formatRialAsToman(plan.maximumLoan)}`,
+    `وضعیت: ${plan.isActive ? 'فعال' : 'غیرفعال'}`,
+  ].join('\n');
 }
 
-export function registerAdminFlow(bot: Telegraf, dependencies: HandlerDependencies): void {
+async function replyPlanDetails(ctx: BotContext, plan: PlanTerms): Promise<void> {
+  await ctx.reply(formatPlanSummary(plan), adminFieldsKeyboard(plan));
+}
+
+async function showAdminPlans(ctx: BotContext, dependencies: HandlerDependencies): Promise<void> {
+  const plans = await dependencies.admin.listPlans();
+  await ctx.reply(
+    'طرح موردنظر برای مدیریت را انتخاب کنید:',
+    Markup.inlineKeyboard([
+      ...adminPlansKeyboard(plans).reply_markup.inline_keyboard,
+      [Markup.button.callback('⚙️ تنظیمات عمومی', 'admin:settings')],
+    ]),
+  );
+}
+
+async function showAdminSettings(ctx: BotContext, dependencies: HandlerDependencies): Promise<void> {
+  const storeName = await dependencies.admin.getStoreName();
+  await ctx.reply(
+    ['تنظیمات عمومی ربات:', `نام فروشگاه: ${storeName}`].join('\n'),
+    Markup.inlineKeyboard([
+      [Markup.button.callback('ویرایش نام فروشگاه', 'admin:setting:store_name')],
+      [Markup.button.callback('بازگشت به طرح‌ها', 'admin:list')],
+    ]),
+  );
+}
+
+export function registerAdminFlow(bot: Telegraf<BotContext>, dependencies: HandlerDependencies): void {
   bot.command('admin', async (ctx) => {
     if (!isAdmin(ctx, dependencies.adminId)) {
       await ctx.reply('دسترسی به این بخش مجاز نیست.');
@@ -49,7 +85,28 @@ export function registerAdminFlow(bot: Telegraf, dependencies: HandlerDependenci
       return;
     }
 
+    ctx.session = { step: 'idle' };
     await showAdminPlans(ctx, dependencies);
+  });
+
+  bot.action('admin:settings', async (ctx) => {
+    await ctx.answerCbQuery();
+    if (!isAdmin(ctx, dependencies.adminId)) {
+      return;
+    }
+
+    ctx.session = { step: 'idle' };
+    await showAdminSettings(ctx, dependencies);
+  });
+
+  bot.action('admin:setting:store_name', async (ctx) => {
+    await ctx.answerCbQuery();
+    if (!isAdmin(ctx, dependencies.adminId)) {
+      return;
+    }
+
+    ctx.session = { step: 'admin-store-name' };
+    await ctx.reply('نام جدید فروشگاه را وارد کنید (در پیام‌ها و خروجی‌ها نمایش داده می‌شود):');
   });
 
   bot.action(/^admin:plan:(\d+)$/, async (ctx) => {
@@ -71,18 +128,8 @@ export function registerAdminFlow(bot: Telegraf, dependencies: HandlerDependenci
       return;
     }
 
-    await ctx.reply(
-      [
-        `طرح ${toPersianDigits(plan.months)} ماهه`,
-        `اعتبار: ${String(plan.creditPercent)}٪`,
-        `خدمات: ${String(plan.servicePercent)}٪`,
-        `ضریب: ${String(plan.monthlyInstallmentFactor)}`,
-        `حداقل: ${formatRialAsToman(plan.minimumLoan)}`,
-        `حداکثر: ${plan.maximumLoan === null ? 'نامحدود' : formatRialAsToman(plan.maximumLoan)}`,
-        `وضعیت: ${plan.isActive ? 'فعال' : 'غیرفعال'}`,
-      ].join('\n'),
-      adminFieldsKeyboard(plan),
-    );
+    ctx.session = { step: 'idle' };
+    await replyPlanDetails(ctx, plan);
   });
 
   bot.action(/^admin:field:(\d+):([A-Za-z]+)$/, async (ctx) => {
@@ -115,15 +162,39 @@ export function registerAdminFlow(bot: Telegraf, dependencies: HandlerDependenci
     }
 
     const updated = await dependencies.admin.toggleActive(String(ctx.from.id), planId);
-    await ctx.reply(`وضعیت طرح ${toPersianDigits(updated.months)} ماهه تغییر کرد.`);
+    ctx.session = { step: 'idle' };
+    await ctx.reply(`وضعیت طرح ${toPersianDigits(updated.months)} ماهه به «${updated.isActive ? 'فعال' : 'غیرفعال'}» تغییر کرد.`);
+    await replyPlanDetails(ctx, updated);
   });
 }
 
 export async function handleAdminText(
-  ctx: Context,
+  ctx: BotContext,
   text: string,
   dependencies: HandlerDependencies,
 ): Promise<boolean> {
+  if (ctx.session.step === 'admin-store-name') {
+    if (!isAdmin(ctx, dependencies.adminId)) {
+      ctx.session = initialSession();
+      return true;
+    }
+
+    try {
+      const storeName = await dependencies.admin.setStoreName(String(ctx.from?.id), text);
+      ctx.session = { step: 'idle' };
+      await ctx.reply(`نام فروشگاه به «${storeName}» به‌روزرسانی شد.`);
+      await showAdminSettings(ctx, dependencies);
+    } catch (error) {
+      if (!(error instanceof UserInputError)) {
+        throw error;
+      }
+
+      await ctx.reply(`${error.message}\nلطفاً نام معتبر وارد کنید.`);
+    }
+
+    return true;
+  }
+
   if (ctx.session.step !== 'admin-value') {
     return false;
   }
@@ -146,6 +217,7 @@ export async function handleAdminText(
     );
     ctx.session = { step: 'idle' };
     await ctx.reply(`طرح ${toPersianDigits(updated.months)} ماهه با موفقیت به‌روزرسانی شد.`);
+    await replyPlanDetails(ctx, updated);
   } catch (error) {
     if (!(error instanceof UserInputError)) {
       throw error;

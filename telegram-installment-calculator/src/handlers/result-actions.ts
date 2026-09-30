@@ -1,4 +1,5 @@
 import type { Telegraf } from 'telegraf';
+import type { BotContext } from '../bot/types.js';
 import {
   exportFilename,
   type ExportAudience,
@@ -14,7 +15,7 @@ function parseExportAudience(value: string | undefined): ExportAudience | null {
   return value === 'store' || value === 'customer' ? value : null;
 }
 
-export function registerResultActions(bot: Telegraf, dependencies: HandlerDependencies): void {
+export function registerResultActions(bot: Telegraf<BotContext>, dependencies: HandlerDependencies): void {
   bot.action('result:new', async (ctx) => {
     await ctx.answerCbQuery();
     await askForMode(ctx);

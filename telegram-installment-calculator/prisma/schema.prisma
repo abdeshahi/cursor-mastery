@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Plan {
+  id                       Int           @id @default(autoincrement())
+  months                   Int           @unique
+  creditPercent            Decimal
+  servicePercent           Decimal
+  monthlyInstallmentFactor Decimal
+  minimumLoan              BigInt
+  maximumLoan              BigInt?
+  sortOrder                Int
+  isActive                 Boolean       @default(true)
+  calculations             Calculation[]
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  telegramId   BigInt        @unique
+  firstName    String?
+  lastName     String?
+  username     String?
+  createdAt    DateTime      @default(now())
+  calculations Calculation[]
+}
+
+model Calculation {
+  id                 Int      @id @default(autoincrement())
+  userId             Int?
+  user               User?    @relation(fields: [userId], references: [id])
+  planId             Int
+  plan               Plan     @relation(fields: [planId], references: [id])
+  fundingSource      String
+  cashPriceToman     BigInt
+  cashPriceRial      BigInt
+  requiredLoan       BigInt
+  credit             BigInt
+  digitalService     BigInt
+  monthlyInstallment BigInt
+  totalRepayment     BigInt
+  eligible           Boolean
+  createdAt          DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}

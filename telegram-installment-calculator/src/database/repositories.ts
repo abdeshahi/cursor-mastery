@@ -166,17 +166,30 @@ export class PrismaCalculationRepository implements CalculationRepository {
 }
 
 export class PrismaSettingRepository {
+  private readonly cache = new Map<string, string>();
+
   constructor(private readonly db: PrismaClient) {}
 
   async get(key: string): Promise<string | null> {
-    return (await this.db.setting.findUnique({ where: { key } }))?.value ?? null;
+    const cached = this.cache.get(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const value = (await this.db.setting.findUnique({ where: { key } }))?.value ?? null;
+    if (value !== null) {
+      this.cache.set(key, value);
+    }
+
+    return value;
   }
 
-  set(key: string, value: string) {
-    return this.db.setting.upsert({
+  async set(key: string, value: string) {
+    await this.db.setting.upsert({
       where: { key },
       create: { key, value },
       update: { value },
     });
+    this.cache.set(key, value);
   }
 }

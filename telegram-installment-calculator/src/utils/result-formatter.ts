@@ -16,6 +16,15 @@ const DIRECTIONAL_WRAPPER_LENGTH = 2;
 
 type FormatStyle = 'plain' | 'html';
 
+function brandTitle(result: CalculationResult): string {
+  const brand = result.brandName?.trim();
+  return brand === undefined || brand.length === 0 ? 'CTTEL' : brand;
+}
+
+function installmentHeading(result: CalculationResult): string {
+  return `محاسبه اقساط ${brandTitle(result)}`;
+}
+
 function money(value: bigint): string {
   return formatRialAsToman(value);
 }
@@ -57,7 +66,7 @@ function storeResultSummary(result: CalculationResult, style: FormatStyle): stri
     return `قیمت نقدی: ${formatToman(result.cashPriceToman)}`;
   }
 
-  return 'محاسبه اقساط CTTEL';
+  return installmentHeading(result);
 }
 
 function renderStorePlan(
@@ -124,7 +133,7 @@ function storeResultBlocks(result: CalculationResult, style: FormatStyle): strin
   return [
     [
       '🏪 نسخه فروشگاه',
-      '📱 محاسبه اقساط CTTEL',
+      `📱 ${installmentHeading(result)}`,
       storeResultSummary(result, style),
       `منبع تأمین: ${FUNDING_SOURCE_LABELS[result.fundingSource]}`,
       `تاریخ: ${formatJalali(result.createdAt)}`,
@@ -213,7 +222,7 @@ export function createShareUrl(result: CalculationResult): string {
   const concise =
     result.mode === 'installment-capacity' && result.installmentCapacityRial !== undefined
       ? [
-          'محاسبه اقساط CTTEL',
+          installmentHeading(result),
           `توان پرداخت قسط: ${formatRialAsToman(result.installmentCapacityRial)}`,
           ...result.plans
             .filter((plan) => plan.eligible)
@@ -223,7 +232,7 @@ export function createShareUrl(result: CalculationResult): string {
             ),
         ].join('\n')
       : [
-          'محاسبه اقساط CTTEL',
+          installmentHeading(result),
           ...(result.storeDepositToman === undefined
             ? result.cashPriceToman === undefined
               ? []
@@ -252,12 +261,12 @@ export function createShareUrl(result: CalculationResult): string {
 
   const fallback =
     result.mode === 'installment-capacity' && result.installmentCapacityRial !== undefined
-      ? `محاسبه اقساط CTTEL — ${formatRialAsToman(result.installmentCapacityRial)}`
+      ? `${installmentHeading(result)} — ${formatRialAsToman(result.installmentCapacityRial)}`
       : result.storeDepositToman === undefined
         ? result.cashPriceToman === undefined
-          ? 'محاسبه اقساط CTTEL'
-          : `محاسبه اقساط CTTEL — ${formatToman(result.cashPriceToman)}`
-        : `محاسبه اقساط CTTEL — ${formatToman(result.storeDepositToman)}`;
+          ? installmentHeading(result)
+          : `${installmentHeading(result)} — ${formatToman(result.cashPriceToman)}`
+        : `${installmentHeading(result)} — ${formatToman(result.storeDepositToman)}`;
 
   return build(fallback);
 }

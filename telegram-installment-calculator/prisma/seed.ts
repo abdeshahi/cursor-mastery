@@ -11,6 +11,7 @@ const plans = [
     minimumLoan: 0n,
     maximumLoan: null,
     sortOrder: 1,
+    isActive: true,
   },
   {
     months: 12,
@@ -20,6 +21,7 @@ const plans = [
     minimumLoan: 500_000_000n,
     maximumLoan: null,
     sortOrder: 2,
+    isActive: true,
   },
   {
     months: 18,
@@ -29,6 +31,7 @@ const plans = [
     minimumLoan: 1_000_000_000n,
     maximumLoan: 3_000_000_000n,
     sortOrder: 3,
+    isActive: true,
   },
   {
     months: 24,
@@ -38,6 +41,7 @@ const plans = [
     minimumLoan: 1_000_000_000n,
     maximumLoan: 3_000_000_000n,
     sortOrder: 4,
+    isActive: true,
   },
   {
     months: 36,
@@ -47,6 +51,7 @@ const plans = [
     minimumLoan: 1_000_000_000n,
     maximumLoan: 3_250_000_000n,
     sortOrder: 5,
+    isActive: true,
   },
 ] as const;
 
@@ -62,6 +67,7 @@ async function main() {
         minimumLoan: plan.minimumLoan,
         maximumLoan: plan.maximumLoan,
         sortOrder: plan.sortOrder,
+        isActive: plan.isActive,
       },
     });
   }

@@ -12,6 +12,7 @@ export interface CalculationResult {
   fundingSource: FundingSource;
   createdAt: Date;
   plans: InstallmentResult[];
+  brandName?: string;
 }
 
 export const FUNDING_SOURCE_LABELS: Record<FundingSource, string> = {

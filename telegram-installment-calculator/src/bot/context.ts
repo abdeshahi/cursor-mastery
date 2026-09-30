@@ -6,7 +6,8 @@ export type SessionStep =
   | 'cash-price'
   | 'installment-capacity'
   | 'funding'
-  | 'admin-value';
+  | 'admin-value'
+  | 'admin-store-name';
 
 export type AdminField =
   | 'creditPercent'

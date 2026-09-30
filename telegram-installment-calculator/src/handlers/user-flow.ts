@@ -1,5 +1,6 @@
-import type { Context, Telegraf } from 'telegraf';
+import type { Telegraf } from 'telegraf';
 import { initialSession } from '../bot/context.js';
+import type { BotContext } from '../bot/types.js';
 import { RialStorageError } from '../calculator/installment-calculator.js';
 import { fundingKeyboard, modeKeyboard, resultKeyboard } from '../keyboards/keyboards.js';
 import { UserInputError } from '../utils/input-validation.js';
@@ -15,17 +16,17 @@ import {
   parseInstallmentCapacityInput,
 } from './helpers.js';
 
-export async function askForMode(ctx: Context): Promise<void> {
+export async function askForMode(ctx: BotContext): Promise<void> {
   ctx.session = { step: 'mode' };
   await ctx.reply('نوع محاسبه را انتخاب کنید:', modeKeyboard());
 }
 
-export async function askForPrice(ctx: Context): Promise<void> {
+export async function askForPrice(ctx: BotContext): Promise<void> {
   ctx.session = { ...ctx.session, step: 'cash-price', calculationMode: 'cash-price' };
   await ctx.reply('مبلغ واریز به حساب فروشگاه را به‌صورت عدد صحیح و به تومان وارد کنید.\nمثال: 80550000');
 }
 
-export async function askForInstallmentCapacity(ctx: Context): Promise<void> {
+export async function askForInstallmentCapacity(ctx: BotContext): Promise<void> {
   ctx.session = {
     ...ctx.session,
     step: 'installment-capacity',
@@ -36,8 +37,9 @@ export async function askForInstallmentCapacity(ctx: Context): Promise<void> {
   );
 }
 
-async function deliverResult(ctx: Context, _dependencies: HandlerDependencies): Promise<void> {
+async function deliverResult(ctx: BotContext, dependencies: HandlerDependencies): Promise<void> {
   const result = ctx.session.lastResult!;
+  result.brandName = await dependencies.admin.getStoreName();
 
   for (const chunk of storeResultMessageChunks(result)) {
     await ctx.reply(chunk, TELEGRAM_HTML_PARSE_MODE);
@@ -54,9 +56,10 @@ async function deliverResult(ctx: Context, _dependencies: HandlerDependencies): 
   }
 }
 
-export function registerUserFlow(bot: Telegraf, dependencies: HandlerDependencies): void {
+export function registerUserFlow(bot: Telegraf<BotContext>, dependencies: HandlerDependencies): void {
   bot.start(async (ctx) => {
-    await ctx.reply('به محاسبه‌گر اقساط CTTEL خوش آمدید.');
+    const storeName = await dependencies.admin.getStoreName();
+    await ctx.reply(`به محاسبه‌گر اقساط ${storeName} خوش آمدید.`);
     await askForMode(ctx);
   });
 
@@ -139,7 +142,7 @@ export function registerUserFlow(bot: Telegraf, dependencies: HandlerDependencie
               storeDeposit!,
             );
 
-      ctx.session = { step: 'idle', lastResult: result };
+      ctx.session = { step: 'idle', lastResult: { ...result, brandName: await dependencies.admin.getStoreName() } };
       await deliverResult(ctx, dependencies);
     } catch (error) {
       if (!(error instanceof RialStorageError)) {
@@ -159,7 +162,7 @@ export function registerUserFlow(bot: Telegraf, dependencies: HandlerDependencie
   });
 }
 
-export async function handleUserText(ctx: Context, text: string): Promise<void> {
+export async function handleUserText(ctx: BotContext, text: string): Promise<void> {
   if (ctx.session.step === 'cash-price') {
     try {
       const { storeDepositToman, cashPriceToman } = parseStoreDepositInput(text);

@@ -1,7 +1,7 @@
 import { Decimal } from 'decimal.js';
 import type winston from 'winston';
 import type { PlanPatch, PlanTerms } from '../types/calculator.js';
-import type { PlanRepository } from '../database/repositories.js';
+import type { PlanRepository, PrismaSettingRepository } from '../database/repositories.js';
 import {
   MAX_CASH_PRICE_TOMAN,
   UserInputError,
@@ -12,14 +12,46 @@ import { tomanToRial } from '../utils/persian.js';
 
 type EditableField = Exclude<keyof PlanPatch, 'isActive'>;
 
+export const STORE_NAME_SETTING_KEY = 'store_name';
+const DEFAULT_STORE_NAME = 'CTTEL';
+
+function isUnlimitedLoanInput(rawValue: string): boolean {
+  const normalized = rawValue.trim().toLowerCase();
+  return normalized === 'unlimited' || rawValue.trim() === 'نامحدود';
+}
+
 export class AdminService {
   constructor(
     private readonly plans: PlanRepository,
+    private readonly settings: PrismaSettingRepository,
     private readonly logger: winston.Logger,
   ) {}
 
   listPlans(): Promise<PlanTerms[]> {
     return this.plans.findAll();
+  }
+
+  async getStoreName(): Promise<string> {
+    return (await this.settings.get(STORE_NAME_SETTING_KEY)) ?? DEFAULT_STORE_NAME;
+  }
+
+  async setStoreName(adminId: string, rawValue: string): Promise<string> {
+    const value = rawValue.trim();
+    if (value.length === 0 || value.length > 64) {
+      throw new UserInputError('نام فروشگاه باید بین ۱ تا ۶۴ کاراکتر باشد.');
+    }
+
+    const previous = await this.getStoreName();
+    await this.settings.set(STORE_NAME_SETTING_KEY, value);
+
+    this.logger.info('admin.setting.updated', {
+      adminId,
+      key: STORE_NAME_SETTING_KEY,
+      before: previous,
+      after: value,
+    });
+
+    return value;
   }
 
   async updateField(
@@ -78,7 +110,7 @@ export class AdminService {
 
   private parsePatch(field: EditableField, rawValue: string): PlanPatch {
     if (field === 'minimumLoan' || field === 'maximumLoan') {
-      if (field === 'maximumLoan' && rawValue.toLowerCase() === 'unlimited') {
+      if (field === 'maximumLoan' && isUnlimitedLoanInput(rawValue)) {
         return { maximumLoan: null };
       }
 
