@@ -71,6 +71,9 @@ ensure_wp_cli
 "${SSH[@]}" "${HOST}" "docker exec -i ${CONTAINER} wp eval-file - --allow-root --path=/var/www/html" \
 	< "${ROOT}/scripts/configure-staging-zarinpal-nonsecrets.php"
 
+echo "==> Recent PHP errors in ${CONTAINER} (diagnostics)..."
+"${SSH[@]}" "${HOST}" "docker logs --since 3h ${CONTAINER} 2>&1 | grep -iE 'PHP (Fatal|Parse|Warning|Notice)|Uncaught|zarinpal' | tail -40" || true
+
 echo "==> Flush caches (staging)..."
 run_wp cache flush 2>/dev/null || true
 

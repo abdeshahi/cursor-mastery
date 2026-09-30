@@ -190,7 +190,7 @@ if ( is_dir( $plugin_dir ) ) {
 		foreach ( $lines as $n => $line ) {
 			if ( false !== strpos( $line, 'function Send_to_ZarinPal_Gateway' ) ) {
 				$report['diagnostics']['send_to_gateway_source'] = array();
-				foreach ( array_slice( $lines, $n, 110, true ) as $m => $src ) {
+				foreach ( array_slice( $lines, $n + 105, 110, true ) as $m => $src ) {
 					$report['diagnostics']['send_to_gateway_source'][] = ( $m + 1 ) . ': ' . substr( rtrim( $src ), 0, 220 );
 				}
 				break;
