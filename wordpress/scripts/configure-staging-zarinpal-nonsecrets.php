@@ -108,6 +108,7 @@ if ( function_exists( 'WC' ) && WC()->payment_gateways() ) {
 	$gateways = WC()->payment_gateways()->payment_gateways();
 	if ( isset( $gateways['WC_ZPal'] ) && method_exists( $gateways['WC_ZPal'], 'is_available' ) ) {
 		$report['diagnostics']['gateway_is_available'] = (bool) $gateways['WC_ZPal']->is_available();
+		$report['diagnostics']['sandbox_field_defined'] = isset( $gateways['WC_ZPal']->get_form_fields()['sandbox'] );
 	}
 	$report['diagnostics']['available_gateway_ids'] = array_keys( WC()->payment_gateways()->get_available_payment_gateways() );
 }

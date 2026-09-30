@@ -39,6 +39,7 @@ MU_FILES=(
 	cttel-catalog.php
 	cttel-storefront-product-card.php
 	cttel-storefront-search.php
+	zz-cttel-staging-guard.php
 )
 
 TEMPLATE_FILES=(
