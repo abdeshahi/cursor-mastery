@@ -53,6 +53,14 @@ export function adminPlansKeyboard(plans: PlanTerms[]): Markup.Markup<InlineKeyb
   );
 }
 
+export function adminMainKeyboard(plans: PlanTerms[]): Markup.Markup<InlineKeyboardMarkup> {
+  const planRows = adminPlansKeyboard(plans).reply_markup.inline_keyboard;
+  return Markup.inlineKeyboard([
+    ...planRows,
+    [Markup.button.callback('⚙️ تنظیمات عمومی', 'admin:settings')],
+  ]);
+}
+
 export function adminFieldsKeyboard(plan: PlanTerms): Markup.Markup<InlineKeyboardMarkup> {
   return Markup.inlineKeyboard([
     [

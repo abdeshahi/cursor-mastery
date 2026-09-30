@@ -60,14 +60,9 @@ async function main() {
     await prisma.plan.upsert({
       where: { months: plan.months },
       create: plan,
+      // Preserve admin-edited plan terms on re-seed; only refresh ordering metadata.
       update: {
-        creditPercent: plan.creditPercent,
-        servicePercent: plan.servicePercent,
-        monthlyInstallmentFactor: plan.monthlyInstallmentFactor,
-        minimumLoan: plan.minimumLoan,
-        maximumLoan: plan.maximumLoan,
         sortOrder: plan.sortOrder,
-        isActive: plan.isActive,
       },
     });
   }
@@ -75,7 +70,7 @@ async function main() {
   await prisma.setting.upsert({
     where: { key: 'store_name' },
     create: { key: 'store_name', value: 'CTTEL' },
-    update: { value: 'CTTEL' },
+    update: {},
   });
 }
 

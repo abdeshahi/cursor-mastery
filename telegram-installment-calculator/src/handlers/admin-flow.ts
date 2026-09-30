@@ -3,7 +3,7 @@ import { initialSession, type AdminField } from '../bot/context.js';
 import type { BotContext } from '../bot/types.js';
 import type { Telegraf } from 'telegraf';
 import type { PlanTerms } from '../types/calculator.js';
-import { adminFieldsKeyboard, adminPlansKeyboard } from '../keyboards/keyboards.js';
+import { adminFieldsKeyboard, adminMainKeyboard } from '../keyboards/keyboards.js';
 import { formatRialAsToman, toPersianDigits } from '../utils/persian.js';
 import { UserInputError } from '../utils/input-validation.js';
 import type { HandlerDependencies } from './helpers.js';
@@ -48,13 +48,7 @@ async function replyPlanDetails(ctx: BotContext, plan: PlanTerms): Promise<void>
 
 async function showAdminPlans(ctx: BotContext, dependencies: HandlerDependencies): Promise<void> {
   const plans = await dependencies.admin.listPlans();
-  await ctx.reply(
-    'طرح موردنظر برای مدیریت را انتخاب کنید:',
-    Markup.inlineKeyboard([
-      ...adminPlansKeyboard(plans).reply_markup.inline_keyboard,
-      [Markup.button.callback('⚙️ تنظیمات عمومی', 'admin:settings')],
-    ]),
-  );
+  await ctx.reply('طرح موردنظر برای مدیریت را انتخاب کنید:', adminMainKeyboard(plans));
 }
 
 async function showAdminSettings(ctx: BotContext, dependencies: HandlerDependencies): Promise<void> {
