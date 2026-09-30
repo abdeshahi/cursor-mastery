@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa-IR">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>CTTEL Homepage v2 — Design Review</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800&display=swap" rel="stylesheet" />
+	<link rel="stylesheet" href="../mu-plugins/cttel-home-v2.css" />
+	<style>
+		/* Inline design tokens (mirror cttel-design-system.php) */
+		:root {
+			--cttel-brand-primary: #1a56db;
+			--cttel-brand-primary-hover: #1446b8;
+			--cttel-brand-accent: #0ea5e9;
+			--cttel-bg: #f4f6f9;
+			--cttel-bg-elevated: #eef1f6;
+			--cttel-surface: #ffffff;
+			--cttel-surface-dark: #0f1419;
+			--cttel-surface-dark-soft: #1a222c;
+			--cttel-text: #141c26;
+			--cttel-text-secondary: #5c6b7a;
+			--cttel-text-on-dark: #f3f6fa;
+			--cttel-text-muted-on-dark: #a8b4c2;
+			--cttel-border: rgba(20, 28, 38, 0.1);
+			--cttel-border-strong: rgba(20, 28, 38, 0.16);
+			--cttel-success: #0d9488;
+			--cttel-warning: #d97706;
+			--cttel-radius-sm: 6px;
+			--cttel-radius-md: 10px;
+			--cttel-radius-lg: 16px;
+			--cttel-radius-pill: 999px;
+			--cttel-shadow-sm: 0 1px 2px rgba(15, 20, 25, 0.06);
+			--cttel-shadow-md: 0 8px 24px rgba(15, 20, 25, 0.08);
+			--cttel-shadow-lg: 0 20px 48px rgba(15, 20, 25, 0.12);
+			--cttel-container: min(1200px, 92vw);
+			--cttel-section-y: clamp(2.5rem, 5vw, 4.5rem);
+			--cttel-section-y-tight: clamp(1.75rem, 3vw, 2.75rem);
+			--cttel-font-display: clamp(1.75rem, 4.2vw, 3rem);
+			--cttel-font-h2: clamp(1.35rem, 2.4vw, 1.75rem);
+			--cttel-font-h3: clamp(1.05rem, 1.8vw, 1.25rem);
+			--cttel-font-body: 1rem;
+			--cttel-font-small: 0.875rem;
+			--cttel-font-caption: 0.8125rem;
+			--cttel-line-tight: 1.25;
+			--cttel-line-body: 1.7;
+			--cttel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+			--cttel-img-product: 1 / 1;
+			--cttel-img-hero: 4 / 3;
+		}
+		body {
+			margin: 0;
+			font-family: Vazirmatn, system-ui, sans-serif;
+			background: var(--cttel-bg);
+			color: var(--cttel-text);
+			overflow-x: hidden;
+		}
+		.cttel-v2-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.65rem 1.25rem; border-radius: var(--cttel-radius-md); font-weight: 700; font-size: var(--cttel-font-small); text-decoration: none; border: 1px solid transparent; }
+		.cttel-v2-btn--primary { background: var(--cttel-brand-primary); color: #fff; }
+		.cttel-v2-btn--ghost { background: transparent; border-color: var(--cttel-border-strong); color: var(--cttel-text); }
+		.cttel-v2-btn--on-dark { background: #fff; color: var(--cttel-surface-dark); }
+		.cttel-v2-link-arrow::before { content: "←"; margin-inline-end: 0.35rem; opacity: 0.7; }
+		.cttel-v2-eyebrow { font-size: var(--cttel-font-caption); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cttel-brand-accent); margin: 0 0 0.5rem; }
+		.cttel-v2-heading { font-size: var(--cttel-font-h2); font-weight: 800; margin: 0 0 0.65rem; }
+		.cttel-v2-lead { font-size: var(--cttel-font-body); line-height: var(--cttel-line-body); color: var(--cttel-text-secondary); margin: 0 0 1.25rem; max-width: 42em; }
+		.cttel-v2-section { padding-block: var(--cttel-section-y); }
+		.cttel-container { width: var(--cttel-container); margin-inline: auto; padding-inline: clamp(1rem, 3vw, 1.5rem); }
+		.mock-header { background: var(--cttel-surface); border-bottom: 1px solid var(--cttel-border); padding: 0.65rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.875rem; font-weight: 700; }
+		.mock-header span { opacity: 0.55; font-weight: 600; }
+		.cttel-products ul.products { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; list-style: none; padding: 0; margin: 0; }
+		.cttel-pcard { background: var(--cttel-surface); border: 1px solid var(--cttel-border); border-radius: var(--cttel-radius-lg); overflow: hidden; box-shadow: var(--cttel-shadow-sm); }
+		.cttel-pcard__media { aspect-ratio: 1/1; background: linear-gradient(180deg, #fafbfc, #eef2f7); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--cttel-text-secondary); }
+		.cttel-pcard__title { padding: 0.75rem 0.85rem 0; font-weight: 700; font-size: 0.9375rem; margin: 0; }
+		.cttel-pcard__price { padding: 0 0.85rem; font-weight: 800; margin: 0.35rem 0; }
+		.cttel-pcard__btn { display: flex; margin: 0.65rem 0.85rem 0.85rem; min-height: 44px; align-items: center; justify-content: center; background: var(--cttel-brand-primary); color: #fff; border-radius: var(--cttel-radius-md); font-size: 0.8125rem; font-weight: 700; }
+		@media (max-width: 781px) { .cttel-products ul.products { grid-template-columns: repeat(2, 1fr); } }
+	</style>
+</head>
+<body class="cttel-v2-home">
+	<div class="mock-header">CTTEL <span>Design Review — Header unchanged (Blocksy)</span></div>
+
+	<section class="cttel-v2 cttel-v2-hero-editorial">
+		<div class="cttel-container">
+			<div class="cttel-v2-hero-editorial__grid">
+				<div>
+					<p class="cttel-v2-eyebrow">فروشگاه CTTEL</p>
+					<h1 class="cttel-v2-hero-editorial__title">موبایل، لوازم جانبی و <em>خرید اقساطی</em> با استاندارد یک فروشگاه حرفه‌ای</h1>
+					<p class="cttel-v2-lead">از پرچمدار و جانبی منتخب تا گوشی کارکرده و مسیر اقساط — تجربه‌ای یکپارچه برای خرید مطمئن در CTTEL.</p>
+					<div class="cttel-v2-hero-editorial__actions">
+						<a class="cttel-v2-btn cttel-v2-btn--primary" href="#">مشاهده فروشگاه</a>
+						<a class="cttel-v2-btn cttel-v2-btn--ghost" href="#">راهنمای خرید اقساطی</a>
+					</div>
+				</div>
+				<div class="cttel-v2-hero-editorial__visual" style="background: linear-gradient(145deg,#1e3a8a,#0f1419); min-height: 220px;"></div>
+			</div>
+		</div>
+	</section>
+
+	<nav class="cttel-v2 cttel-v2-service-rail" aria-label="دسترسی سریع">
+		<div class="cttel-container cttel-v2-service-rail__inner">
+			<a class="cttel-v2-service-rail__item" href="#"><span class="cttel-v2-service-rail__icon cttel-v2-service-rail__icon--installment"></span><span class="cttel-v2-service-rail__text"><span class="cttel-v2-service-rail__label">خرید اقساطی</span><span class="cttel-v2-service-rail__desc">انتخاب محصول و ثبت درخواست</span></span></a>
+			<a class="cttel-v2-service-rail__item" href="#"><span class="cttel-v2-service-rail__icon cttel-v2-service-rail__icon--used"></span><span class="cttel-v2-service-rail__text"><span class="cttel-v2-service-rail__label">گوشی کارکرده</span><span class="cttel-v2-service-rail__desc">موجودی تأیید‌شده</span></span></a>
+			<a class="cttel-v2-service-rail__item" href="#"><span class="cttel-v2-service-rail__icon cttel-v2-service-rail__icon--sourcing"></span><span class="cttel-v2-service-rail__text"><span class="cttel-v2-service-rail__label">درخواست تأمین گوشی</span><span class="cttel-v2-service-rail__desc">پیدا کردن مدل موردنظر</span></span></a>
+			<a class="cttel-v2-service-rail__item" href="#"><span class="cttel-v2-service-rail__icon cttel-v2-service-rail__icon--accessories"></span><span class="cttel-v2-service-rail__text"><span class="cttel-v2-service-rail__label">لوازم جانبی</span><span class="cttel-v2-service-rail__desc">کاور، شارژر، صدا</span></span></a>
+		</div>
+	</nav>
+
+	<section class="cttel-v2 cttel-v2-section cttel-v2-mosaic" id="mosaic">
+		<div class="cttel-container">
+			<p class="cttel-v2-eyebrow">دسته‌بندی</p>
+			<h2 class="cttel-v2-heading">کشف محصولات CTTEL</h2>
+			<div class="cttel-v2-mosaic__grid">
+				<a class="cttel-v2-tile cttel-v2-mosaic__tile cttel-v2-mosaic__tile--large" href="#"><div class="cttel-v2-mosaic__visual"><span class="cttel-v2-mosaic__placeholder"></span></div><div class="cttel-v2-mosaic__copy"><h3 class="cttel-v2-mosaic__title">موبایل</h3><p class="cttel-v2-mosaic__desc">جدیدترین اسمارت‌فون‌ها و پرچمدارها</p></div></a>
+				<a class="cttel-v2-tile cttel-v2-mosaic__tile cttel-v2-mosaic__tile--medium" href="#"><div class="cttel-v2-mosaic__visual"><span class="cttel-v2-mosaic__placeholder"></span></div><div class="cttel-v2-mosaic__copy"><h3 class="cttel-v2-mosaic__title">لوازم جانبی</h3><p class="cttel-v2-mosaic__desc">جانبی اصل و سازگار</p></div></a>
+				<a class="cttel-v2-tile cttel-v2-mosaic__tile cttel-v2-mosaic__tile--medium" href="#"><div class="cttel-v2-mosaic__visual"><span class="cttel-v2-mosaic__placeholder"></span></div><div class="cttel-v2-mosaic__copy"><h3 class="cttel-v2-mosaic__title">گوشی کارکرده</h3><p class="cttel-v2-mosaic__desc">کارکرده با شفافیت وضعیت</p></div></a>
+				<a class="cttel-v2-tile cttel-v2-mosaic__tile cttel-v2-mosaic__tile--small" href="#"><div class="cttel-v2-mosaic__visual"><span class="cttel-v2-mosaic__placeholder"></span></div><div class="cttel-v2-mosaic__copy"><h3 class="cttel-v2-mosaic__title">هندزفری</h3><p class="cttel-v2-mosaic__desc">صدا و تماس</p></div></a>
+				<a class="cttel-v2-tile cttel-v2-mosaic__tile cttel-v2-mosaic__tile--small" href="#"><div class="cttel-v2-mosaic__visual"><span class="cttel-v2-mosaic__placeholder"></span></div><div class="cttel-v2-mosaic__copy"><h3 class="cttel-v2-mosaic__title">ساعت هوشمند</h3><p class="cttel-v2-mosaic__desc">پوشیدنی‌های هوشمند</p></div></a>
+				<a class="cttel-v2-tile cttel-v2-mosaic__tile cttel-v2-mosaic__tile--small" href="#"><div class="cttel-v2-mosaic__visual"><span class="cttel-v2-mosaic__placeholder"></span></div><div class="cttel-v2-mosaic__copy"><h3 class="cttel-v2-mosaic__title">خرید اقساطی</h3><p class="cttel-v2-mosaic__desc">مسیر خرید منعطف</p></div></a>
+			</div>
+		</div>
+	</section>
+
+	<section class="cttel-v2 cttel-v2-section" id="products">
+		<div class="cttel-container">
+			<p class="cttel-v2-eyebrow">منتخب</p>
+			<h2 class="cttel-v2-heading">کارت محصول premium</h2>
+			<ul class="products cttel-products">
+				<li class="cttel-pcard"><div class="cttel-pcard__media">Product</div><h3 class="cttel-pcard__title">iPhone 15 Pro</h3><p class="cttel-pcard__price">۵۲,۰۰۰,۰۰۰ تومان</p><span class="cttel-pcard__btn">مشاهده محصول</span></li>
+				<li class="cttel-pcard"><div class="cttel-pcard__media">Product</div><h3 class="cttel-pcard__title">Galaxy S24 Ultra</h3><p class="cttel-pcard__price">۴۸,۵۰۰,۰۰۰ تومان</p><span class="cttel-pcard__btn">مشاهده محصول</span></li>
+				<li class="cttel-pcard"><div class="cttel-pcard__media">Product</div><h3 class="cttel-pcard__title">AirPods Pro</h3><p class="cttel-pcard__price">۱۲,۹۰۰,۰۰۰ تومان</p><span class="cttel-pcard__btn">مشاهده محصول</span></li>
+				<li class="cttel-pcard"><div class="cttel-pcard__media">Product</div><h3 class="cttel-pcard__title">Apple Watch Series 9</h3><p class="cttel-pcard__price">۲۲,۰۰۰,۰۰۰ تومان</p><span class="cttel-pcard__btn">مشاهده محصول</span></li>
+			</ul>
+		</div>
+	</section>
+
+	<section class="cttel-v2 cttel-v2-section cttel-v2-used" id="used">
+		<div class="cttel-container cttel-v2-used__grid">
+			<div class="cttel-v2-used__intro">
+				<p class="cttel-v2-eyebrow">گوشی کارکرده</p>
+				<h2 class="cttel-v2-heading">تجربه‌ای متفاوت از بازار کارکرده</h2>
+				<p class="cttel-v2-lead">موجودی آماده یا جست‌وجوی اختصاصی — هر دو با استاندارد CTTEL.</p>
+			</div>
+			<div class="cttel-v2-used__paths">
+				<a class="cttel-v2-used__path cttel-v2-tile" href="#"><span class="cttel-v2-used__path-tag">مسیر A</span><h3 class="cttel-v2-used__path-title">موجودی گوشی‌های کارکرده</h3><p class="cttel-v2-used__path-desc">مشاهده مدل‌های موجود در فروشگاه.</p><span class="cttel-v2-btn cttel-v2-btn--ghost">مشاهده موجودی</span></a>
+				<a class="cttel-v2-used__path cttel-v2-used__path--accent cttel-v2-tile" href="#"><span class="cttel-v2-used__path-tag">مسیر B</span><h3 class="cttel-v2-used__path-title">گوشی موردنظرت رو برات پیدا می‌کنیم</h3><p class="cttel-v2-used__path-desc">ثبت درخواست تأمین — /used-phone-request/</p><span class="cttel-v2-btn cttel-v2-btn--primary">ثبت درخواست</span></a>
+			</div>
+		</div>
+	</section>
+
+	<section class="cttel-v2 cttel-v2-installment-campaign" id="installment">
+		<div class="cttel-v2-installment-campaign__inner">
+			<div class="cttel-container cttel-v2-installment-campaign__content">
+				<p class="cttel-v2-eyebrow cttel-v2-eyebrow--on-dark">خرید اقساطی</p>
+				<h2 class="cttel-v2-installment-campaign__title">خرید اقساطی با هویت CTTEL</h2>
+				<p class="cttel-v2-installment-campaign__lead">محصول را انتخاب کنید و از مسیر اختصاصی اقساط در فروشگاه استفاده کنید.</p>
+				<a class="cttel-v2-btn cttel-v2-btn--on-dark" href="#">مشاهده خرید اقساطی</a>
+			</div>
+			<div class="cttel-v2-installment-campaign__visual"></div>
+		</div>
+	</section>
+</body>
+</html>

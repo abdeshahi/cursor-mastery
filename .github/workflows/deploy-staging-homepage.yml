@@ -1,0 +1,44 @@
+name: Deploy staging mobile storefront
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - cursor/hamrahtel-mobile-storefront-8598
+      - cursor/shop-listing-pdp-72ff
+    paths:
+      - 'wordpress/mu-plugins/cttel-homepage.php'
+      - 'wordpress/mu-plugins/cttel-mobile-storefront*.php'
+      - 'wordpress/mu-plugins/cttel-mobile-storefront.css'
+      - 'wordpress/mu-plugins/assets/cttel-ms/**'
+      - 'wordpress/mu-plugins/templates/cttel-mobile-front.php'
+      - 'wordpress/mu-plugins/templates/cttel-categories-hub.php'
+      - 'wordpress/mu-plugins/templates/content-product-ms.php'
+      - 'wordpress/scripts/sync-staging-homepage.sh'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Sync mu-plugins to staging
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          STAGING_SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          STAGING_WP_CONTAINER: wp_staging_app
+        run: |
+          if [ -z "${VPS_PASSWORD}" ] && [ -z "${STAGING_SSH_PRIVATE_KEY}" ]; then
+            echo "::error::Set GitHub secret VPS_PASSWORD or STAGING_SSH_PRIVATE_KEY to deploy staging."
+            exit 1
+          fi
+          if [ "${STAGING_WP_CONTAINER}" != "wp_staging_app" ]; then
+            echo "::error::Refusing deploy: STAGING_WP_CONTAINER must be wp_staging_app."
+            exit 1
+          fi
+          chmod +x wordpress/scripts/sync-staging-homepage.sh
+          cd wordpress && ./scripts/sync-staging-homepage.sh
