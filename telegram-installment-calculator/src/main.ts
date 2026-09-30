@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 
-import { registerBotCommands } from './bot/commands.js';
 import { createBot, createBotDependencies } from './bot/create-bot.js';
 import { ensureDefaultSettings, syncDatabaseSchema } from './database/bootstrap.js';
 import { loadEnvironment } from './config/env.js';
@@ -17,7 +16,6 @@ async function main(): Promise<void> {
   const bot = createBot(env, dependencies, logger);
 
   logger.info('bot.starting');
-  await registerBotCommands(bot);
   await bot.launch();
 
   const shutdown = async (signal: string) => {
