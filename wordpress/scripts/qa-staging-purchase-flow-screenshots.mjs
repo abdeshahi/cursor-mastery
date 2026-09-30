@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 
 const BASE = 'https://staging.cttel.ir';
+// Audit endpoints require CTTEL_STAGING_AUDIT_TOKEN from staging wp-config.php.
+const AUDIT_FETCH = { headers: { 'X-CTTEL-Audit-Token': process.env.CTTEL_AUDIT_TOKEN || '' } };
 const OUT = '/opt/cursor/artifacts/screenshots';
 const SHOT = (n, name) => path.join(OUT, `${String(n).padStart(2, '0')}-${name}.png`);
 
@@ -98,7 +100,7 @@ function parsePrice(text) {
   await ctx2.close();
   await browser.close();
 
-  const audit = await (await fetch(`${BASE}/?cttel_staging_wc_audit=snapshot`)).json();
+  const audit = await (await fetch(`${BASE}/?cttel_staging_wc_audit=snapshot`, AUDIT_FETCH)).json();
 
   console.log(
     JSON.stringify(

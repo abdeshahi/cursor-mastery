@@ -52,8 +52,13 @@ fi
 systemctl enable docker 2>/dev/null || service docker start 2>/dev/null || true
 sleep 2
 
+# Fresh installs only: never wipe an existing install (production .env, CREDENTIALS.md, backups).
+if [[ -e "${INSTALL_DIR}" ]]; then
+  echo "Refusing: ${INSTALL_DIR} already exists. This script is for fresh installs only."
+  exit 1
+fi
+
 log "Fetching WordPress stack"
-rm -rf "${INSTALL_DIR}"
 git clone --depth 1 --branch "${BRANCH}" "${REPO}" "${INSTALL_DIR}/repo"
 cp -a "${INSTALL_DIR}/repo/wordpress" "${INSTALL_DIR}/app"
 cd "${INSTALL_DIR}/app"

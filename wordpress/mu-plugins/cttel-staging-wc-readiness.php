@@ -11,23 +11,16 @@ require_once __DIR__ . '/cttel-staging-shipping-postpaid.php';
 require_once __DIR__ . '/cttel-staging-online-payment.php';
 require_once __DIR__ . '/cttel-staging-checkout-fields.php';
 
-if ( ! function_exists( 'cttel_is_staging_site' ) ) {
-	function cttel_is_staging_site(): bool {
-		if ( defined( 'CTTEL_STAGING' ) && CTTEL_STAGING ) {
-			return true;
-		}
-		$host = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( (string) $_SERVER['HTTP_HOST'] ) : '';
-		return str_contains( $host, 'staging.' ) || str_contains( $host, 'staging.cttel' );
-	}
-}
+require_once __DIR__ . '/cttel-environment.php';
 
 /**
  * Staging-only JSON audit (no production): ?cttel_staging_wc_audit=snapshot
+ * Requires a shop manager login or the X-CTTEL-Audit-Token header.
  */
 add_action(
 	'template_redirect',
 	static function (): void {
-		if ( ! cttel_is_staging_site() || ! isset( $_GET['cttel_staging_wc_audit'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['cttel_staging_wc_audit'] ) || ! cttel_staging_audit_request_allowed() ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}
 		$mode = (string) wp_unslash( $_GET['cttel_staging_wc_audit'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -52,41 +45,6 @@ add_action(
 		}
 	},
 	5
-);
-
-/**
- * Trash known staging QA orders once (no production, no other orders).
- */
-add_action(
-	'init',
-	static function (): void {
-		if ( ! cttel_is_staging_site() || ! function_exists( 'wc_get_order' ) ) {
-			return;
-		}
-		if ( get_option( 'cttel_staging_orders_136_137_trashed' ) ) {
-			return;
-		}
-		$targets = array( 136, 137 );
-		$results = array();
-		foreach ( $targets as $order_id ) {
-			$order = wc_get_order( $order_id );
-			if ( ! $order ) {
-				$results[ (string) $order_id ] = 'not_found';
-				continue;
-			}
-			$email = strtolower( (string) $order->get_billing_email() );
-			$note  = (string) $order->get_customer_note();
-			$safe  = str_contains( $email, 'staging' ) || str_contains( $email, 'cttel.invalid' ) || str_contains( $note, 'STAGING TEST' );
-			if ( ! $safe ) {
-				$results[ (string) $order_id ] = 'skipped_not_test';
-				continue;
-			}
-			$order->delete( false );
-			$results[ (string) $order_id ] = 'trashed';
-		}
-		update_option( 'cttel_staging_orders_136_137_trashed', $results, false );
-	},
-	25
 );
 
 /**

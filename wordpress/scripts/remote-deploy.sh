@@ -28,7 +28,7 @@ client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 client.connect(target.split("@")[1], port=port, username=target.split("@")[0], password=password, timeout=30, allow_agent=False, look_for_keys=False)
 
-cmd = "curl -fsSL https://raw.githubusercontent.com/abdeshahi/cursor-mastery/cursor/wordpress-woocommerce-stack-72ff/wordpress/scripts/install-on-vps.sh | bash -s -- --domain cttel.ir --email admin@cttel.ir --title CTTEL"
+cmd = "if [ -e /opt/cttel-wordpress ]; then echo 'Refusing: /opt/cttel-wordpress already exists (fresh installs only).'; exit 1; fi; curl -fsSL https://raw.githubusercontent.com/abdeshahi/cursor-mastery/cursor/wordpress-woocommerce-stack-72ff/wordpress/scripts/install-on-vps.sh | bash -s -- --domain cttel.ir --email admin@cttel.ir --title CTTEL"
 stdin, stdout, stderr = client.exec_command(cmd, get_pty=True)
 for line in iter(stdout.readline, ""):
     print(line, end="")

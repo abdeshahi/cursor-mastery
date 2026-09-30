@@ -21,6 +21,26 @@ Mu-plugins and templates under `wordpress/mu-plugins/`:
 
 Legacy files (`cttel-homepage-render.php`, `cttel-homepage.css`, `cttel-home-mockup.css`) are **not** deployed by the updated sync script.
 
+## Staging gate (`cttel-environment.php`)
+
+Staging-only behavior (postpaid shipping, online-only payment, required mobile, catalog bootstrap, audits) runs only when **both** hold:
+
+1. `define( 'CTTEL_STAGING', true );` is in the **staging** `wp-config.php` (the sync script sets and verifies it).
+2. The site URL stored in the database (`home`) starts with `staging.`.
+
+The request Host header is never used. Never add `CTTEL_STAGING` to production.
+
+### Audit endpoints
+
+`?cttel_staging_wc_audit=snapshot|full|catalog` answers only for a logged-in shop manager, or for requests sending
+`X-CTTEL-Audit-Token` equal to `CTTEL_STAGING_AUDIT_TOKEN` (at least 32 characters). The owner sets the token on the staging server only:
+
+```bash
+docker exec wp_staging_app wp config set CTTEL_STAGING_AUDIT_TOKEN "$(openssl rand -hex 32)" --allow-root
+```
+
+QA scripts read it from the `CTTEL_AUDIT_TOKEN` environment variable. Never commit it.
+
 ## Manual sync (from repo)
 
 ```bash

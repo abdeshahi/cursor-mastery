@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 
 const BASE = 'https://staging.cttel.ir';
+// Audit endpoints require CTTEL_STAGING_AUDIT_TOKEN from staging wp-config.php.
+const AUDIT_FETCH = { headers: { 'X-CTTEL-Audit-Token': process.env.CTTEL_AUDIT_TOKEN || '' } };
 const OUT = '/opt/cursor/artifacts/screenshots/purchase-flow';
 const R = { bugs: [], consoleErrors: [], networkFails: [] };
 
@@ -125,7 +127,7 @@ async function runViewport(width, label, browser) {
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const audit = await (await fetch(`${BASE}/?cttel_staging_wc_audit=full`)).json().catch(() => ({}));
+  const audit = await (await fetch(`${BASE}/?cttel_staging_wc_audit=full`, AUDIT_FETCH)).json().catch(() => ({}));
   R.shipping_methods = audit?.shipping?.iran_zone?.methods || [];
   R.payment_gateways = audit?.gateways || [];
   R.available_gateways = audit?.available_gateway_ids || [];

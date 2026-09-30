@@ -10,10 +10,7 @@ defined( 'ABSPATH' ) || exit;
 define( 'CTTEL_HOMEPAGE_VERSION', '3.0.0-mobile-storefront' );
 define( 'CTTEL_LEGACY_HOMEPAGE_MOCKUP', false );
 
-$cttel_staging_sync = __DIR__ . '/cttel-staging-home-sync.php';
-if ( is_readable( $cttel_staging_sync ) ) {
-	require_once $cttel_staging_sync;
-}
+require_once __DIR__ . '/cttel-environment.php';
 
 $cttel_mobile_storefront = __DIR__ . '/cttel-mobile-storefront.php';
 if ( is_readable( $cttel_mobile_storefront ) ) {

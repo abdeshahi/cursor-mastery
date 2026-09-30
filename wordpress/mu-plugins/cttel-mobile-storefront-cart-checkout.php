@@ -297,15 +297,7 @@ add_action(
 	20
 );
 
-if ( ! function_exists( 'cttel_is_staging_site' ) ) {
-	function cttel_is_staging_site(): bool {
-		if ( defined( 'CTTEL_STAGING' ) && CTTEL_STAGING ) {
-			return true;
-		}
-		$host = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( (string) $_SERVER['HTTP_HOST'] ) : '';
-		return str_contains( $host, 'staging.' ) || str_contains( $host, 'staging.cttel' );
-	}
-}
+require_once __DIR__ . '/cttel-environment.php';
 
 add_action(
 	'wp_footer',

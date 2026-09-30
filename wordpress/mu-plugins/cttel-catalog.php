@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+require_once __DIR__ . '/cttel-environment.php';
+
 const CTTEL_CATALOG_VERSION     = '1.0.0';
 const CTTEL_CATALOG_BOOT_KEY      = 'cttel_catalog_structure_version';
 const CTTEL_DEVICE_MODEL_TAX      = 'cttel_device_model';
@@ -46,11 +48,7 @@ function cttel_catalog_used_spec_field_labels(): array {
  * @return bool
  */
 function cttel_is_staging_catalog_site(): bool {
-	if ( function_exists( 'cttel_is_staging_site' ) ) {
-		return cttel_is_staging_site();
-	}
-	$host = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( (string) $_SERVER['HTTP_HOST'] ) : '';
-	return str_contains( $host, 'staging.' ) || str_contains( $host, 'staging.cttel' );
+	return cttel_is_staging_site();
 }
 
 add_action(
@@ -1056,7 +1054,7 @@ function cttel_catalog_audit_snapshot(): array {
 add_action(
 	'template_redirect',
 	static function (): void {
-		if ( ! cttel_is_staging_catalog_site() || ! isset( $_GET['cttel_staging_wc_audit'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['cttel_staging_wc_audit'] ) || ! cttel_staging_audit_request_allowed() ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}
 		if ( 'catalog' !== (string) wp_unslash( $_GET['cttel_staging_wc_audit'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended

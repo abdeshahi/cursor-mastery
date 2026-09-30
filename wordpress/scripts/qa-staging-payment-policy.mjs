@@ -1,6 +1,8 @@
 import { chromium } from 'playwright';
 
 const BASE = 'https://staging.cttel.ir';
+// Audit endpoints require CTTEL_STAGING_AUDIT_TOKEN from staging wp-config.php.
+const AUDIT_FETCH = { headers: { 'X-CTTEL-Audit-Token': process.env.CTTEL_AUDIT_TOKEN || '' } };
 const R = {};
 
 function ok(k, v) {
@@ -9,7 +11,7 @@ function ok(k, v) {
 }
 
 (async () => {
-  const audit = await (await fetch(`${BASE}/?cttel_staging_wc_audit=snapshot`)).json();
+  const audit = await (await fetch(`${BASE}/?cttel_staging_wc_audit=snapshot`, AUDIT_FETCH)).json();
   ok('ONLINE GATEWAY CONFIGURED', audit.online_gateway_configured ? 'YES' : 'NO');
 
   const browser = await chromium.launch({ headless: true });
@@ -48,7 +50,7 @@ function ok(k, v) {
     body.includes('جمع محصولات') && body.includes('مبلغ قابل پرداخت آنلاین') ? 'YES' : 'NO'
   );
 
-  const shipAudit = await (await fetch(`${BASE}/?cttel_staging_wc_audit=full`)).json();
+  const shipAudit = await (await fetch(`${BASE}/?cttel_staging_wc_audit=full`, AUDIT_FETCH)).json();
   const iran = shipAudit?.shipping?.iran_zone?.methods?.[0];
   ok('SHIPPING CHARGE IN WC', iran && String(iran.cost) === '0' ? '0' : String(iran?.cost ?? '?'));
 

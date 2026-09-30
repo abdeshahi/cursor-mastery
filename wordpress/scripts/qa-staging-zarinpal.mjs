@@ -1,6 +1,8 @@
 import { chromium } from 'playwright';
 
 const BASE = 'https://staging.cttel.ir';
+// Audit endpoints require CTTEL_STAGING_AUDIT_TOKEN from staging wp-config.php.
+const AUDIT_FETCH = { headers: { 'X-CTTEL-Audit-Token': process.env.CTTEL_AUDIT_TOKEN || '' } };
 const R = {};
 
 async function overflow(page) {
@@ -54,7 +56,7 @@ async function runWidth(w, tag) {
 }
 
 (async () => {
-  const audit = await fetch(`${BASE}/?cttel_staging_wc_audit=full`).then((r) => r.json()).catch(() => ({}));
+  const audit = await fetch(`${BASE}/?cttel_staging_wc_audit=full`, AUDIT_FETCH).then((r) => r.json()).catch(() => ({}));
   R.audit = {
     zarinpal: audit?.zarinpal ?? null,
     postpaid: audit?.shipping?.postpaid_shipping ?? null,

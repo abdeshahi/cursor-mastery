@@ -13,7 +13,7 @@ if [[ "${CONTAINER}" != "wp_staging_app" ]]; then
 fi
 
 MU_FILES=(
-	cttel-staging-home-sync.php
+	cttel-environment.php
 	cttel-homepage.php
 	cttel-mobile-storefront.php
 	cttel-mobile-storefront-shell.php
@@ -76,6 +76,36 @@ if ! "${SSH[@]}" "${HOST}" "docker ps --format '{{.Names}}' | grep -qx '${CONTAI
 	echo "Staging container ${CONTAINER} not found on ${HOST}. Aborting (fail closed)."
 	exit 1
 fi
+
+# Staging-only behavior is gated on CTTEL_STAGING in wp-config.php (see cttel-environment.php).
+# Set it before syncing code so the storefront rules never run ungated; fail closed otherwise.
+echo "==> Ensure WP-CLI in ${CONTAINER}..."
+"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} sh -c '\
+	if command -v wp >/dev/null 2>&1; then exit 0; fi; \
+	curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
+	chmod +x /usr/local/bin/wp'"
+WP="docker exec ${CONTAINER} wp --allow-root --path=/var/www/html"
+
+echo "==> Verify staging site URL..."
+STAGING_HOME="$("${SSH[@]}" "${HOST}" "${WP} option get home --skip-plugins --skip-themes" | tr -d '[:space:]')"
+case "${STAGING_HOME}" in
+	https://staging.*|http://staging.*) ;;
+	*)
+		echo "Refusing sync: ${CONTAINER} home URL is '${STAGING_HOME}', not a staging.* host."
+		exit 1
+		;;
+esac
+
+echo "==> Set CTTEL_STAGING in staging wp-config.php..."
+"${SSH[@]}" "${HOST}" "${WP} config set CTTEL_STAGING true --raw --type=constant --skip-plugins --skip-themes"
+if [[ "$("${SSH[@]}" "${HOST}" "${WP} config get CTTEL_STAGING --skip-plugins --skip-themes" | tr -d '[:space:]')" != "1" ]]; then
+	echo "CTTEL_STAGING is not set in staging wp-config.php. Aborting (fail closed)."
+	exit 1
+fi
+
+# Retired: this mu-plugin downloaded and executed PHP from GitHub on every request.
+echo "==> Remove retired self-updating mu-plugin (cttel-staging-home-sync.php)..."
+"${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} rm -f /var/www/html/wp-content/mu-plugins/cttel-staging-home-sync.php"
 
 "${SSH[@]}" "${HOST}" "docker exec ${CONTAINER} mkdir -p /var/www/html/wp-content/mu-plugins/templates"
 

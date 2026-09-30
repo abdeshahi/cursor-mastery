@@ -8,6 +8,7 @@ on:
       - cursor/shop-listing-pdp-72ff
     paths:
       - 'wordpress/mu-plugins/cttel-homepage.php'
+      - 'wordpress/mu-plugins/cttel-environment.php'
       - 'wordpress/mu-plugins/cttel-mobile-storefront*.php'
       - 'wordpress/mu-plugins/cttel-staging-wc-readiness.php'
       - 'wordpress/mu-plugins/cttel-staging-shipping-postpaid.php'
