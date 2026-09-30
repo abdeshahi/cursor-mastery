@@ -2543,6 +2543,28 @@ body.cttel-ms-checkout .woocommerce-message {
 	font-size: 0.8125rem;
 }
 
+/* RTL notices: keep the status icon on the right, clear of the text. */
+body.cttel-ms-cart .woocommerce-error,
+body.cttel-ms-cart .woocommerce-info:not(.cart-empty),
+body.cttel-ms-cart .woocommerce-message,
+body.cttel-ms-checkout .woocommerce-error,
+body.cttel-ms-checkout .woocommerce-info,
+body.cttel-ms-checkout .woocommerce-message {
+	position: relative;
+	padding-right: 2.75em !important;
+	padding-left: 1em !important;
+}
+
+body.cttel-ms-cart .woocommerce-error::before,
+body.cttel-ms-cart .woocommerce-info:not(.cart-empty)::before,
+body.cttel-ms-cart .woocommerce-message::before,
+body.cttel-ms-checkout .woocommerce-error::before,
+body.cttel-ms-checkout .woocommerce-info::before,
+body.cttel-ms-checkout .woocommerce-message::before {
+	right: 0.9em !important;
+	left: auto !important;
+}
+
 @media (min-width: 1024px) {
 	body.cttel-ms-cart #header,
 	body.cttel-ms-checkout #header {

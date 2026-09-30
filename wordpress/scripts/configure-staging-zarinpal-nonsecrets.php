@@ -90,10 +90,41 @@ if ( is_array( $fresh ) ) {
 	$report['gateway']['access_token_present'] = '' !== trim( (string) ( $fresh['access_token'] ?? '' ) );
 }
 
-if ( function_exists( 'WC' ) && WC()->api_request_url ) {
+if ( function_exists( 'WC' ) && is_callable( array( WC(), 'api_request_url' ) ) ) {
 	$base = WC()->api_request_url( 'WC_ZPal' );
 	$report['gateway']['callback_base_url'] = $base;
 	$report['gateway']['callback_example']  = add_query_arg( 'wc_order', 'ORDER_ID', $base );
+}
+
+// Diagnostics for "invalid payment method" at checkout: why WC_ZPal may be unavailable.
+// Plugin source lines only; never gateway settings values.
+$report['diagnostics'] = array(
+	'store_currency'        => function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : null,
+	'gateway_is_available'  => null,
+	'available_gateway_ids' => array(),
+	'plugin_conditions'     => array(),
+);
+if ( function_exists( 'WC' ) && WC()->payment_gateways() ) {
+	$gateways = WC()->payment_gateways()->payment_gateways();
+	if ( isset( $gateways['WC_ZPal'] ) && method_exists( $gateways['WC_ZPal'], 'is_available' ) ) {
+		$report['diagnostics']['gateway_is_available'] = (bool) $gateways['WC_ZPal']->is_available();
+	}
+	$report['diagnostics']['available_gateway_ids'] = array_keys( WC()->payment_gateways()->get_available_payment_gateways() );
+}
+$plugin_dir = WP_PLUGIN_DIR . '/zarinpal-woocommerce-payment-gateway';
+if ( is_dir( $plugin_dir ) ) {
+	$iterator = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $plugin_dir, FilesystemIterator::SKIP_DOTS ) );
+	foreach ( $iterator as $file ) {
+		if ( 'php' !== $file->getExtension() ) {
+			continue;
+		}
+		foreach ( file( $file->getPathname() ) as $n => $line ) {
+			if ( preg_match( '/is_available|available_payment_gateways|get_woocommerce_currency|\bIR[RT]\b|IRH[RT]/', $line ) ) {
+				$report['diagnostics']['plugin_conditions'][] = substr( $file->getPathname(), strlen( $plugin_dir ) + 1 ) . ':' . ( $n + 1 ) . ': ' . substr( trim( $line ), 0, 200 );
+			}
+		}
+	}
+	$report['diagnostics']['plugin_conditions'] = array_slice( $report['diagnostics']['plugin_conditions'], 0, 60 );
 }
 
 echo wp_json_encode( $report, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT );
